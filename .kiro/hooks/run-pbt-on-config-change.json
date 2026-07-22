@@ -1,0 +1,13 @@
+{
+  "name": "Run PBT on Config Change",
+  "version": "1.0.0",
+  "description": "Runs property-based tests when game config constants are changed",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["frontend/src/config/*.ts", "backend/src/config/*.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd frontend && npx vitest run --reporter=verbose --testNamePattern=\"Property\" 2>&1 | tail -40"
+  }
+}
