@@ -1,0 +1,50 @@
+name: "📘 Documentation"
+description: Report issues or propose improvements for the project's documentation.
+title: "📘 [Docs] - <short description> "
+labels: ["documentation"]
+assignees: []
+body:
+  - type: dropdown
+    id: section
+    attributes:
+      label: Area
+      description: What part of the documentation does this relate to?
+      options:
+        - README file
+        - Wiki
+        - Static site
+        - Code comments / inline docs
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe what you want to document, change, or fix.
+      placeholder: Clear explanation of the issue or proposal...
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_state
+    attributes:
+      label: Current state
+      description: If applicable, paste a snippet or link to the current content that needs improvement.
+      placeholder: Example or link...
+
+  - type: textarea
+    id: expected_change
+    attributes:
+      label: Proposed change
+      description: What should be added, removed, or improved?
+      placeholder: Your suggestion...
+
+  - type: checkboxes
+    id: duplicate_check
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have used the search function to check if a similar issue already exists.
+          required: true

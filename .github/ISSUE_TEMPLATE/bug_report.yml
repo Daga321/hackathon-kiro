@@ -1,0 +1,90 @@
+name: "🐛 Bug Report"
+description: Create a new ticket for a bug or unexpected behavior.
+title: "🐛 [BUG] - <short description>"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: Please provide a clear and concise description of the issue.
+      placeholder: e.g. When I try to log in, the system crashes with error XYZ.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: "Steps to Reproduce"
+      description: Please describe the sequence of steps that leads to the issue.
+      value: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll to '...'
+        4. See error: '...'
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "Expected Behavior"
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "Actual Behavior"
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Screenshots or Videos"
+      description: Paste URLs or drag-and-drop files in the comment once the issue is created.
+      placeholder: e.g. https://imgur.com/xyz123 or upload below after submission
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: "Browser(s)"
+      description: In which browsers does the issue occur?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+        - Opera
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: "Operating System(s)"
+      description: Affected operating systems or platforms.
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Android
+        - iOS
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: "Checklist"
+      options:
+        - label: "I have used the search function to check if an issue already exists."
+          required: true
