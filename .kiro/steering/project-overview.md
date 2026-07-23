@@ -2,62 +2,62 @@
 inclusion: auto
 ---
 
-# Visión General del Proyecto: Horde Battle Game
+# Project Overview: Horde Battle Game
 
-## Descripción del Proyecto
+## Project Description
 
-**Horde Battle Game** es un juego de acción top-down para navegador ambientado en un **cementerio nocturno**. El jugador encarna a un **guardia de cementerio** que debe defender su territorio de oleadas de **muertos vivientes** (zombies y esqueletos) usando primero su arma cuerpo a cuerpo (bastón/pala). Inspirado en Boxhead y Brotato.
+**Horde Battle Game** is a top-down action game for browsers set in a **nighttime cemetery**. The player embodies a **cemetery guard** who must defend his territory from waves of **undead** (zombies and skeletons) using first his melee weapon (staff/shovel). Inspired by Boxhead and Brotato.
 
-**Características clave del dominio:**
-- El personaje es un guardia de cementerio con ataque melee exclusivo en el MVP
-- Los enemigos son no-muertos (Undead): zombies, esqueletos y variantes post-MVP
-- La arena es un cementerio con lápidas, cercas y portones en pixel art
-- El ataque a distancia (proyectiles) es una funcionalidad post-MVP
+**Key domain characteristics:**
+- The character is a cemetery guard with melee-only attack in the MVP
+- Enemies are Undead: zombies, skeletons, and post-MVP variants
+- The arena is a cemetery with tombstones, fences, and gates in pixel art
+- Ranged attack (projectiles) is a post-MVP feature
 
-El juego opera en navegadores web de escritorio y móvil sin necesidad de instalación ni plugins. Cuenta con un backend en AWS para autenticación de usuarios, rankings globales, lista de amigos y clasificaciones entre amigos.
+The game runs in desktop and mobile web browsers without installation or plugins. It features an AWS backend for user authentication, global rankings, friend lists, and friend leaderboards.
 
-### Objetivos Principales
+### Main Objectives
 
-- Juego completamente funcional en navegador (desktop y móvil)
-- Arquitectura serverless escalable y de bajo costo en AWS
-- Sistema de autenticación seguro con Cognito
-- Rankings globales y entre amigos persistidos en DynamoDB
-- Rendimiento mínimo de 60 FPS en desktop y 30 FPS en móvil
+- Fully functional game in browser (desktop and mobile)
+- Scalable and low-cost serverless architecture on AWS
+- Secure authentication system with Cognito
+- Global and friend rankings persisted in DynamoDB
+- Minimum performance of 60 FPS on desktop and 30 FPS on mobile
 
 ---
 
-## Stack Tecnológico
+## Technology Stack
 
 ### Frontend
 
-| Tecnología | Versión | Rol |
-|------------|---------|-----|
-| TypeScript | 5.x | Lenguaje principal |
-| Phaser 3 | 3.60+ | Motor de juego |
-| Vite | 5.x | Bundler y dev server |
-| Vitest | 1.x | Testing unitario |
+| Technology | Version | Role |
+|------------|---------|------|
+| TypeScript | 5.x | Main language |
+| Phaser 3 | 3.60+ | Game engine |
+| Vite | 5.x | Bundler and dev server |
+| Vitest | 1.x | Unit testing |
 | fast-check | 3.x | Property-Based Testing |
 
 ### Backend (AWS Serverless)
 
-| Servicio | Rol |
-|----------|-----|
-| AWS Lambda (Node.js 20) | Lógica de negocio de la API |
-| Amazon API Gateway (HTTP API) | Exposición de endpoints REST/HTTPS |
-| Amazon DynamoDB | Persistencia de perfiles, scores y amigos |
-| Amazon Cognito User Pools | Autenticación y gestión de sesiones (JWT/OAuth 2.0) |
+| Service | Role |
+|---------|------|
+| AWS Lambda (Node.js 20) | API business logic |
+| Amazon API Gateway (HTTP API) | REST/HTTPS endpoint exposure |
+| Amazon DynamoDB | Persistence of profiles, scores, and friends |
+| Amazon Cognito User Pools | Authentication and session management (JWT/OAuth 2.0) |
 
-### Infraestructura y Despliegue
+### Infrastructure and Deployment
 
-| Servicio | Rol |
-|----------|-----|
-| Amazon S3 | Almacenamiento de assets estáticos del frontend |
-| Amazon CloudFront | CDN para servir el frontend con TTL ≥ 86400s |
-| AWS CDK (TypeScript) | Infraestructura como código |
-| AWS WAF | Protección de la API y el CDN |
-| Amazon Route 53 | Gestión DNS |
-| AWS Certificate Manager | Certificados TLS/SSL |
-| Amazon CloudWatch | Logging, métricas y alarmas |
+| Service | Role |
+|---------|------|
+| Amazon S3 | Static frontend asset storage |
+| Amazon CloudFront | CDN to serve the frontend with TTL ≥ 86400s |
+| AWS CDK (TypeScript) | Infrastructure as code |
+| AWS WAF | API and CDN protection |
+| Amazon Route 53 | DNS management |
+| AWS Certificate Manager | TLS/SSL certificates |
+| Amazon CloudWatch | Logging, metrics, and alarms |
 
 ### Tooling
 
@@ -68,7 +68,7 @@ El juego opera en navegadores web de escritorio y móvil sin necesidad de instal
 
 ---
 
-## Estructura del Proyecto
+## Project Structure
 
 ```
 hackathon-kiro/
@@ -79,7 +79,7 @@ hackathon-kiro/
 │   │       ├── design.md
 │   │       └── tasks.md
 │   └── steering/
-│       ├── project-overview.md   ← este archivo
+│       ├── project-overview.md   ← this file
 │       ├── code-standards.md
 │       └── aws-guidelines.md
 ├── frontend/
@@ -92,39 +92,39 @@ hackathon-kiro/
 │   │       ├── tilemaps/
 │   │       └── audio/
 │   ├── src/
-│   │   ├── main.ts                 # Punto de entrada Vite + Phaser config
+│   │   ├── main.ts                 # Vite + Phaser config entry point
 │   │   ├── config/
-│   │   │   ├── game-config.ts      # Configuración global de Phaser
-│   │   │   ├── asset-manifest.ts   # Mapa llave → ruta de todos los assets
+│   │   │   ├── game-config.ts      # Global Phaser configuration
+│   │   │   ├── asset-manifest.ts   # Key → path map of all assets
 │   │   │   └── constants.ts        # PLAYER_SPEED, PROJECTILE_RANGE, etc.
 │   │   ├── scenes/
-│   │   │   ├── BootScene.ts        # Precarga mínima + transición a Preload
-│   │   │   ├── PreloadScene.ts     # Carga de todos los assets con barra de progreso
-│   │   │   ├── MenuScene.ts        # Menú principal, login/registro UI
-│   │   │   ├── GameScene.ts        # Escena principal de juego
-│   │   │   ├── HUDScene.ts         # Overlay HUD (vida, ronda, score, controles)
-│   │   │   ├── GameOverScene.ts    # Pantalla de game over y submit score
-│   │   │   └── LeaderboardScene.ts # Rankings global y de amigos
+│   │   │   ├── BootScene.ts        # Minimal preload + transition to Preload
+│   │   │   ├── PreloadScene.ts     # Load all assets with progress bar
+│   │   │   ├── MenuScene.ts        # Main menu, login/register UI
+│   │   │   ├── GameScene.ts        # Main game scene
+│   │   │   ├── HUDScene.ts         # HUD overlay (health, round, score, controls)
+│   │   │   ├── GameOverScene.ts    # Game over screen and submit score
+│   │   │   └── LeaderboardScene.ts # Global and friends rankings
 │   │   ├── game-objects/
 │   │   │   ├── Player.ts
 │   │   │   ├── Enemy.ts
 │   │   │   ├── Projectile.ts
 │   │   │   └── HealthBar.ts
 │   │   ├── systems/
-│   │   │   ├── CombatSystem.ts     # Cálculo y aplicación de daño
-│   │   │   ├── WaveManager.ts      # Generación y control de rondas
-│   │   │   ├── PathfindingSystem.ts# Navegación de enemigos hacia el jugador
-│   │   │   ├── InputHandler.ts     # Teclado, mouse y controles táctiles
-│   │   │   └── ScoreSystem.ts      # Tracking de puntuación en sesión
+│   │   │   ├── CombatSystem.ts     # Damage calculation and application
+│   │   │   ├── WaveManager.ts      # Round generation and control
+│   │   │   ├── PathfindingSystem.ts# Enemy navigation toward the player
+│   │   │   ├── InputHandler.ts     # Keyboard, mouse, and touch controls
+│   │   │   └── ScoreSystem.ts      # In-session score tracking
 │   │   ├── ui/
-│   │   │   ├── VirtualJoystick.ts  # Joystick on-screen para móvil
-│   │   │   ├── FireButton.ts       # Botón de disparo para móvil
+│   │   │   ├── VirtualJoystick.ts  # On-screen joystick for mobile
+│   │   │   ├── FireButton.ts       # Fire button for mobile
 │   │   │   └── RoundNotification.ts
 │   │   ├── services/
-│   │   │   ├── AuthService.ts      # Wrapper de Cognito (login, register, logout)
+│   │   │   ├── AuthService.ts      # Cognito wrapper (login, register, logout)
 │   │   │   ├── LeaderboardService.ts
 │   │   │   ├── FriendsService.ts
-│   │   │   └── ApiClient.ts        # Cliente HTTP base con JWT interceptor
+│   │   │   └── ApiClient.ts        # Base HTTP client with JWT interceptor
 │   │   └── types/
 │   │       ├── game.types.ts
 │   │       ├── api.types.ts
@@ -175,7 +175,7 @@ hackathon-kiro/
 │   │   │   ├── DatabaseStack.ts    # DynamoDB tables
 │   │   │   └── FrontendStack.ts    # S3 + CloudFront
 │   │   └── constructs/
-│   │       ├── LambdaFunction.ts   # Construct reutilizable
+│   │       ├── LambdaFunction.ts   # Reusable construct
 │   │       └── DynamoTable.ts
 │   ├── cdk.json
 │   └── package.json
@@ -188,11 +188,11 @@ hackathon-kiro/
 
 ---
 
-## Patrones de Arquitectura Clave
+## Key Architecture Patterns
 
 ### Frontend: Scene-based Architecture (Phaser 3)
 
-Cada estado del juego es una `Phaser.Scene` independiente. Las escenas se comunican mediante el EventEmitter global de Phaser o datos pasados en `scene.start()`. El HUD corre como una escena paralela (`scene.launch()`) sobre la GameScene.
+Each game state is an independent `Phaser.Scene`. Scenes communicate through Phaser's global EventEmitter or data passed in `scene.start()`. The HUD runs as a parallel scene (`scene.launch()`) on top of the GameScene.
 
 ```
 BootScene → PreloadScene → MenuScene ⇄ GameScene + HUDScene → GameOverScene
@@ -202,55 +202,55 @@ BootScene → PreloadScene → MenuScene ⇄ GameScene + HUDScene → GameOverSc
 
 ### Backend: Handler → Service → Repository
 
-Cada Lambda handler se limita a parsear el input y delegar en un Service. Los Services contienen la lógica de negocio. Los Repositories abstraen las operaciones de DynamoDB.
+Each Lambda handler is limited to parsing the input and delegating to a Service. Services contain the business logic. Repositories abstract DynamoDB operations.
 
 ```
 API Gateway → Lambda Handler → Service → Repository → DynamoDB
                     ↓
-              Cognito Authorizer (endpoints protegidos)
+              Cognito Authorizer (protected endpoints)
 ```
 
-### Comunicación Frontend ↔ Backend
+### Frontend ↔ Backend Communication
 
-- `ApiClient.ts` es el único punto de salida HTTP del frontend
-- Todas las peticiones incluyen el JWT de Cognito en el header `Authorization: Bearer <token>`
-- API Gateway valida el JWT con el Cognito Authorizer antes de invocar la Lambda
+- `ApiClient.ts` is the single HTTP exit point from the frontend
+- All requests include the Cognito JWT in the `Authorization: Bearer <token>` header
+- API Gateway validates the JWT with the Cognito Authorizer before invoking the Lambda
 
-### Separación de Sistemas de Juego
+### Game Systems Separation
 
-Los sistemas de juego (`CombatSystem`, `WaveManager`, `PathfindingSystem`) son clases independientes sin estado global. Reciben referencias a los objetos que necesitan operar y emiten eventos a través de Phaser EventEmitter. Esto facilita el testing unitario.
+Game systems (`CombatSystem`, `WaveManager`, `PathfindingSystem`) are independent classes without global state. They receive references to the objects they need to operate on and emit events through Phaser EventEmitter. This facilitates unit testing.
 
 ---
 
-## Contexto del Dominio del Juego
+## Game Domain Context
 
-### Mecánicas Principales (MVP)
+### Main Mechanics (MVP)
 
-| Mecánica | Descripción |
+| Mechanic | Description |
 |----------|-------------|
-| **Personaje** | Guardia de cementerio — sprite pixel art con animaciones idle, walk, attack, hurt, death. |
-| **Movimiento** | WASD/flechas en desktop, joystick virtual en móvil. Velocidad 200px/s, diagonal normalizada. |
-| **Ataque melee** | Click/tap/spacebar → swing del bastón/pala en radio 64px. Daño 30 HP a todos los Undead en rango. Cooldown 600ms. |
-| **No-muertos** | Zombies y esqueletos persiguen al guardia a 80px/s. Pathfinding 10 veces/seg. Daño cuerpo a cuerpo si están a ≤48px. |
-| **Daño recibido** | 10 HP/s por cada Undead a ≤48px del guardia (ticks independientes). |
-| **Oleadas** | Ronda 1: 5 no-muertos. Cada ronda suma 3 más. Pausa de 3s entre rondas. |
-| **Puntuación** | 10 puntos por no-muerto eliminado. Se persiste al finalizar si el usuario está autenticado. |
-| **Game Over** | Guardia muere → overlay con stats → opción de submit score y play again. |
+| **Character** | Cemetery guard — pixel art sprite with idle, walk, attack, hurt, death animations. |
+| **Movement** | WASD/arrow keys on desktop, virtual joystick on mobile. Speed 200px/s, diagonal normalized. |
+| **Melee attack** | Click/tap/spacebar → staff/shovel swing in 64px radius. 30 HP damage to all Undead in range. 600ms cooldown. |
+| **Undead** | Zombies and skeletons chase the guard at 80px/s. Pathfinding 10 times/sec. Melee damage if within ≤48px. |
+| **Damage received** | 10 HP/s per each Undead within ≤48px of the guard (independent ticks). |
+| **Waves** | Round 1: 5 undead. Each round adds 3 more. 3s pause between rounds. |
+| **Score** | 10 points per undead killed. Persisted on game over if the user is authenticated. |
+| **Game Over** | Guard dies → overlay with stats → option to submit score and play again. |
 
-### Constantes del Dominio
+### Domain Constants
 
 ```typescript
 // src/config/constants.ts
 export const PLAYER_SPEED = 200;              // px/s
-export const PLAYER_MELEE_RANGE = 64;         // px — bastón/pala del guardia
+export const PLAYER_MELEE_RANGE = 64;         // px — guard's staff/shovel
 export const PLAYER_ATTACK_COOLDOWN_MS = 600; // ms
-export const PLAYER_MELEE_DAMAGE = 30;        // HP por swing
+export const PLAYER_MELEE_DAMAGE = 30;        // HP per swing
 export const ENEMY_SPEED = 80;                // px/s
-export const ENEMY_MELEE_RANGE = 48;          // px — SIEMPRE < PLAYER_MELEE_RANGE
-export const ENEMY_MELEE_DAMAGE = 10;         // HP por segundo
+export const ENEMY_MELEE_RANGE = 48;          // px — ALWAYS < PLAYER_MELEE_RANGE
+export const ENEMY_MELEE_DAMAGE = 10;         // HP per second
 export const ENEMY_SEPARATION_DISTANCE = 32;  // px
-export const ENEMY_BASE_HP = 100;             // HP zombie estándar
-export const ENEMY_SCORE_VALUE = 10;          // puntos
+export const ENEMY_BASE_HP = 100;             // HP standard zombie
+export const ENEMY_SCORE_VALUE = 10;          // points
 export const PLAYER_MAX_HP = 100;             // HP
 export const ROUND_START_ENEMIES = 5;
 export const ROUND_ENEMY_INCREMENT = 3;
@@ -259,24 +259,24 @@ export const PATHFINDING_UPDATE_HZ = 10;
 export const ENEMY_SPAWN_BORDER_PX = 32;
 export const ENEMY_MIN_SPAWN_DISTANCE = 100;
 
-// Post-MVP (Req 19) — disponibles cuando ranged esté habilitado
+// Post-MVP (Req 19) — available when ranged is enabled
 export const PROJECTILE_SPEED = 400;          // px/s
 export const PROJECTILE_RANGE = 400;          // px
 export const PROJECTILE_DAMAGE = 25;
 export const PROJECTILE_COOLDOWN_MS = 500;
 ```
 
-### Características Post-MVP
+### Post-MVP Features
 
-- **Variedad de no-muertos**: Esqueleto rápido (140px/s) desde ronda 10; lanzador de huesos desde ronda 15
-- **Jefes (Bosses)**: Zombie gigante o Señor no-muerto en rondas múltiplo de 10; 1000 HP, 500 pts bonus
-- **Ataque a distancia (Req 19)**: El guardia desbloquea un arma ranged (agua bendita, pistola de bengalas, etc.)
+- **Undead variety**: Fast skeleton (140px/s) from round 10; bone thrower from round 15
+- **Bosses**: Giant zombie or Undead Lord on rounds that are multiples of 10; 1000 HP, 500 pts bonus
+- **Ranged attack (Req 19)**: The guard unlocks a ranged weapon (holy water, flare gun, etc.)
 
-### Flujo de Usuario Típico
+### Typical User Flow
 
-1. Usuario abre el juego en el navegador (servido desde CloudFront)
-2. Puede jugar sin cuenta o registrarse/iniciar sesión (Cognito)
-3. Juega partidas, acumulando puntuación por rondas superadas
-4. Al morir, puede enviar su score al leaderboard global
-5. Puede consultar el ranking global (top 100) y el ranking de amigos
-6. Puede enviar/aceptar solicitudes de amistad por username
+1. User opens the game in the browser (served from CloudFront)
+2. Can play without an account or register/sign in (Cognito)
+3. Plays matches, accumulating score through rounds survived
+4. On death, can submit their score to the global leaderboard
+5. Can view the global ranking (top 100) and friend ranking
+6. Can send/accept friend requests by username

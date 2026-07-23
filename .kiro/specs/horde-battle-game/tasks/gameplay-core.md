@@ -1,0 +1,136 @@
+# Tasks: Gameplay Core
+
+> **Related:** [Requirements](../requirements/gameplay-core.md) | [Design](../design/gameplay-core.md)
+
+---
+
+- [ ] 3. Implement GameObjects: Player, Enemy, Projectile, HealthBar, HUD
+  - [ ] 3.1 Implement `Player`
+    - Create `src/objects/Player.ts` extending `Phaser.GameObjects.Sprite`
+    - Properties: `hp = PLAYER_HP`, `speed = PLAYER_SPEED`, `fireCooldown = PLAYER_FIRE_COOLDOWN`, `lastFireTime`
+    - Method `move(velocity: Vector2)`: normalize to 200 px/s; animate with walk/idle based on direction
+    - Method `clampToArena(bounds: Rectangle)`: limit position to Arena bounds
+    - Method `takeDamage(amount: number)`: reduce HP, clamp to 0; cannot be negative
+    - Method `shoot(targetX, targetY)`: respect 500 ms cooldown; create Projectile if cooldown met
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.9, 5.2_
+  - [ ] 3.2 Implement `Enemy`
+    - Create `src/objects/Enemy.ts` extending `Phaser.GameObjects.Sprite`
+    - Properties: `hp = ENEMY_HP`, `maxHp`, `speed = ENEMY_BASE_SPEED`, `meleeRange`, `damageTick`, `healthBar`
+    - Method `takeDamage(amount)`: reduce HP; show HealthBar on first damage; if HP ≤ 0 call `die()`
+    - Method `die()`: start animation; hide HealthBar; destroy sprite in ≤ 300 ms
+    - Method `update(playerPos, delta)`: delegated to PathfindingSystem for direction
+    - _Requirements: 3.2, 4.1, 4.2, 4.4, 4.6_
+  - [ ] 3.3 Implement `Projectile`
+    - Create `src/objects/Projectile.ts` extending `Phaser.GameObjects.Sprite`
+    - Properties: `speed = PROJECTILE_SPEED`, `maxRange = PROJECTILE_RANGE`, `traveled = 0`, `damage = PROJECTILE_DAMAGE`
+    - Method `update(delta)`: move in direction, accumulate `traveled`; destroy on reaching 400 px
+    - Method `onHitEnemy(enemy)`: apply 25 pts damage; destroy projectile
+    - Method `onHitWall()`: destroy projectile without damage
+    - _Requirements: 2.2, 2.3, 2.6, 2.7, 2.8_
+  - [ ] 3.4 Implement `HealthBar`
+    - Create `src/objects/HealthBar.ts` extending `Phaser.GameObjects.Graphics`
+    - Method `attach(enemy)`: position above the Enemy sprite
+    - Method `update(currentHp, maxHp)`: recalculate width proportionally (1% tolerance)
+    - Methods `hide()` and `destroy()`
+    - _Requirements: 4.2, 4.3, 4.4, 4.6_
+  - [ ] 3.5 Implement `HUD`
+    - Create `src/objects/HUD.ts` extending `Phaser.GameObjects.Container`
+    - Methods: `updateHp(current, max)` — red if `hp < 0.30 * maxHp`, default color if ≥ 30%
+    - Methods: `updateRound(n)`, `updateEnemiesLeft(n)`, `updateScore(n)` — update within 1 frame
+    - Method `showRoundIncoming(nextRound)`: display "Round [N] incoming" for 3 seconds
+    - Ensure the HUD does not occlude > 10% of the playfield; font ≥ 12 px; contrast ≥ 4.5:1
+    - _Requirements: 6.5, 6.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
+
+---
+
+- [ ] 4. Implement game systems (WaveManager, CombatSystem, PathfindingSystem, InputSystem, AudioSystem)
+  - [ ] 4.1 Implement `WaveManager`
+    - Create `src/systems/WaveManager.ts`
+    - Property `currentRound = 1`, `enemiesRemaining`
+    - Method `enemyCountForRound(round)`: return `5 + (round - 1) * 3`; support up to round 50 → 152 enemies
+    - Method `startRound(round)`: spawn enemies in 32 px strip interior to border, distance ≥ 100 px from Player
+    - Method `onEnemyKilled()`: decrement `enemiesRemaining`; if reaches 0 → `startInterRoundPause()`
+    - Method `startInterRoundPause()`: wait 3000 ms, then `startRound(round + 1)`
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.7_
+  - [ ]* 4.2 Write property test for WaveManager (enemy formula)
+    - **Property 12: The enemy count formula per round is exactly 5 + (round − 1) × 3**
+    - **Validates: Requirements 6.1, 6.4, 6.7**
+  - [ ]* 4.3 Write property test for WaveManager (spawn positions)
+    - **Property 13: Spawn positions respect the minimum distance from the Player**
+    - **Validates: Requirements 6.2**
+  - [ ] 4.4 Implement `CombatSystem`
+    - Create `src/systems/CombatSystem.ts`
+    - Method `applyPlayerMeleeAttack(guard, enemies)`: apply melee damage to all undead within PLAYER_MELEE_RANGE; only if round is active
+    - Method `applyUndeadMeleeDamage(undead, guard, delta)`: inflict 10 pts/1000 ms per undead within range ≤ 48 px; only if round is active
+    - Method `checkGameOver(guard)`: return `true` if `guard.hp <= 0`
+    - Attack cooldown logic: silently reject inputs < 600 ms since last attack
+    - _Requirements: 2.1, 2.5, 2.6, 2.7, 3.5, 3.6, 5.1, 5.2, 5.3_
+  - [ ]* 4.5 Write property test for CombatSystem (melee attack damage)
+    - **Property 4: The guard's melee attack applies exactly 30 points to each undead in range**
+    - **Validates: Requirement 2.5**
+  - [ ]* 4.6 Write property test for CombatSystem (attack cooldown)
+    - **Property 5: Attack cooldown guarantees at most 1 melee attack every 600 ms**
+    - **Validates: Requirement 2.7**
+  - [ ]* 4.7 Write property test for CombatSystem (guard HP)
+    - **Property 9: Guard HP never falls below 0**
+    - **Validates: Requirement 5.2**
+  - [ ]* 4.8 Write property test for CombatSystem (score per kill)
+    - **Property 11: Killing an undead always adds exactly 10 points**
+    - **Validates: Requirement 4.5**
+  - [ ] 4.9 Implement `PathfindingSystem`
+    - Create `src/systems/PathfindingSystem.ts`
+    - Method `updateEnemyDirection(enemy, playerPos)`: calculate normalized direction vector at 80 px/s; minimum frequency 10 Hz
+    - Method `applySeparationForce(enemies, arenaBounds)`: push overlapping enemies apart (< 32 px between centers); clamp to Arena
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+  - [ ]* 4.10 Write property test for PathfindingSystem (Arena bounds)
+    - **Property 1: Guard and undead always remain within Arena bounds**
+    - **Validates: Requirements 1.2, 3.3, 3.4**
+  - [ ]* 4.11 Write property test for PathfindingSystem (undead speed)
+    - **Property 8: Base speed of standard undead is always 80 px/s**
+    - **Validates: Requirement 3.2**
+  - [ ]* 4.12 Write property test for PathfindingSystem (undead separation)
+    - **Property 7: Separation force eliminates overlaps without pushing undead outside the Arena**
+    - **Validates: Requirement 3.4**
+  - [ ] 4.13 Implement `InputSystem`
+    - Create `src/systems/InputSystem.ts`
+    - Method `getMovementVector()`: read WASD + arrows + virtual joystick; return normalized vector
+    - Method `isAttackPressed()`: detect click, tap, spacebar or on-screen attack button
+    - Method `getAttackTarget()`: return cursor position or touch point
+    - Create virtual joystick (radius ≥ 80 px, lower-left zone, ≥ 16 px from edge) only on touch devices
+    - Create attack button (≥ 64×64 px, lower-right zone, ≤ 16 px from edge) only on touch devices
+    - _Requirements: 1.1, 1.5, 1.6, 2.1, 2.8, 12.3, 12.4, 12.5, 12.7_
+  - [ ] 4.14 Implement `AudioSystem`
+    - Create `src/systems/AudioSystem.ts`
+    - Methods: `playMeleeSwing()`, `playUndeadDeath()`, `playGuardHurt()`, `playRoundStart()`
+    - Load keys from `ASSET_MANIFEST.audio`; mute if asset did not load (do not throw error)
+    - _Requirements: 15.1, 15.2_
+
+---
+
+- [ ] 6. Implement guard properties and melee combat system
+  - [ ] 6.1 Implement guard speed normalization logic
+    - In `GraveyardGuard.move()`: apply `Vector2.normalize().scale(PLAYER_SPEED)` for all direction combinations including diagonals
+    - Ensure the magnitude is exactly 200 px/s (±0.001 tolerance)
+    - _Requirements: 1.1, 1.5_
+  - [ ]* 6.2 Write property test for guard speed
+    - **Property 2: Movement speed is always exactly 200 px/s for the guard**
+    - **Validates: Requirements 1.1, 1.5**
+  - [ ] 6.3 Implement guard melee range logic
+    - In `CombatSystem.applyPlayerMeleeAttack()`: affect all undead whose center is within PLAYER_MELEE_RANGE (64 px)
+    - Guarantee that `PLAYER_MELEE_RANGE (64) > ENEMY_MELEE_RANGE (48)` via assertion in `GameConfig.ts`
+    - _Requirements: 2.2, 2.3, 2.5_
+  - [ ]* 6.4 Write property test for guard melee range
+    - **Property 4: The guard's melee attack applies exactly 30 points to each undead in range**
+    - **Validates: Requirement 2.5**
+  - [ ]* 6.5 Write property test for guard vs undead range
+    - **Property 3: The guard's melee range always exceeds the undead melee range**
+    - **Validates: Requirement 2.3**
+  - [ ]* 6.6 Implement proportional HealthBar logic
+    - In `HealthBar.update()`: `barWidth = Math.round((currentHp / maxHp) * MAX_BAR_WIDTH)`; 1% tolerance
+    - _Requirements: 4.3_
+  - [ ]* 6.7 Write property test for HealthBar
+    - **Property 10: An undead's HP bar reflects the hp/maxHp ratio accurately**
+    - **Validates: Requirement 4.3**
+  - [ ]* 6.8 Write property test for HUD color threshold
+    - **Property 24: The HUD displays health in red if and only if HP < 30% of maximum**
+    - **Validates: Requirements 7.3, 7.4**

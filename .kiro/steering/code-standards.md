@@ -2,13 +2,13 @@
 inclusion: auto
 ---
 
-# Estándares de Código: Horde Battle Game
+# Code Standards: Horde Battle Game
 
 ## TypeScript
 
-### Configuración Estricta
+### Strict Configuration
 
-Todos los módulos (frontend y backend) usan `strict: true` en `tsconfig.json`. Las siguientes reglas son obligatorias:
+All modules (frontend and backend) use `strict: true` in `tsconfig.json`. The following rules are mandatory:
 
 ```json
 {
@@ -27,25 +27,25 @@ Todos los módulos (frontend y backend) usan `strict: true` en `tsconfig.json`. 
 }
 ```
 
-### Reglas Fundamentales
+### Fundamental Rules
 
-- **Prohibido `any`**: Usar `unknown` cuando el tipo sea incierto y hacer type narrowing explícito.
-- **Tipos explícitos en firmas públicas**: Toda función/método público debe tener tipos de parámetros y retorno declarados explícitamente.
-- **No non-null assertion `!`**: Usar optional chaining `?.` o guardas de tipo en su lugar.
-- **Preferir `type` sobre `interface`** para tipos de datos y uniones; usar `interface` solo para contratos de objetos extensibles.
-- **Enums → `const` objects**: Usar objetos `as const` en lugar de `enum` para evitar el output JS extra.
+- **No `any` allowed**: Use `unknown` when the type is uncertain and do explicit type narrowing.
+- **Explicit types on public signatures**: Every public function/method must have explicitly declared parameter and return types.
+- **No non-null assertion `!`**: Use optional chaining `?.` or type guards instead.
+- **Prefer `type` over `interface`** for data types and unions; use `interface` only for extensible object contracts.
+- **Enums → `const` objects**: Use `as const` objects instead of `enum` to avoid the extra JS output.
 
 ```typescript
-// ❌ Evitar
+// ❌ Avoid
 function processEnemy(e: any): any { ... }
 
-// ✅ Correcto
+// ✅ Correct
 function processEnemy(enemy: Enemy): DamageResult { ... }
 
-// ❌ Evitar enum
+// ❌ Avoid enum
 enum Direction { North, South, East, West }
 
-// ✅ Preferir const object
+// ✅ Prefer const object
 const Direction = {
   North: 'north',
   South: 'south',
@@ -57,27 +57,27 @@ type Direction = typeof Direction[keyof typeof Direction];
 
 ---
 
-## Convenciones de Nomenclatura
+## Naming Conventions
 
-| Elemento | Convención | Ejemplo |
-|----------|------------|---------|
-| Clases | `PascalCase` | `WaveManager`, `CombatSystem` |
+| Element | Convention | Example |
+|---------|------------|---------|
+| Classes | `PascalCase` | `WaveManager`, `CombatSystem` |
 | Interfaces / Types | `PascalCase` | `PlayerState`, `EnemyConfig` |
-| Funciones y métodos | `camelCase` | `spawnEnemy()`, `applyDamage()` |
-| Variables locales | `camelCase` | `currentRound`, `enemyCount` |
-| Constantes de módulo | `UPPER_SNAKE_CASE` | `PLAYER_SPEED`, `MAX_ENEMIES` |
-| Archivos de código | `kebab-case` | `wave-manager.ts`, `combat-system.ts` |
-| Archivos de escena Phaser | `PascalCase` (clase) + `kebab-case` (archivo) | `GameScene.ts` → `game-scene.ts` |
-| Directorios | `kebab-case` | `game-objects/`, `ui/` |
-| Variables privadas de clase | `_camelCase` | `_healthPoints`, `_speed` |
-| Handlers de Lambda | `kebab-case` | `submit-score.ts`, `get-global.ts` |
+| Functions and methods | `camelCase` | `spawnEnemy()`, `applyDamage()` |
+| Local variables | `camelCase` | `currentRound`, `enemyCount` |
+| Module constants | `UPPER_SNAKE_CASE` | `PLAYER_SPEED`, `MAX_ENEMIES` |
+| Code files | `kebab-case` | `wave-manager.ts`, `combat-system.ts` |
+| Phaser scene files | `PascalCase` (class) + `kebab-case` (file) | `GameScene.ts` → `game-scene.ts` |
+| Directories | `kebab-case` | `game-objects/`, `ui/` |
+| Private class variables | `_camelCase` | `_healthPoints`, `_speed` |
+| Lambda handlers | `kebab-case` | `submit-score.ts`, `get-global.ts` |
 
-### Naming de Eventos Phaser
+### Phaser Event Naming
 
-Los eventos de Phaser EventEmitter se nombran en `kebab-case` con un prefijo de dominio:
+Phaser EventEmitter events are named in `kebab-case` with a domain prefix:
 
 ```typescript
-// Prefijos: game:, wave:, player:, enemy:, ui:
+// Prefixes: game:, wave:, player:, enemy:, ui:
 this.events.emit('wave:round-started', { round: 1, enemyCount: 5 });
 this.events.emit('player:health-changed', { current: 75, max: 100 });
 this.events.emit('enemy:killed', { enemyId: 'e-001', scoreValue: 10 });
@@ -85,43 +85,43 @@ this.events.emit('enemy:killed', { enemyId: 'e-001', scoreValue: 10 });
 
 ---
 
-## Estructura de Archivos y Módulos
+## File and Module Structure
 
-### Regla de Un Responsable por Archivo
+### One Responsibility Per File Rule
 
-Cada archivo exporta **una** clase o función principal. Los tipos de soporte del mismo dominio pueden co-existir en el mismo archivo.
+Each file exports **one** main class or function. Supporting types from the same domain can co-exist in the same file.
 
-### Orden de Imports
+### Import Order
 
 ```typescript
-// 1. Imports de Node.js / runtime
+// 1. Node.js / runtime imports
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
-// 2. Imports de dependencias externas (Phaser, AWS SDK, etc.)
+// 2. External dependency imports (Phaser, AWS SDK, etc.)
 import Phaser from 'phaser';
 
-// 3. Imports internos (rutas absolutas con alias)
+// 3. Internal imports (absolute paths with aliases)
 import { PLAYER_SPEED } from '@/config/constants';
 import type { EnemyConfig } from '@/types/game.types';
 ```
 
 ### Barrel Exports
 
-Los subdirectorios importantes pueden exponer un `index.ts` barrel, pero solo para agrupar exports relacionados. Evitar barrels que re-exporten de múltiples dominios.
+Important subdirectories can expose an `index.ts` barrel, but only to group related exports. Avoid barrels that re-export from multiple domains.
 
 ---
 
-## Estándares de Phaser 3
+## Phaser 3 Standards
 
-### Organización de Escenas
+### Scene Organization
 
-Cada escena extiende `Phaser.Scene` y declara explícitamente su key:
+Each scene extends `Phaser.Scene` and explicitly declares its key:
 
 ```typescript
 export class GameScene extends Phaser.Scene {
   static readonly KEY = 'GameScene';
 
-  // Sistemas inyectados / inicializados en create()
+  // Systems injected / initialized in create()
   private _combatSystem!: CombatSystem;
   private _waveManager!: WaveManager;
   private _player!: Player;
@@ -130,7 +130,7 @@ export class GameScene extends Phaser.Scene {
     super({ key: GameScene.KEY });
   }
 
-  preload(): void { /* solo si hay assets específicos de esta escena */ }
+  preload(): void { /* only if there are scene-specific assets */ }
 
   create(): void {
     this._combatSystem = new CombatSystem(this);
@@ -150,7 +150,7 @@ export class GameScene extends Phaser.Scene {
 
 ### Game Objects
 
-Los Game Objects extienden `Phaser.GameObjects.Sprite` u otras clases base de Phaser:
+Game Objects extend `Phaser.GameObjects.Sprite` or other Phaser base classes:
 
 ```typescript
 export class Enemy extends Phaser.GameObjects.Sprite {
@@ -174,9 +174,9 @@ export class Enemy extends Phaser.GameObjects.Sprite {
 }
 ```
 
-### Sistemas (Systems)
+### Systems
 
-Los sistemas son clases planas (no Phaser.GameObjects) que reciben la escena en el constructor. No mantienen estado global.
+Systems are plain classes (not Phaser.GameObjects) that receive the scene in the constructor. They do not maintain global state.
 
 ```typescript
 export class CombatSystem {
@@ -195,7 +195,7 @@ export class CombatSystem {
 
 ### Asset Loading
 
-Todos los assets se cargan en `PreloadScene` usando las llaves del asset manifest:
+All assets are loaded in `PreloadScene` using the asset manifest keys:
 
 ```typescript
 // src/config/asset-manifest.ts
@@ -209,7 +209,7 @@ export const ASSET_MANIFEST = {
   },
 } as const;
 
-// En PreloadScene:
+// In PreloadScene:
 this.load.spritesheet(
   ASSET_MANIFEST.player.idle.key,
   ASSET_MANIFEST.player.idle.path,
@@ -217,17 +217,17 @@ this.load.spritesheet(
 );
 ```
 
-### Física
+### Physics
 
-- Usar `arcade` physics (ligero y suficiente para el juego).
-- Habilitar physics solo en escenas que lo necesiten (`physics: { default: 'arcade' }` en config).
-- Definir los grupos de colisión en `create()` y registrar los overlaps/colliders explícitamente.
+- Use `arcade` physics (lightweight and sufficient for the game).
+- Enable physics only in scenes that need it (`physics: { default: 'arcade' }` in config).
+- Define collision groups in `create()` and register overlaps/colliders explicitly.
 
 ---
 
-## Estándares de Lambda (Backend)
+## Lambda Standards (Backend)
 
-### Estructura del Handler
+### Handler Structure
 
 ```typescript
 // backend/src/handlers/leaderboard/submit-score.ts
@@ -243,7 +243,7 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const body = JSON.parse(event.body ?? '{}');
-    const input = validateSubmitScoreInput(body); // lanza si inválido
+    const input = validateSubmitScoreInput(body); // throws if invalid
 
     const userId = event.requestContext.authorizer?.claims?.sub;
     if (!userId) {
@@ -262,17 +262,17 @@ export const handler = async (
 };
 ```
 
-### Error Handling en Lambda
+### Lambda Error Handling
 
-- Los errores de validación retornan `400` con mensaje descriptivo del campo fallido.
-- Los errores de autenticación retornan `401` sin detalles internos.
-- Los errores inesperados retornan `500` con mensaje genérico y loguean el stack trace completo a CloudWatch.
-- **Nunca exponer** detalles del stack trace o información interna en la respuesta HTTP.
+- Validation errors return `400` with a descriptive message of the failed field.
+- Authentication errors return `401` without internal details.
+- Unexpected errors return `500` with a generic message and log the full stack trace to CloudWatch.
+- **Never expose** stack trace details or internal information in the HTTP response.
 
-### Variables de Entorno
+### Environment Variables
 
-- Acceder solo a través de un módulo de configuración centralizado, nunca directamente con `process.env` en handlers.
-- Validar presencia de variables críticas al inicio (cold start).
+- Access only through a centralized configuration module, never directly with `process.env` in handlers.
+- Validate the presence of critical variables at startup (cold start).
 
 ```typescript
 // backend/src/config/env.ts
@@ -292,9 +292,9 @@ export const ENV = {
 
 ### Logging
 
-- Usar structured logging (JSON) para facilitar las queries en CloudWatch.
-- Incluir siempre `requestId`, `userId` (si disponible) y `action` en cada log.
-- Niveles: `info` para flujo normal, `warn` para condiciones inesperadas recuperables, `error` para excepciones.
+- Use structured logging (JSON) to facilitate queries in CloudWatch.
+- Always include `requestId`, `userId` (if available), and `action` in each log.
+- Levels: `info` for normal flow, `warn` for recoverable unexpected conditions, `error` for exceptions.
 
 ```typescript
 logger.info('Score submitted', { requestId, userId, round, score });
@@ -303,17 +303,17 @@ logger.error('DynamoDB write failed', { requestId, error: error.message, stack: 
 
 ---
 
-## Convenciones de Testing
+## Testing Conventions
 
-### Stack de Testing
+### Testing Stack
 
-- **Vitest** para unit tests en frontend y backend
-- **fast-check** para Property-Based Testing (PBT)
-- Cobertura mínima objetivo: 80% en sistemas de juego core y lógica de negocio de Lambda
+- **Vitest** for unit tests in frontend and backend
+- **fast-check** for Property-Based Testing (PBT)
+- Minimum coverage target: 80% on core game systems and Lambda business logic
 
-### Estructura de Archivos de Test
+### Test File Structure
 
-Los tests viven junto al código que testean con el sufijo `.test.ts`:
+Tests live alongside the code they test with the `.test.ts` suffix:
 
 ```
 src/systems/CombatSystem.ts
@@ -322,30 +322,30 @@ src/systems/WaveManager.ts
 src/systems/WaveManager.test.ts
 ```
 
-### Naming de Tests
+### Test Naming
 
-Seguir el patrón `describe / it` con lenguaje declarativo:
+Follow the `describe / it` pattern with declarative language:
 
 ```typescript
 describe('CombatSystem', () => {
   describe('applyProjectileDamage', () => {
-    it('debería reducir los HP del enemigo en PROJECTILE_DAMAGE', () => { ... });
-    it('debería destruir el proyectil al impactar', () => { ... });
-    it('no debería reducir los HP por debajo de 0', () => { ... });
+    it('should reduce enemy HP by PROJECTILE_DAMAGE', () => { ... });
+    it('should destroy the projectile on impact', () => { ... });
+    it('should not reduce HP below 0', () => { ... });
   });
 });
 ```
 
-### Property-Based Tests con fast-check
+### Property-Based Tests with fast-check
 
-Usar PBT para invariantes del dominio del juego:
+Use PBT for game domain invariants:
 
 ```typescript
 import { describe, it } from 'vitest';
 import * as fc from 'fast-check';
 
-describe('WaveManager - invariantes de ronda', () => {
-  it('el conteo de enemigos siempre debe ser positivo para cualquier número de ronda', () => {
+describe('WaveManager - round invariants', () => {
+  it('enemy count should always be positive for any round number', () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 50 }), (round) => {
         const enemyCount = ROUND_START_ENEMIES + (round - 1) * ROUND_ENEMY_INCREMENT;
@@ -354,7 +354,7 @@ describe('WaveManager - invariantes de ronda', () => {
     );
   });
 
-  it('la velocidad normalizada de movimiento diagonal nunca debe exceder PLAYER_SPEED', () => {
+  it('normalized diagonal movement speed should never exceed PLAYER_SPEED', () => {
     fc.assert(
       fc.property(
         fc.float({ min: -1, max: 1 }),
@@ -374,71 +374,71 @@ describe('WaveManager - invariantes de ronda', () => {
 
 ### Mocking
 
-- Usar `vi.mock()` de Vitest para dependencias externas (AWS SDK, Phaser).
-- Crear factories de objetos de test en `src/__tests__/factories/` para reutilizar.
-- No testear implementaciones internas; testear comportamiento observable.
+- Use Vitest's `vi.mock()` for external dependencies (AWS SDK, Phaser).
+- Create test object factories in `src/__tests__/factories/` for reuse.
+- Do not test internal implementations; test observable behavior.
 
 ---
 
-## Reglas de Git (Commits Convencionales)
+## Git Rules (Conventional Commits)
 
-Todos los commits siguen el formato [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-<tipo>[alcance opcional]: <descripción corta en español o inglés>
-
-[cuerpo opcional]
-[pie opcional con BREAKING CHANGE o refs a issues]
-```
-
-### Tipos Permitidos
-
-| Tipo | Uso |
-|------|-----|
-| `feat` | Nueva funcionalidad |
-| `fix` | Corrección de bug |
-| `docs` | Solo cambios en documentación |
-| `test` | Añadir o corregir tests |
-| `chore` | Tareas de mantenimiento (deps, config) |
-| `refactor` | Refactorización sin cambio funcional |
-| `perf` | Mejora de rendimiento |
-| `ci` | Cambios en CI/CD |
-| `build` | Cambios en sistema de build |
-
-### Ejemplos
+All commits follow the [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ```
-feat(wave-manager): añadir pausa de 3 segundos entre rondas
-fix(combat): corregir normalización de velocidad diagonal
-test(pathfinding): agregar PBT para separación de enemigos
-chore(deps): actualizar phaser a 3.61.0
-refactor(hud): extraer HealthBar a componente independiente
+<type>[optional scope]: <short description>
+
+[optional body]
+[optional footer with BREAKING CHANGE or issue refs]
 ```
 
-### Ramas
+### Allowed Types
 
-- `main` → producción
-- `develop` → integración
-- `feat/<nombre-kebab>` → features
-- `fix/<nombre-kebab>` → bugfixes
-- `chore/<nombre-kebab>` → tareas de mantenimiento
+| Type | Usage |
+|------|-------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation-only changes |
+| `test` | Adding or fixing tests |
+| `chore` | Maintenance tasks (deps, config) |
+| `refactor` | Refactoring without functional change |
+| `perf` | Performance improvement |
+| `ci` | CI/CD changes |
+| `build` | Build system changes |
+
+### Examples
+
+```
+feat(wave-manager): add 3-second pause between rounds
+fix(combat): fix diagonal speed normalization
+test(pathfinding): add PBT for enemy separation
+chore(deps): update phaser to 3.61.0
+refactor(hud): extract HealthBar to independent component
+```
+
+### Branches
+
+- `main` → production
+- `develop` → integration
+- `feat/<kebab-name>` → features
+- `fix/<kebab-name>` → bugfixes
+- `chore/<kebab-name>` → maintenance tasks
 
 ---
 
-## Reglas de Seguridad
+## Security Rules
 
-### Secretos y Credenciales
+### Secrets and Credentials
 
-- **Nunca** incluir API keys, tokens, ARNs, contraseñas ni URLs de recursos privados en el código fuente.
-- Usar variables de entorno para toda configuración sensible.
-- Los archivos `.env` están en `.gitignore`; usar `.env.example` con valores ficticios como plantilla.
-- En Lambda, cargar secretos desde AWS Secrets Manager o Parameter Store, no desde variables de entorno para datos de alta sensibilidad.
+- **Never** include API keys, tokens, ARNs, passwords, or private resource URLs in source code.
+- Use environment variables for all sensitive configuration.
+- `.env` files are in `.gitignore`; use `.env.example` with dummy values as a template.
+- In Lambda, load secrets from AWS Secrets Manager or Parameter Store, not from environment variables for highly sensitive data.
 
-### Validación de Inputs
+### Input Validation
 
-- Todo input del frontend debe ser validado en el backend antes de procesarse.
-- Usar [Zod](https://zod.dev/) para schema validation en Lambda handlers.
-- El frontend también valida para UX, pero la validación del backend es la fuente de verdad.
+- All frontend input must be validated in the backend before processing.
+- Use [Zod](https://zod.dev/) for schema validation in Lambda handlers.
+- The frontend also validates for UX, but backend validation is the source of truth.
 
 ```typescript
 // submit-score.schema.ts
@@ -454,39 +454,39 @@ export const SubmitScoreSchema = z.object({
 export type SubmitScoreInput = z.infer<typeof SubmitScoreSchema>;
 
 export function validateSubmitScoreInput(data: unknown): SubmitScoreInput {
-  return SubmitScoreSchema.parse(data); // lanza ZodError si inválido
+  return SubmitScoreSchema.parse(data); // throws ZodError if invalid
 }
 ```
 
 ### JWT Handling
 
-- Nunca decodificar o confiar en el JWT en el frontend para decisiones de seguridad.
-- En el frontend, el JWT se usa únicamente para incluirlo en el header de cada petición.
-- La validación del JWT es responsabilidad exclusiva del Cognito Authorizer en API Gateway.
-- Los tokens se almacenan en memoria (no en `localStorage`) cuando sea posible para reducir riesgo XSS.
+- Never decode or trust the JWT on the frontend for security decisions.
+- On the frontend, the JWT is used solely to include it in the header of each request.
+- JWT validation is the exclusive responsibility of the Cognito Authorizer in API Gateway.
+- Tokens are stored in memory (not in `localStorage`) when possible to reduce XSS risk.
 
-### Protección contra Abuso
+### Abuse Protection
 
-- El backend valida que el `round` enviado no exceda un máximo plausible basado en la duración de la sesión (ver Req. 16.3).
-- Rate limiting de login: máx. 10 intentos/minuto/IP (manejado por Cognito + WAF).
+- The backend validates that the submitted `round` does not exceed a plausible maximum based on session duration (see Req. 16.3).
+- Login rate limiting: max 10 attempts/minute/IP (handled by Cognito + WAF).
 
 ---
 
-## Accesibilidad y Rendimiento
+## Accessibility and Performance
 
-### Accesibilidad (UI Web, no canvas)
+### Accessibility (Web UI, not canvas)
 
-- Las pantallas de menú, login, leaderboard y game-over son HTML/CSS estándar.
-- Contraste mínimo WCAG AA (4.5:1) en texto sobre fondo.
-- Font size mínimo 12px; HUD legible entre 360px y 1920px de viewport.
-- Los botones táctiles tienen tamaño mínimo de 44×44px (HUD) y 48×48px (controles de juego).
-- El HUD no ocluye más del 10% del área de juego; los controles táctiles no más del 20%.
+- Menu, login, leaderboard, and game-over screens are standard HTML/CSS.
+- Minimum WCAG AA contrast (4.5:1) for text on background.
+- Minimum font size 12px; HUD readable between 360px and 1920px viewport.
+- Touch buttons have a minimum size of 44×44px (HUD) and 48×48px (game controls).
+- The HUD does not occlude more than 10% of the game area; touch controls no more than 20%.
 
-### Rendimiento
+### Performance
 
-- Objetivo: 60 FPS desktop (hasta 30 enemigos simultáneos), 30 FPS móvil (hasta 20 enemigos).
-- Usar **object pooling** para proyectiles y enemigos; evitar crear/destruir objetos frecuentemente en el game loop.
-- Las operaciones pesadas (pathfinding, separación) se distribuyen usando el delta time de Phaser; no bloquear el game loop.
-- El pathfinding actualiza a 10 Hz (cada 100ms), no en cada frame.
-- Cargar el juego a estado interactivo en ≤5 segundos en conexión de 10 Mbps.
-- Los assets de sprites usan sprite sheets (no imágenes individuales) para reducir draw calls.
+- Target: 60 FPS desktop (up to 30 simultaneous enemies), 30 FPS mobile (up to 20 enemies).
+- Use **object pooling** for projectiles and enemies; avoid frequently creating/destroying objects in the game loop.
+- Heavy operations (pathfinding, separation) are distributed using Phaser's delta time; do not block the game loop.
+- Pathfinding updates at 10 Hz (every 100ms), not every frame.
+- Load the game to interactive state in ≤5 seconds on a 10 Mbps connection.
+- Sprite assets use sprite sheets (not individual images) to reduce draw calls.

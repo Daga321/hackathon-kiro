@@ -2,29 +2,29 @@
 inclusion: manual
 ---
 
-# Guías de AWS: Horde Battle Game
+# AWS Guidelines: Horde Battle Game
 
-## Servicios AWS y su Rol
+## AWS Services and Their Role
 
-| Servicio | Rol en el Proyecto |
-|----------|-------------------|
-| **Amazon Cognito User Pools** | Autenticación de usuarios, emisión de JWT (OAuth 2.0), registro y login |
-| **AWS Lambda (Node.js 20)** | Lógica de negocio: submit score, leaderboard, friends, perfil |
-| **Amazon API Gateway (HTTP API)** | Exposición de endpoints REST sobre HTTPS, Cognito Authorizer, CORS |
-| **Amazon DynamoDB** | Persistencia de perfiles de usuario, scores y relaciones de amistad |
-| **Amazon S3** | Almacenamiento de los assets estáticos compilados del frontend |
-| **Amazon CloudFront** | CDN: servir el frontend con baja latencia y cacheo agresivo |
-| **AWS CDK (TypeScript)** | Infraestructura como código, despliegue reproducible |
-| **AWS WAF** | Protección contra ataques web (rate limiting, SQLi, XSS) |
-| **Amazon Route 53** | Gestión de DNS para el dominio del juego |
-| **AWS Certificate Manager (ACM)** | Certificados TLS/SSL para HTTPS (CloudFront + API Gateway) |
-| **Amazon CloudWatch** | Logs, métricas, alarmas y dashboards |
+| Service | Role in the Project |
+|---------|---------------------|
+| **Amazon Cognito User Pools** | User authentication, JWT issuance (OAuth 2.0), registration and login |
+| **AWS Lambda (Node.js 20)** | Business logic: submit score, leaderboard, friends, profile |
+| **Amazon API Gateway (HTTP API)** | REST endpoint exposure over HTTPS, Cognito Authorizer, CORS |
+| **Amazon DynamoDB** | Persistence of user profiles, scores, and friendship relations |
+| **Amazon S3** | Storage of compiled static frontend assets |
+| **Amazon CloudFront** | CDN: serve the frontend with low latency and aggressive caching |
+| **AWS CDK (TypeScript)** | Infrastructure as code, reproducible deployment |
+| **AWS WAF** | Web attack protection (rate limiting, SQLi, XSS) |
+| **Amazon Route 53** | DNS management for the game domain |
+| **AWS Certificate Manager (ACM)** | TLS/SSL certificates for HTTPS (CloudFront + API Gateway) |
+| **Amazon CloudWatch** | Logs, metrics, alarms, and dashboards |
 
 ---
 
 ## Amazon Cognito
 
-### Configuración del User Pool
+### User Pool Configuration
 
 ```typescript
 // infra/lib/stacks/AuthStack.ts
@@ -44,7 +44,7 @@ const userPool = new cognito.UserPool(this, 'HordeBattleUserPool', {
     requireSymbols: false,
   },
   accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-  removalPolicy: cdk.RemovalPolicy.RETAIN, // nunca destruir en producción
+  removalPolicy: cdk.RemovalPolicy.RETAIN, // never destroy in production
 });
 
 const userPoolClient = new cognito.UserPoolClient(this, 'HordeBattleAppClient', {
@@ -60,25 +60,25 @@ const userPoolClient = new cognito.UserPoolClient(this, 'HordeBattleAppClient', 
   accessTokenValidity: cdk.Duration.hours(24),
   idTokenValidity: cdk.Duration.hours(24),
   refreshTokenValidity: cdk.Duration.days(30),
-  preventUserExistenceErrors: true, // evitar user enumeration
+  preventUserExistenceErrors: true, // prevent user enumeration
 });
 ```
 
-### JWT y OAuth 2.0
+### JWT and OAuth 2.0
 
-- Cognito emite tres tipos de tokens: **ID token**, **Access token** y **Refresh token**.
-- Usar el **ID token** para identificar al usuario en el backend (contiene `sub`, `email`, `username`).
-- El frontend incluye el ID token en cada petición: `Authorization: Bearer <id_token>`.
-- Los tokens expiran en 24 horas; el cliente refresca automáticamente usando el Refresh token.
-- **Nunca** usar el token en el frontend para decisiones de autorización; solo para enviarlo al backend.
+- Cognito issues three types of tokens: **ID token**, **Access token**, and **Refresh token**.
+- Use the **ID token** to identify the user in the backend (contains `sub`, `email`, `username`).
+- The frontend includes the ID token in each request: `Authorization: Bearer <id_token>`.
+- Tokens expire in 24 hours; the client automatically refreshes using the Refresh token.
+- **Never** use the token on the frontend for authorization decisions; only to send it to the backend.
 
-### Extracción de Claims en Lambda
+### Extracting Claims in Lambda
 
 ```typescript
-// El Cognito Authorizer valida el JWT; los claims llegan en el requestContext
+// The Cognito Authorizer validates the JWT; claims arrive in the requestContext
 export const handler = async (event: APIGatewayProxyEvent) => {
   const claims = event.requestContext.authorizer?.claims;
-  const userId = claims?.sub;           // UUID único del usuario
+  const userId = claims?.sub;           // User's unique UUID
   const username = claims?.['cognito:username'];
   const email = claims?.email;
 
@@ -89,10 +89,10 @@ export const handler = async (event: APIGatewayProxyEvent) => {
 };
 ```
 
-### Invalidación de Sesión (Logout)
+### Session Invalidation (Logout)
 
-- En el backend, llamar a `AdminUserGlobalSignOut` de Cognito para invalidar todos los tokens del usuario.
-- En el frontend, borrar los tokens del estado de la aplicación (no de localStorage).
+- On the backend, call Cognito's `AdminUserGlobalSignOut` to invalidate all of the user's tokens.
+- On the frontend, clear tokens from application state (not from localStorage).
 
 ```typescript
 // backend/src/handlers/auth/logout.ts
@@ -114,59 +114,59 @@ export const handler = async (event: APIGatewayProxyEvent) => {
 
 ## Amazon DynamoDB
 
-### Diseño de Tablas
+### Table Design
 
-El proyecto usa el patrón **Single Table Design** con una tabla principal y tablas secundarias para rankings.
+The project uses a **Single Table Design** pattern with one main table and secondary tables for rankings.
 
-#### Tabla Principal: `horde-battle-users`
+#### Main Table: `horde-battle-users`
 
-| Atributo | Tipo | Descripción |
-|----------|------|-------------|
+| Attribute | Type | Description |
+|-----------|------|-------------|
 | `PK` | String | `USER#<userId>` |
 | `SK` | String | `PROFILE` / `FRIEND#<friendId>` / `SCORE#<timestamp>` |
-| `username` | String | Nombre de usuario único |
-| `email` | String | Email (encriptado) |
-| `highestRound` | Number | Mayor ronda alcanzada |
-| `totalScore` | Number | Puntuación total acumulada |
-| `status` | String | `active`, `pending`, `confirmed` (para amistades) |
+| `username` | String | Unique username |
+| `email` | String | Email (encrypted) |
+| `highestRound` | Number | Highest round reached |
+| `totalScore` | Number | Total accumulated score |
+| `status` | String | `active`, `pending`, `confirmed` (for friendships) |
 | `createdAt` | String | ISO 8601 |
 | `updatedAt` | String | ISO 8601 |
-| `GSI1PK` | String | `LEADERBOARD` (solo en entradas de score top) |
-| `GSI1SK` | String | `ROUND#<pad(round)>#SCORE#<pad(score)>` (para ordenamiento) |
+| `GSI1PK` | String | `LEADERBOARD` (only on top score entries) |
+| `GSI1SK` | String | `ROUND#<pad(round)>#SCORE#<pad(score)>` (for sorting) |
 
 ```typescript
-// Ejemplos de ítems en la tabla
-// Perfil de usuario:
+// Example items in the table
+// User profile:
 { PK: 'USER#abc123', SK: 'PROFILE', username: 'player1', highestRound: 15, totalScore: 1450 }
 
-// Relación de amistad pendiente:
+// Pending friendship relation:
 { PK: 'USER#abc123', SK: 'FRIEND#xyz789', status: 'pending', createdAt: '...' }
 
-// Relación de amistad confirmada (ambas partes):
+// Confirmed friendship relation (both sides):
 { PK: 'USER#abc123', SK: 'FRIEND#xyz789', status: 'confirmed' }
 { PK: 'USER#xyz789', SK: 'FRIEND#abc123', status: 'confirmed' }
 ```
 
-#### GSI para Leaderboard Global: `GSI1`
+#### GSI for Global Leaderboard: `GSI1`
 
-- **GSI1PK**: `LEADERBOARD` (partition key fija para todos los scores globales)
-- **GSI1SK**: `ROUND#<round_padded_6>#SCORE#<score_padded_10>` → permite scan ordenado descendente
+- **GSI1PK**: `LEADERBOARD` (fixed partition key for all global scores)
+- **GSI1SK**: `ROUND#<round_padded_6>#SCORE#<score_padded_10>` → allows descending ordered scan
 
 ```typescript
-// Ejemplo de clave GSI para ronda 15, score 1500:
+// GSI key example for round 15, score 1500:
 { GSI1PK: 'LEADERBOARD', GSI1SK: 'ROUND#000015#SCORE#0000001500' }
 ```
 
-#### Tabla de Usernames Únicos: `horde-battle-usernames`
+#### Unique Usernames Table: `horde-battle-usernames`
 
-Tabla auxiliar simple para verificar unicidad de usernames en O(1):
+Simple auxiliary table to verify username uniqueness in O(1):
 
-| Atributo | Tipo |
-|----------|------|
+| Attribute | Type |
+|-----------|------|
 | `username` | String (PK) |
 | `userId` | String |
 
-### Configuración CDK
+### CDK Configuration
 
 ```typescript
 // infra/lib/stacks/DatabaseStack.ts
@@ -191,24 +191,24 @@ usersTable.addGlobalSecondaryIndex({
 });
 ```
 
-### Buenas Prácticas DynamoDB
+### DynamoDB Best Practices
 
-- **On-demand capacity** (`PAY_PER_REQUEST`): escala automáticamente, ideal para tráfico variable.
-- **Point-in-time recovery** habilitado para todas las tablas de producción.
-- **Encryption at rest** con AWS Managed Keys por defecto.
-- Usar **batch writes** cuando sea posible para reducir latencia y costo.
-- Limitar los scans; preferir queries con SK conditions o GSI.
-- El top 100 del leaderboard global se obtiene con una Query al GSI1 con `Limit: 100` ordenado descendente.
+- **On-demand capacity** (`PAY_PER_REQUEST`): scales automatically, ideal for variable traffic.
+- **Point-in-time recovery** enabled for all production tables.
+- **Encryption at rest** with AWS Managed Keys by default.
+- Use **batch writes** when possible to reduce latency and cost.
+- Limit scans; prefer queries with SK conditions or GSI.
+- The global leaderboard top 100 is obtained with a Query on GSI1 with `Limit: 100` sorted descending.
 
 ---
 
 ## AWS Lambda
 
-### Patrón de Handler
+### Handler Pattern
 
-Ver [code-standards.md](./code-standards.md) para la estructura detallada del handler.
+See [code-standards.md](./code-standards.md) for the detailed handler structure.
 
-### Configuración de Funciones en CDK
+### Function Configuration in CDK
 
 ```typescript
 // infra/lib/constructs/LambdaFunction.ts
@@ -224,14 +224,14 @@ export function createLambda(
   return new lambdaNodejs.NodejsFunction(scope, id, {
     entry,
     runtime: lambda.Runtime.NODEJS_20_X,
-    architecture: lambda.Architecture.ARM_64, // Graviton2: mejor precio/rendimiento
+    architecture: lambda.Architecture.ARM_64, // Graviton2: better price/performance
     memorySize: 256,
     timeout: cdk.Duration.seconds(10),
     environment,
     bundling: {
       minify: true,
       sourceMap: true,
-      externalModules: ['@aws-sdk/*'], // incluido en el runtime de Node.js 20
+      externalModules: ['@aws-sdk/*'], // included in the Node.js 20 runtime
     },
     tracing: lambda.Tracing.ACTIVE, // X-Ray
     logRetention: logs.RetentionDays.ONE_MONTH,
@@ -239,10 +239,10 @@ export function createLambda(
 }
 ```
 
-### Variables de Entorno por Función
+### Environment Variables Per Function
 
 ```typescript
-// Ejemplo en ApiStack
+// Example in ApiStack
 const submitScoreLambda = createLambda(this, 'SubmitScoreFn',
   'src/handlers/leaderboard/submit-score.ts',
   {
@@ -252,16 +252,16 @@ const submitScoreLambda = createLambda(this, 'SubmitScoreFn',
   }
 );
 
-// Dar permisos mínimos (least privilege)
+// Grant minimum permissions (least privilege)
 props.usersTable.grantWriteData(submitScoreLambda);
 ```
 
-### Error Handling y CloudWatch Logging
+### Error Handling and CloudWatch Logging
 
-- Usar una función wrapper `withErrorHandling` para capturar errores no manejados en todos los handlers.
-- Los logs van automáticamente a CloudWatch Logs por el runtime de Lambda.
-- Usar **structured logging** (JSON) para facilitar la búsqueda con CloudWatch Insights.
-- Configurar alarmas en CloudWatch para error rate > 1% y p99 latencia > 2000ms.
+- Use a `withErrorHandling` wrapper function to catch unhandled errors in all handlers.
+- Logs go automatically to CloudWatch Logs via the Lambda runtime.
+- Use **structured logging** (JSON) to facilitate searching with CloudWatch Insights.
+- Configure CloudWatch alarms for error rate > 1% and p99 latency > 2000ms.
 
 ```typescript
 // backend/src/utils/logger.ts
@@ -275,18 +275,18 @@ export const logger = {
 };
 ```
 
-### SLA de Latencia
+### Latency SLA
 
-- El p99 de cada Lambda debe ser ≤ 2000ms bajo carga normal.
-- Para reducir cold starts: usar ARM_64 (Graviton), mantener bundles pequeños, y considerar Provisioned Concurrency para endpoints críticos (login, submit score).
+- The p99 of each Lambda must be ≤ 2000ms under normal load.
+- To reduce cold starts: use ARM_64 (Graviton), keep bundles small, and consider Provisioned Concurrency for critical endpoints (login, submit score).
 
 ---
 
 ## Amazon API Gateway (HTTP API)
 
-### Configuración
+### Configuration
 
-Usar **HTTP API** (no REST API) por menor latencia y costo. REST API solo si se necesitan features avanzados (request transformation, usage plans).
+Use **HTTP API** (not REST API) for lower latency and cost. REST API only if advanced features are needed (request transformation, usage plans).
 
 ```typescript
 // infra/lib/stacks/ApiStack.ts
@@ -297,7 +297,7 @@ import * as apigwv2Authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 const httpApi = new apigwv2.HttpApi(this, 'HordeBattleApi', {
   apiName: 'horde-battle-api',
   corsPreflight: {
-    allowOrigins: [`https://${props.cloudFrontDomain}`], // solo el dominio de CloudFront
+    allowOrigins: [`https://${props.cloudFrontDomain}`], // only the CloudFront domain
     allowMethods: [apigwv2.CorsHttpMethod.GET, apigwv2.CorsHttpMethod.POST, apigwv2.CorsHttpMethod.DELETE],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: cdk.Duration.hours(24),
@@ -313,14 +313,14 @@ const cognitoAuthorizer = new apigwv2Authorizers.HttpUserPoolAuthorizer(
 
 ### CORS
 
-- `allowOrigins` contiene **exclusivamente** el dominio de CloudFront (no `*` en producción).
-- El preflight OPTIONS es manejado automáticamente por API Gateway.
-- **HTTP requests** son rechazados con 301 redirect a HTTPS (configurado en CloudFront).
+- `allowOrigins` contains **exclusively** the CloudFront domain (not `*` in production).
+- The preflight OPTIONS is handled automatically by API Gateway.
+- **HTTP requests** are rejected with a 301 redirect to HTTPS (configured in CloudFront).
 
-### Definición de Rutas
+### Route Definitions
 
 ```typescript
-// Rutas protegidas (requieren JWT válido)
+// Protected routes (require valid JWT)
 httpApi.addRoutes({
   path: '/leaderboard/submit',
   methods: [apigwv2.HttpMethod.POST],
@@ -335,7 +335,7 @@ httpApi.addRoutes({
   authorizer: cognitoAuthorizer,
 });
 
-// Ruta pública (no requiere JWT)
+// Public route (no JWT required)
 httpApi.addRoutes({
   path: '/leaderboard/global',
   methods: [apigwv2.HttpMethod.GET],
@@ -343,40 +343,40 @@ httpApi.addRoutes({
 });
 ```
 
-### Endpoints del Backend
+### Backend Endpoints
 
-| Método | Ruta | Auth | Descripción |
+| Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/auth/register` | No | Registro (Cognito lo maneja) |
-| `POST` | `/auth/logout` | Sí | Invalidar sesión server-side |
-| `GET` | `/leaderboard/global` | No | Top 100 global |
-| `POST` | `/leaderboard/submit` | Sí | Enviar score |
-| `GET` | `/leaderboard/friends` | Sí | Ranking de amigos |
-| `GET` | `/friends` | Sí | Lista de amigos |
-| `POST` | `/friends/request` | Sí | Enviar solicitud |
-| `POST` | `/friends/accept` | Sí | Aceptar solicitud |
-| `POST` | `/friends/reject` | Sí | Rechazar solicitud |
-| `DELETE` | `/friends/:friendId` | Sí | Eliminar amigo |
+| `POST` | `/auth/register` | No | Registration (Cognito handles it) |
+| `POST` | `/auth/logout` | Yes | Invalidate session server-side |
+| `GET` | `/leaderboard/global` | No | Global top 100 |
+| `POST` | `/leaderboard/submit` | Yes | Submit score |
+| `GET` | `/leaderboard/friends` | Yes | Friend ranking |
+| `GET` | `/friends` | Yes | Friend list |
+| `POST` | `/friends/request` | Yes | Send request |
+| `POST` | `/friends/accept` | Yes | Accept request |
+| `POST` | `/friends/reject` | Yes | Reject request |
+| `DELETE` | `/friends/:friendId` | Yes | Remove friend |
 
 ---
 
 ## Amazon S3 + CloudFront
 
-### Bucket S3
+### S3 Bucket
 
 ```typescript
 // infra/lib/stacks/FrontendStack.ts
 const siteBucket = new s3.Bucket(this, 'SiteBucket', {
   bucketName: `horde-battle-frontend-${this.account}`,
-  blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // acceso solo vía CloudFront OAC
+  blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // access only via CloudFront OAC
   encryption: s3.BucketEncryption.S3_MANAGED,
-  versioned: false, // los assets ya tienen hash en el nombre (Vite)
+  versioned: false, // assets already have hash in the name (Vite)
   removalPolicy: cdk.RemovalPolicy.RETAIN,
   autoDeleteObjects: false,
 });
 ```
 
-### Distribución CloudFront
+### CloudFront Distribution
 
 ```typescript
 const distribution = new cloudfront.Distribution(this, 'Distribution', {
@@ -387,7 +387,7 @@ const distribution = new cloudfront.Distribution(this, 'Distribution', {
     compress: true,
   },
   additionalBehaviors: {
-    // Assets versionados (con hash en nombre): TTL máximo 1 año
+    // Versioned assets (with hash in name): maximum TTL 1 year
     '/assets/*': {
       origin: origins.S3BucketOrigin.withOriginAccessControl(siteBucket),
       cachePolicy: new cloudfront.CachePolicy(this, 'ImmutableAssetPolicy', {
@@ -397,7 +397,7 @@ const distribution = new cloudfront.Distribution(this, 'Distribution', {
       }),
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
     },
-    // index.html: sin cache (siempre fresco)
+    // index.html: no cache (always fresh)
     '/index.html': {
       origin: origins.S3BucketOrigin.withOriginAccessControl(siteBucket),
       cachePolicy: new cloudfront.CachePolicy(this, 'NoStorePolicy', {
@@ -413,7 +413,7 @@ const distribution = new cloudfront.Distribution(this, 'Distribution', {
     { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/index.html' }, // SPA fallback
     { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/index.html' },
   ],
-  certificate: props.certificate, // ACM cert en us-east-1
+  certificate: props.certificate, // ACM cert in us-east-1
   domainNames: [props.domainName],
   webAclId: props.wafAclArn,
   minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
@@ -422,11 +422,11 @@ const distribution = new cloudfront.Distribution(this, 'Distribution', {
 
 ### Asset Versioning
 
-Vite genera hashes en los nombres de los bundles automáticamente (`main-Bn2xkz1A.js`). Esto permite configurar TTL extremadamente largo en CloudFront para esos assets.
+Vite automatically generates hashes in bundle names (`main-Bn2xkz1A.js`). This allows configuring extremely long TTL in CloudFront for those assets.
 
 ### Cache Invalidation
 
-Al desplegar una nueva versión del frontend, solo es necesario invalidar `/index.html` (ya que los demás assets tienen nombres diferentes por los hashes):
+When deploying a new frontend version, only `/index.html` needs to be invalidated (since other assets have different names due to hashes):
 
 ```bash
 aws cloudfront create-invalidation \
@@ -434,15 +434,15 @@ aws cloudfront create-invalidation \
   --paths "/index.html"
 ```
 
-En CDK/GitHub Actions, esto se hace automáticamente como parte del workflow de deploy.
+In CDK/GitHub Actions, this is done automatically as part of the deploy workflow.
 
 ---
 
 ## AWS CDK
 
-### Estructura de Stacks
+### Stack Structure
 
-Dividir la infraestructura en stacks independientes para facilitar actualizaciones parciales:
+Split infrastructure into independent stacks to facilitate partial updates:
 
 ```
 infra/lib/stacks/
@@ -452,7 +452,7 @@ infra/lib/stacks/
 └── FrontendStack.ts    # S3 + CloudFront + Route53 + ACM
 ```
 
-Cada stack recibe las dependencias que necesita como props:
+Each stack receives the dependencies it needs as props:
 
 ```typescript
 // infra/bin/app.ts
@@ -475,9 +475,9 @@ const frontend = new FrontendStack(app, 'HordeBattleFrontend', {
 });
 ```
 
-### Naming y Tagging
+### Naming and Tagging
 
-Todos los recursos llevan tags consistentes para facilitar el monitoreo de costos:
+All resources carry consistent tags to facilitate cost monitoring:
 
 ```typescript
 cdk.Tags.of(app).add('Project', 'horde-battle-game');
@@ -485,24 +485,24 @@ cdk.Tags.of(app).add('Environment', process.env.CDK_ENV ?? 'dev');
 cdk.Tags.of(app).add('ManagedBy', 'cdk');
 ```
 
-Convención de nombres para recursos:
-- Formato: `horde-battle-<recurso>-<entorno>`
-- Ejemplos: `horde-battle-users-prod`, `horde-battle-api-dev`
+Resource naming convention:
+- Format: `horde-battle-<resource>-<environment>`
+- Examples: `horde-battle-users-prod`, `horde-battle-api-dev`
 
 ---
 
-## Servicios Adicionales
+## Additional Services
 
 ### AWS WAF
 
-- Asociar un Web ACL a CloudFront y/o API Gateway.
-- Reglas recomendadas:
-  - **AWSManagedRulesCommonRuleSet**: protección general (SQLi, XSS)
-  - **AWSManagedRulesAmazonIpReputationList**: bloquear IPs maliciosas conocidas
-  - **Rate limiting rule**: máx. 100 requests/5min por IP en endpoints de login
+- Associate a Web ACL with CloudFront and/or API Gateway.
+- Recommended rules:
+  - **AWSManagedRulesCommonRuleSet**: general protection (SQLi, XSS)
+  - **AWSManagedRulesAmazonIpReputationList**: block known malicious IPs
+  - **Rate limiting rule**: max 100 requests/5min per IP on login endpoints
 
 ```typescript
-// WAF debe estar en us-east-1 para CloudFront
+// WAF must be in us-east-1 for CloudFront
 const webAcl = new wafv2.CfnWebACL(this, 'WebAcl', {
   scope: 'CLOUDFRONT',
   defaultAction: { allow: {} },
@@ -526,17 +526,17 @@ const webAcl = new wafv2.CfnWebACL(this, 'WebAcl', {
 
 ### Route 53
 
-- Crear un Hosted Zone para el dominio del juego.
-- Añadir un **A record** (alias) apuntando a la distribución de CloudFront.
-- Usar el mismo dominio para el certificado ACM.
+- Create a Hosted Zone for the game domain.
+- Add an **A record** (alias) pointing to the CloudFront distribution.
+- Use the same domain for the ACM certificate.
 
 ### AWS Certificate Manager (ACM)
 
-- Los certificados para CloudFront deben estar en **us-east-1** (requerimiento de CloudFront), independientemente de la región del resto de recursos.
-- Para API Gateway custom domain (si se usa), el cert puede estar en la región de la API.
+- Certificates for CloudFront must be in **us-east-1** (CloudFront requirement), regardless of the region of other resources.
+- For API Gateway custom domain (if used), the cert can be in the API's region.
 
 ```typescript
-// El stack de Frontend debe estar en us-east-1 o usar cross-region references
+// The Frontend stack must be in us-east-1 or use cross-region references
 const certificate = new acm.Certificate(this, 'SiteCertificate', {
   domainName: 'hordebattle.example.com',
   validation: acm.CertificateValidation.fromDns(hostedZone),
@@ -545,59 +545,59 @@ const certificate = new acm.Certificate(this, 'SiteCertificate', {
 
 ### CloudWatch
 
-#### Dashboards Recomendados
+#### Recommended Dashboards
 
-- **Gameplay**: requests a `/leaderboard/submit` por minuto, errores 4xx/5xx, latencia p50/p99
-- **Auth**: intentos de login, tasa de éxito/fallo, tokens emitidos
-- **Database**: consumo de RCU/WCU de DynamoDB, throttles, errores
+- **Gameplay**: requests to `/leaderboard/submit` per minute, 4xx/5xx errors, p50/p99 latency
+- **Auth**: login attempts, success/failure rate, tokens issued
+- **Database**: DynamoDB RCU/WCU consumption, throttles, errors
 
-#### Alarmas Críticas
+#### Critical Alarms
 
 ```typescript
-// Alarma: Lambda error rate > 1%
+// Alarm: Lambda error rate > 1%
 new cloudwatch.Alarm(this, 'LambdaErrorAlarm', {
   metric: submitScoreLambda.metricErrors({ period: cdk.Duration.minutes(5) }),
   threshold: 5,
   evaluationPeriods: 2,
-  alarmDescription: 'Lambda submit-score con errores elevados',
+  alarmDescription: 'Lambda submit-score with elevated errors',
 });
 
-// Alarma: DynamoDB throttle
+// Alarm: DynamoDB throttle
 new cloudwatch.Alarm(this, 'DynamoThrottleAlarm', {
   metric: usersTable.metricThrottledRequests({ period: cdk.Duration.minutes(5) }),
   threshold: 1,
   evaluationPeriods: 1,
-  alarmDescription: 'DynamoDB throttling detectado',
+  alarmDescription: 'DynamoDB throttling detected',
 });
 ```
 
 ---
 
-## Costos y Buenas Prácticas de Escalado
+## Costs and Scaling Best Practices
 
-### Estimación de Costos (Escala Moderada)
+### Cost Estimation (Moderate Scale)
 
-| Servicio | Costo Estimado |
-|----------|---------------|
-| Lambda | ~$0 (free tier: 1M requests/mes) para carga baja |
-| API Gateway (HTTP API) | ~$1/millón de requests |
-| DynamoDB (on-demand) | ~$1.25/millón de writes, $0.25/millón de reads |
-| CloudFront | ~$0.0085/GB + $0.0075/10K requests (primeros 1TB gratis) |
-| Cognito | Gratuito hasta 50,000 MAU; luego $0.0055/MAU |
-| S3 | ~$0.023/GB almacenado |
+| Service | Estimated Cost |
+|---------|---------------|
+| Lambda | ~$0 (free tier: 1M requests/month) for low load |
+| API Gateway (HTTP API) | ~$1/million requests |
+| DynamoDB (on-demand) | ~$1.25/million writes, $0.25/million reads |
+| CloudFront | ~$0.0085/GB + $0.0075/10K requests (first 1TB free) |
+| Cognito | Free up to 50,000 MAU; then $0.0055/MAU |
+| S3 | ~$0.023/GB stored |
 
-### Optimizaciones de Costo
+### Cost Optimizations
 
-- **Lambda ARM_64 (Graviton2)**: 20% más barato que x86 con igual o mejor rendimiento.
-- **DynamoDB on-demand**: sin costo de capacidad reservada ociosa; ideal para tráfico impredecible.
-- **CloudFront cacheo agresivo**: reduce los requests a S3 y la latencia del usuario.
-- **Lambda memory sizing**: empezar con 256MB y ajustar basado en métricas de CloudWatch (Lambda Power Tuning).
-- Evitar llamadas DynamoDB innecesarias usando caché en memoria dentro del mismo Lambda (warm invocations).
+- **Lambda ARM_64 (Graviton2)**: 20% cheaper than x86 with equal or better performance.
+- **DynamoDB on-demand**: no idle reserved capacity cost; ideal for unpredictable traffic.
+- **CloudFront aggressive caching**: reduces requests to S3 and user latency.
+- **Lambda memory sizing**: start with 256MB and adjust based on CloudWatch metrics (Lambda Power Tuning).
+- Avoid unnecessary DynamoDB calls by using in-memory cache within the same Lambda (warm invocations).
 
-### Escalado
+### Scaling
 
-- DynamoDB on-demand escala automáticamente sin intervención.
-- Lambda escala automáticamente hasta las cuotas de cuenta (por defecto 1,000 ejecuciones concurrentes).
-- Si se esperan picos de tráfico conocidos (lanzamiento, eventos), usar **Provisioned Concurrency** en las Lambdas críticas para eliminar cold starts.
-- CloudFront distribuye la carga globalmente sin configuración adicional.
-- Si el leaderboard global se convierte en un hotspot de lectura, considerar un TTL de caché en API Gateway (30-60 segundos) para el endpoint `GET /leaderboard/global`.
+- DynamoDB on-demand scales automatically without intervention.
+- Lambda scales automatically up to account quotas (default 1,000 concurrent executions).
+- If known traffic spikes are expected (launch, events), use **Provisioned Concurrency** on critical Lambdas to eliminate cold starts.
+- CloudFront distributes load globally without additional configuration.
+- If the global leaderboard becomes a read hotspot, consider a cache TTL in API Gateway (30-60 seconds) for the `GET /leaderboard/global` endpoint.
