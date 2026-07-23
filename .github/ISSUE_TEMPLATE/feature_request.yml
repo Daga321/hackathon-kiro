@@ -1,0 +1,39 @@
+name: "✨ Feature Request"
+description: Suggest a new feature or enhancement.
+title: "✨ [FEATURE] - <short description>"
+labels: ["enhancement", "feature"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Feature Description"
+      description: Please describe the feature clearly and concisely.
+      placeholder: e.g. Add support for multi-language translations.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: "Use Case / User Story"
+      description: Explain why this feature is needed and who will benefit from it.
+      placeholder: e.g. As a user, I want to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Mockups, Diagrams or Media"
+      description: Paste links or upload files once the issue is created.
+      placeholder: e.g. https://imgur.com/mockup.png or attach below
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: "Checklist"
+      options:
+        - label: "I have used the search function to check if an issue already exists."
+          required: true

@@ -1,0 +1,13 @@
+{
+  "name": "Lambda Security Review",
+  "version": "1.0.0",
+  "description": "Reviews Lambda handler files for security issues before writing",
+  "when": {
+    "type": "preToolUse",
+    "toolTypes": ["write"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file write operation is about to be performed. If the file being written is a Lambda handler (in backend/src/handlers/), verify that: 1) Input is validated with Zod schema before processing, 2) JWT is extracted from requestContext.authorizer.claims (not from body), 3) No secrets or credentials are hardcoded, 4) Errors return generic messages (not internal details), 5) DynamoDB queries use parameterized conditions. If any of these are missing in the proposed code, flag them."
+  }
+}

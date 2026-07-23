@@ -1,0 +1,12 @@
+{
+  "name": "Check PBT Coverage After Task",
+  "version": "1.0.0",
+  "description": "Reminds to check property-based test coverage after completing a spec task",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A spec task was just completed. Check if there are any property-based tests (fast-check) that should be added or updated based on the changes made. Reference the correctness properties in .kiro/specs/horde-battle-game/design.md and verify the task's acceptance criteria are covered by tests."
+  }
+}

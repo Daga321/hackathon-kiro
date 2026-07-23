@@ -1,0 +1,48 @@
+name: "🛠️ DevOps / CI"
+description: Report or request changes in CI/CD pipelines, GitHub Actions, or automation scripts.
+title: "🛠️ [CI/CD] - <short description> "
+labels: ["ci", "devops"]
+assignees: []
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: What component does this affect?
+      options:
+        - GitHub Actions
+        - Docker setup
+        - Deployment scripts
+        - Environment configuration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or limitation
+      description: What is the current issue or need?
+      placeholder: Describe the problem or missing feature...
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested solution or improvement
+      description: Describe how it could be solved or improved.
+      placeholder: Proposal or example...
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected impact
+      description: What benefit or outcome do you expect from this change?
+      placeholder: E.g., faster deployment, reduced build time, improved security...
+
+  - type: checkboxes
+    id: duplicate_check
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have used the search function to check if a similar issue already exists.
+          required: true

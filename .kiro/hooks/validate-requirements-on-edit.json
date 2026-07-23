@@ -1,0 +1,13 @@
+{
+  "name": "Validate Requirements on Edit",
+  "version": "1.0.0",
+  "description": "Reminds to check design consistency when requirements are edited",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [".kiro/specs/horde-battle-game/requirements.md"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The requirements.md file was just edited. Please check if the changes are consistent with the design.md and tasks.md files in .kiro/specs/horde-battle-game/. If there are inconsistencies, list them and suggest updates needed."
+  }
+}

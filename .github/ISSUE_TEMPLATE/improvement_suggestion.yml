@@ -1,0 +1,46 @@
+name: "🛠️ Improvement Suggestion"
+description: Propose an improvement for an existing feature or code.
+title: "🛠️ [IMPROVEMENT] - <short description>"
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Improvement Description"
+      description: What would you like to improve and why?
+      placeholder: e.g. Refactor the login form for better accessibility.
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-limitations
+    attributes:
+      label: "Current Limitations"
+      description: What is the current behavior or problem?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-changes
+    attributes:
+      label: "Suggested Changes"
+      description: What should be changed or optimized?
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Visual Aids or Media"
+      description: Optionally add screenshots, mockups, or videos.
+      placeholder: e.g. https://imgur.com/mockup.png or upload below
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: "Checklist"
+      options:
+        - label: "I have used the search function to check if an issue already exists."
+          required: true

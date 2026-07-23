@@ -1,0 +1,48 @@
+name: "🔧 Refactor / Optimization"
+description: Suggest refactoring or performance improvements to the codebase.
+title: "🔧 [Refactor] - <short description> "
+labels: ["refactor"]
+assignees: []
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Refactor scope
+      description: What kind of refactor or optimization is this?
+      options:
+        - Code cleanup
+        - Duplicate removal
+        - Performance improvement
+        - Migration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: Motivation
+      description: Why is this refactor necessary?
+      placeholder: Explain the need...
+
+  - type: textarea
+    id: current_code
+    attributes:
+      label: Current behavior or structure
+      description: Provide an example of the current code, structure or pattern.
+      placeholder: Code snippet or explanation...
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed change
+      description: Suggest a way to refactor or improve the code.
+      placeholder: Your plan or idea...
+
+  - type: checkboxes
+    id: duplicate_check
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have used the search function to check if a similar issue already exists.
+          required: true

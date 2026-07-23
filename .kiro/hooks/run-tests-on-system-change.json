@@ -1,0 +1,13 @@
+{
+  "name": "Run Tests on Game System Change",
+  "version": "1.0.0",
+  "description": "Runs Vitest tests when game systems or objects change",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["frontend/src/systems/**/*.ts", "frontend/src/game-objects/**/*.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd frontend && npx vitest run --reporter=verbose 2>&1 | tail -30"
+  }
+}
