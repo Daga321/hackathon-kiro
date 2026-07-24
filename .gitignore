@@ -25,7 +25,6 @@ cdk.out/
 Thumbs.db
 
 # AWS
-.aws-sam/
 samconfig.toml
 
 # Logs
