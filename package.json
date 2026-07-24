@@ -1,0 +1,19 @@
+{
+  "name": "hackathon-kiro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Serverless game platform - Hackathon Kiro",
+  "scripts": {
+    "cdk:synth": "pnpm --filter @hackathon-kiro/cdk synth",
+    "cdk:deploy": "pnpm --filter @hackathon-kiro/cdk deploy",
+    "cdk:diff": "pnpm --filter @hackathon-kiro/cdk diff",
+    "cdk:bootstrap": "pnpm --filter @hackathon-kiro/cdk bootstrap",
+    "sam:local": "pnpm --filter @hackathon-kiro/lambdas sam:local",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
