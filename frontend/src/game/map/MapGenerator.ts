@@ -19,13 +19,12 @@ export interface MapGeneratorResult {
 /**
  * Generates a designed graveyard tilemap using Phaser's Tilemap API.
  *
- * The map is 128×128 tiles (2048×2048 px) with multiple layers:
- * - Ground (grass fill)
- * - Elevated terrain (plains with proper autotile edges)
- * - Border walls (2 tiles thick perimeter)
- * - Fences (corridor dividers with gaps)
- * - Decorations (organized graveyard rows + sparse scatter)
- * - Objects (rocks/debris near walls)
+ * The map is 128×128 tiles (2048×2048 px) with intentionally placed zones:
+ * - 5 irregular elevated plateaus creating natural terrain variety
+ * - Partial fences defining sub-areas (graveyard, enclosed yard, separators)
+ * - Clustered decorations respecting zone identity
+ * - Grouped objects (rock formations, debris clusters)
+ * - Clear pathways and open combat areas between zones
  */
 export class MapGenerator {
   private scene: Phaser.Scene;
@@ -91,8 +90,9 @@ export class MapGenerator {
     return layer;
   }
 
+
   // ═══════════════════════════════════════════════════════════════════════════
-  // LAYER 2: ELEVATED TERRAIN (plains with proper autotile edges)
+  // LAYER 2: ELEVATED TERRAIN (5 large irregular plateaus)
   // ═══════════════════════════════════════════════════════════════════════════
 
   private createElevatedLayer(): Phaser.Tilemaps.TilemapLayer | null {
@@ -104,10 +104,20 @@ export class MapGenerator {
       data.push(new Array(TILES_X).fill(-1));
     }
 
-    // Define elevated zones with irregular shapes
-    this.placeElevatedZone(data, 5, 5, 28, 25, 'top-left');    // Top-left corner
-    this.placeElevatedZone(data, 85, 5, 38, 25, 'top-right');  // Top-right corner
-    this.placeElevatedZone(data, 85, 90, 38, 32, 'bottom-right'); // Bottom-right patch
+    // Zone 1: NW Plateau — Large L-shape closer to center
+    this.placeElevatedZone(data, 4, 4, 40, 35, 'nw-plateau');
+
+    // Zone 2: NE Ridge — Wide ridge across top-right, pushed closer
+    this.placeElevatedZone(data, 65, 4, 59, 22, 'ne-ridge');
+
+    // Zone 3: South Shelf — Spans most of the bottom
+    this.placeElevatedZone(data, 4, 95, 70, 29, 'south-shelf');
+
+    // Zone 4: SE Mound — Large area bottom-right
+    this.placeElevatedZone(data, 85, 75, 39, 30, 'se-mound');
+
+    // Zone 5: Central-West Rock — Tactical obstacle near combat area
+    this.placeElevatedZone(data, 8, 50, 20, 18, 'central-rock');
 
     const map = this.scene.make.tilemap({
       data,
@@ -130,9 +140,11 @@ export class MapGenerator {
     return layer;
   }
 
+
   /**
    * Place an elevated zone with proper autotile edges.
-   * Adds irregular indentations to avoid perfect rectangles.
+   * SIMPLIFIED: Using simple rectangles first to validate autotiling.
+   * Indentations disabled until visual rendering is confirmed correct.
    */
   private placeElevatedZone(
     data: number[][],
@@ -142,16 +154,68 @@ export class MapGenerator {
     height: number,
     _position: string
   ): void {
-    // Create a boolean mask for the zone shape (with irregularities)
+    // Create a boolean mask for the zone shape — simple rectangle for validation
     const mask: boolean[][] = [];
     for (let dy = 0; dy < height; dy++) {
       mask.push(new Array(width).fill(true));
     }
 
-    // Add indentations (2-3 tile bites) along edges for organic look
-    this.addIndentations(mask, width, height);
+    // Apply simple shape carving (NO random indentations for now)
+    switch (_position) {
+      case 'nw-plateau':
+        // L-shaped: remove a 22×18 chunk from bottom-right
+        for (let dy = height - 18; dy < height; dy++) {
+          for (let dx = width - 22; dx < width; dx++) {
+            if (dy >= 0 && dy < height && dx >= 0 && dx < width) {
+              mask[dy][dx] = false;
+            }
+          }
+        }
+        break;
 
-    // Now assign proper tile frames based on adjacency
+      case 'ne-ridge':
+        // Remove a wide notch from the bottom-center (passage for player)
+        for (let dy = height - 10; dy < height; dy++) {
+          for (let dx = 15; dx < 40 && dx < width; dx++) {
+            mask[dy][dx] = false;
+          }
+        }
+        break;
+
+      case 'south-shelf':
+        // Two large passages cut from the top edge
+        for (let dy = 0; dy < 14 && dy < height; dy++) {
+          for (let dx = 18; dx < 35 && dx < width; dx++) {
+            mask[dy][dx] = false;
+          }
+        }
+        for (let dy = 0; dy < 12 && dy < height; dy++) {
+          for (let dx = 45; dx < 60 && dx < width; dx++) {
+            mask[dy][dx] = false;
+          }
+        }
+        break;
+
+      case 'se-mound':
+        // Remove top-left chunk to create an entrance
+        for (let dy = 0; dy < 12; dy++) {
+          for (let dx = 0; dx < 15 && dx < width; dx++) {
+            if (dy >= 0 && dy < height) {
+              mask[dy][dx] = false;
+            }
+          }
+        }
+        break;
+
+      case 'central-rock':
+        // Simple solid rectangle (tactical block)
+        break;
+
+      default:
+        break;
+    }
+
+    // Assign tile frames using FULL 8-neighbor autotile logic
     for (let dy = 0; dy < height; dy++) {
       for (let dx = 0; dx < width; dx++) {
         if (!mask[dy][dx]) continue;
@@ -166,14 +230,23 @@ export class MapGenerator {
     }
   }
 
+
   /**
    * Add irregular indentations to the zone mask for a natural look.
    */
-  private addIndentations(mask: boolean[][], width: number, height: number): void {
+  private addIndentations(
+    mask: boolean[][],
+    width: number,
+    height: number,
+    topCount?: number,
+    bottomCount?: number,
+    leftCount?: number,
+    rightCount?: number
+  ): void {
     // Top edge indentations
-    const topIndents = 2 + (this.rng.between(0, 1));
+    const topIndents = topCount ?? (2 + this.rng.between(0, 1));
     for (let i = 0; i < topIndents; i++) {
-      const ix = this.rng.between(3, width - 4);
+      const ix = this.rng.between(2, Math.max(3, width - 3));
       const iw = this.rng.between(2, 3);
       const ih = this.rng.between(2, 3);
       for (let dy = 0; dy < ih && dy < height; dy++) {
@@ -184,9 +257,9 @@ export class MapGenerator {
     }
 
     // Bottom edge indentations
-    const bottomIndents = 2 + (this.rng.between(0, 1));
+    const bottomIndents = bottomCount ?? (2 + this.rng.between(0, 1));
     for (let i = 0; i < bottomIndents; i++) {
-      const ix = this.rng.between(3, width - 4);
+      const ix = this.rng.between(2, Math.max(3, width - 3));
       const iw = this.rng.between(2, 3);
       const ih = this.rng.between(2, 3);
       for (let dy = 0; dy < ih && height - 1 - dy >= 0; dy++) {
@@ -197,9 +270,9 @@ export class MapGenerator {
     }
 
     // Left edge indentations
-    const leftIndent = this.rng.between(1, 2);
+    const leftIndent = leftCount ?? this.rng.between(1, 2);
     for (let i = 0; i < leftIndent; i++) {
-      const iy = this.rng.between(3, height - 4);
+      const iy = this.rng.between(2, Math.max(3, height - 3));
       const iw = this.rng.between(2, 3);
       const ih = this.rng.between(2, 3);
       for (let dy = 0; dy < ih && iy + dy < height; dy++) {
@@ -210,9 +283,9 @@ export class MapGenerator {
     }
 
     // Right edge indentations
-    const rightIndent = this.rng.between(1, 2);
+    const rightIndent = rightCount ?? this.rng.between(1, 2);
     for (let i = 0; i < rightIndent; i++) {
-      const iy = this.rng.between(3, height - 4);
+      const iy = this.rng.between(2, Math.max(3, height - 3));
       const iw = this.rng.between(2, 3);
       const ih = this.rng.between(2, 3);
       for (let dy = 0; dy < ih && iy + dy < height; dy++) {
@@ -264,6 +337,7 @@ export class MapGenerator {
     return PLAINS_TILES.FILL_1;
   }
 
+
   // ═══════════════════════════════════════════════════════════════════════════
   // LAYER 3: BORDER WALLS (2 tiles thick perimeter)
   // ═══════════════════════════════════════════════════════════════════════════
@@ -313,6 +387,7 @@ export class MapGenerator {
     return layer;
   }
 
+
   /**
    * Determine wall tile frame based on position in the border.
    */
@@ -346,7 +421,7 @@ export class MapGenerator {
 
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // LAYER 4: FENCES (corridor dividers with gaps for passage)
+  // LAYER 4: FENCES (large meaningful structures with gaps)
   // ═══════════════════════════════════════════════════════════════════════════
 
   private createFenceLayer(): Phaser.Tilemaps.TilemapLayer | null {
@@ -358,19 +433,39 @@ export class MapGenerator {
       data.push(new Array(TILES_X).fill(-1));
     }
 
-    // Vertical fence line separating left corridor (column 25-26, rows 20-90)
-    this.placeVerticalFence(data, 25, 20, 90);
+    // ─── 1. Graveyard perimeter (cols 55-85, rows 55-80) ───────────────────
+    // North fence
+    this.placeFenceSegment(data, 'horizontal', 55, 55, 85, 55);
+    // East fence
+    this.placeFenceSegment(data, 'vertical', 85, 55, 85, 80);
+    // South fence with gate
+    this.placeFenceSegment(data, 'horizontal', 55, 80, 67, 80);
+    this.placeFenceSegment(data, 'horizontal', 72, 80, 85, 80);
+    // West fence partial (leave large opening north side)
+    this.placeFenceSegment(data, 'vertical', 55, 65, 55, 80);
 
-    // Horizontal fence in the south (row 90, columns 30-80)
-    this.placeHorizontalFence(data, 90, 30, 80);
+    // ─── 2. Corridor fence separating NW plateau from combat area ───────────
+    // Horizontal at row 38, from col 4 to col 55, with gaps
+    this.placeFenceSegment(data, 'horizontal', 4, 38, 18, 38);
+    this.placeFenceSegment(data, 'horizontal', 23, 38, 38, 38);
+    this.placeFenceSegment(data, 'horizontal', 43, 38, 55, 38);
 
-    // Small fence enclosures in the graveyard section (right area)
-    // Enclosure 1: top-right graveyard area
-    this.placeFenceEnclosure(data, 75, 35, 20, 15);
-    // Enclosure 2: middle-right graveyard
-    this.placeFenceEnclosure(data, 90, 55, 18, 12);
-    // Enclosure 3: smaller section
-    this.placeFenceEnclosure(data, 70, 70, 15, 10);
+    // ─── 3. Eastern separator (between NE ridge and SE area) ────────────────
+    this.placeFenceSegment(data, 'vertical', 82, 26, 82, 45);
+    // Gap at row 35-38
+    this.placeFenceSegment(data, 'vertical', 82, 49, 82, 60);
+
+    // ─── 4. Small enclosed yard (cols 32-48, rows 42-52) ────────────────────
+    this.placeFenceSegment(data, 'horizontal', 32, 42, 48, 42);
+    this.placeFenceSegment(data, 'horizontal', 32, 52, 38, 52);
+    this.placeFenceSegment(data, 'horizontal', 43, 52, 48, 52);
+    this.placeFenceSegment(data, 'vertical', 32, 42, 32, 52);
+    this.placeFenceSegment(data, 'vertical', 48, 42, 48, 52);
+
+    // ─── 5. Scattered short fragments ────────────────────────────────────────
+    this.placeFenceSegment(data, 'horizontal', 90, 68, 97, 68);
+    this.placeFenceSegment(data, 'vertical', 60, 85, 60, 92);
+    this.placeFenceSegment(data, 'horizontal', 35, 72, 42, 72);
 
     const map = this.scene.make.tilemap({
       data,
@@ -394,111 +489,51 @@ export class MapGenerator {
     return layer;
   }
 
-  /**
-   * Place a vertical fence line with gaps every 15-20 tiles for player passage.
-   */
-  private placeVerticalFence(
-    data: number[][],
-    col: number,
-    startRow: number,
-    endRow: number
-  ): void {
-    const gapInterval = 17;
-    const gapSize = 3;
-
-    for (let row = startRow; row <= endRow; row++) {
-      // Create gaps for passage
-      const relativePos = row - startRow;
-      if (relativePos % gapInterval < gapSize) continue;
-
-      if (row === startRow || (relativePos % gapInterval === gapSize)) {
-        // Post at start of segment
-        data[row][col] = FENCE_TILES.CORNER_TOP_LEFT;
-      } else if (row === endRow || (relativePos % gapInterval === gapInterval - 1)) {
-        // Post at end of segment
-        data[row][col] = FENCE_TILES.CORNER_BOTTOM_LEFT;
-      } else {
-        data[row][col] = FENCE_TILES.VERTICAL;
-      }
-    }
-  }
 
   /**
-   * Place a horizontal fence line with gaps every 15-20 tiles.
+   * Place a fence segment (horizontal or vertical) between two points.
+   * Endpoints get corner/post tiles, midpoints get directional tiles.
    */
-  private placeHorizontalFence(
+  private placeFenceSegment(
     data: number[][],
-    row: number,
-    startCol: number,
-    endCol: number
-  ): void {
-    const gapInterval = 18;
-    const gapSize = 3;
-
-    for (let col = startCol; col <= endCol; col++) {
-      const relativePos = col - startCol;
-      if (relativePos % gapInterval < gapSize) continue;
-
-      if (col === startCol || (relativePos % gapInterval === gapSize)) {
-        data[row][col] = FENCE_TILES.CORNER_TOP_LEFT;
-      } else if (col === endCol || (relativePos % gapInterval === gapInterval - 1)) {
-        data[row][col] = FENCE_TILES.CORNER_TOP_RIGHT;
-      } else {
-        data[row][col] = FENCE_TILES.HORIZONTAL;
-      }
-    }
-  }
-
-  /**
-   * Place a rectangular fence enclosure with a gap for entry.
-   */
-  private placeFenceEnclosure(
-    data: number[][],
+    direction: 'horizontal' | 'vertical',
     startX: number,
     startY: number,
-    width: number,
-    height: number
+    endX: number,
+    endY: number
   ): void {
-    const gapPos = Math.floor(width / 2); // Gap in the bottom fence
-    const gapSize = 3;
-
-    for (let dx = 0; dx < width; dx++) {
-      const x = startX + dx;
-      if (x >= MAP_CONFIG.TILES_X) continue;
-
-      // Top fence
-      if (startY < MAP_CONFIG.TILES_Y) {
-        if (dx === 0) data[startY][x] = FENCE_TILES.CORNER_TOP_LEFT;
-        else if (dx === width - 1) data[startY][x] = FENCE_TILES.CORNER_TOP_RIGHT;
-        else data[startY][x] = FENCE_TILES.HORIZONTAL;
+    if (direction === 'horizontal') {
+      const row = startY;
+      if (row >= MAP_CONFIG.TILES_Y || row < 0) return;
+      for (let col = startX; col <= endX; col++) {
+        if (col >= MAP_CONFIG.TILES_X || col < 0) continue;
+        if (col === startX) {
+          data[row][col] = FENCE_TILES.CORNER_TOP_LEFT;
+        } else if (col === endX) {
+          data[row][col] = FENCE_TILES.CORNER_TOP_RIGHT;
+        } else {
+          data[row][col] = FENCE_TILES.HORIZONTAL;
+        }
       }
-
-      // Bottom fence (with gap)
-      const bottomY = startY + height;
-      if (bottomY < MAP_CONFIG.TILES_Y) {
-        if (dx >= gapPos && dx < gapPos + gapSize) continue; // gap
-        if (dx === 0) data[bottomY][x] = FENCE_TILES.CORNER_BOTTOM_LEFT;
-        else if (dx === width - 1) data[bottomY][x] = FENCE_TILES.CORNER_BOTTOM_RIGHT;
-        else data[bottomY][x] = FENCE_TILES.HORIZONTAL;
+    } else {
+      const col = startX;
+      if (col >= MAP_CONFIG.TILES_X || col < 0) return;
+      for (let row = startY; row <= endY; row++) {
+        if (row >= MAP_CONFIG.TILES_Y || row < 0) continue;
+        if (row === startY) {
+          data[row][col] = FENCE_TILES.CORNER_TOP_LEFT;
+        } else if (row === endY) {
+          data[row][col] = FENCE_TILES.CORNER_BOTTOM_LEFT;
+        } else {
+          data[row][col] = FENCE_TILES.VERTICAL;
+        }
       }
-    }
-
-    // Left and right vertical fences
-    for (let dy = 1; dy < height; dy++) {
-      const y = startY + dy;
-      if (y >= MAP_CONFIG.TILES_Y) continue;
-
-      const leftX = startX;
-      const rightX = startX + width - 1;
-
-      if (leftX < MAP_CONFIG.TILES_X) data[y][leftX] = FENCE_TILES.VERTICAL;
-      if (rightX < MAP_CONFIG.TILES_X) data[y][rightX] = FENCE_TILES.VERTICAL;
     }
   }
 
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // LAYER 5: DECORATIONS (organized graveyard + sparse scatter)
+  // LAYER 5: DECORATIONS (dense, zone-clustered placement)
   // ═══════════════════════════════════════════════════════════════════════════
 
   private createDecorLayer(): Phaser.Tilemaps.TilemapLayer | null {
@@ -510,14 +545,29 @@ export class MapGenerator {
       data.push(new Array(TILES_X).fill(-1));
     }
 
-    // Graveyard section (right third of map): organized gravestone rows
-    this.placeGraveyardRows(data);
+    // A. Main graveyard inside fence area (cols 57-83, rows 57-78)
+    this.placeMainGraveyard(data);
 
-    // Sparse random decor in open areas (left and center)
-    this.placeSparseDecor(data);
+    // B. Secondary graveyard (cols 35-45, rows 72-88)
+    this.placeSecondaryGraveyard(data);
 
-    // Cluster decor near elevated terrain bases
-    this.placeElevatedBaseDecor(data);
+    // C. Cluster at NW cliff base (cols 6-20, rows 37-43)
+    this.placeDebrisCluster(data, 6, 39, 20, 45, 18);
+
+    // D. Cluster near NE ridge base (cols 68-85, rows 24-30)
+    this.placeDebrisCluster(data, 68, 24, 85, 30, 16);
+
+    // E. Cluster near South shelf passages (cols 22-34, rows 90-96)
+    this.placeDebrisCluster(data, 22, 90, 34, 96, 12);
+
+    // F. Scattered in combat zone (cols 30-55, rows 42-65)
+    this.placeCombatZoneDecor(data);
+
+    // G. Path-side decor along row 38 fence
+    this.placePathSideDecor(data);
+
+    // H. Decor near SE mound entrance (cols 88-105, rows 70-78)
+    this.placeDebrisCluster(data, 88, 70, 105, 78, 14);
 
     const map = this.scene.make.tilemap({
       data,
@@ -540,124 +590,188 @@ export class MapGenerator {
     return layer;
   }
 
-  /**
-   * Place organized gravestone rows in the graveyard section (right third).
-   * 5-8 rows of 4-6 gravestones each, spaced 3-4 tiles apart.
-   */
-  private placeGraveyardRows(data: number[][]): void {
-    const graveyardStartX = 80;  // Right third starts around column 80
-    const graveyardEndX = 120;   // Leave room for wall border
-    const graveyardStartY = 35;
-    const graveyardEndY = 85;
-
-    const rowSpacing = 4;  // Tiles between rows
-    const colSpacing = 3;  // Tiles between gravestones in a row
-
-    let currentY = graveyardStartY;
-    let rowCount = 0;
-    const maxRows = 8;
-
-    while (currentY < graveyardEndY && rowCount < maxRows) {
-      const stonesInRow = this.rng.between(4, 6);
-      const rowOffsetX = this.rng.between(0, 2); // Slight row stagger
-
-      for (let i = 0; i < stonesInRow; i++) {
-        const tileX = graveyardStartX + rowOffsetX + (i * colSpacing);
-        if (tileX >= graveyardEndX) break;
-        if (currentY >= MAP_CONFIG.TILES_Y) break;
-
-        // Pick a random gravestone frame
-        const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
-        data[currentY][tileX] = GRAVESTONE_FRAMES[frameIdx];
-      }
-
-      currentY += rowSpacing;
-      rowCount++;
-    }
-
-    // Second graveyard cluster (staggered rows below)
-    currentY = graveyardStartY + 2;
-    const secondStartX = graveyardStartX + 15;
-    rowCount = 0;
-
-    while (currentY < graveyardEndY && rowCount < 5) {
-      const stonesInRow = this.rng.between(3, 5);
-      const rowOffsetX = this.rng.between(0, 1);
-
-      for (let i = 0; i < stonesInRow; i++) {
-        const tileX = secondStartX + rowOffsetX + (i * colSpacing);
-        if (tileX >= graveyardEndX) break;
-        if (currentY >= MAP_CONFIG.TILES_Y) break;
-
-        const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
-        data[currentY][tileX] = GRAVESTONE_FRAMES[frameIdx];
-      }
-
-      currentY += rowSpacing + 1;
-      rowCount++;
-    }
-  }
 
   /**
-   * Place sparse decor in open areas (about 1 per 100-150 sq tiles).
+   * Place the main graveyard: 10 rows of 6-8 gravestones each.
+   * Inside the graveyard fence (cols 57-83, rows 57-78).
    */
-  private placeSparseDecor(data: number[][]): void {
-    // Open areas: left and center zones (avoiding graveyard and border)
-    const zones = [
-      { x1: 5, y1: 35, x2: 22, y2: 85 },   // Left corridor
-      { x1: 30, y1: 35, x2: 70, y2: 55 },   // Center top
-      { x1: 30, y1: 70, x2: 70, y2: 95 },   // Center bottom
-      { x1: 5, y1: 95, x2: 60, y2: 120 },   // Bottom-left open
-    ];
+  private placeMainGraveyard(data: number[][]): void {
+    const startX = 57;
+    const startY = 57;
+    const rowSpacing = 2;
+    const colSpacing = 3;
+    const numRows = 10;
 
-    for (const zone of zones) {
-      const area = (zone.x2 - zone.x1) * (zone.y2 - zone.y1);
-      const decorCount = Math.floor(area / this.rng.between(100, 150));
+    for (let row = 0; row < numRows; row++) {
+      const y = startY + row * rowSpacing;
+      if (y >= MAP_CONFIG.TILES_Y || y >= 78) break;
 
-      for (let i = 0; i < decorCount; i++) {
-        const tx = this.rng.between(zone.x1, zone.x2);
-        const ty = this.rng.between(zone.y1, zone.y2);
+      const rowOffset = (row % 2 === 0) ? 0 : 1;
+      const stonesInRow = 6 + (row % 3 === 0 ? 2 : row % 2 === 0 ? 1 : 0);
 
-        if (tx >= MAP_CONFIG.TILES_X || ty >= MAP_CONFIG.TILES_Y) continue;
-        if (data[ty][tx] !== -1) continue; // Don't overwrite existing
-
-        // Don't place in spawn zone center
-        if (this.isInSpawnZone(tx, ty)) continue;
+      for (let col = 0; col < stonesInRow; col++) {
+        const x = startX + rowOffset + col * colSpacing;
+        if (x >= 83 || x >= MAP_CONFIG.TILES_X) break;
+        if (y >= MAP_CONFIG.TILES_Y) break;
+        if (this.isInSpawnZone(x, y)) continue;
 
         const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
-        data[ty][tx] = GRAVESTONE_FRAMES[frameIdx];
+        data[y][x] = GRAVESTONE_FRAMES[frameIdx];
       }
     }
   }
 
   /**
-   * Place small clusters of decor at the base of elevated terrain.
+   * Place secondary graveyard: 8 rows of 3-5 gravestones.
+   * Cols 35-45, rows 72-88.
    */
-  private placeElevatedBaseDecor(data: number[][]): void {
-    // Clusters along the south edges of elevated zones
-    const basePositions = [
-      { x: 10, y: 31, count: 4 },  // Below top-left elevated
-      { x: 90, y: 31, count: 4 },  // Below top-right elevated
-      { x: 90, y: 122, count: 3 }, // Below bottom-right elevated
-    ];
+  private placeSecondaryGraveyard(data: number[][]): void {
+    const startX = 35;
+    const startY = 72;
+    const rowSpacing = 2;
+    const colSpacing = 2;
+    const numRows = 8;
 
-    for (const pos of basePositions) {
-      for (let i = 0; i < pos.count; i++) {
-        const tx = pos.x + this.rng.between(0, 8);
-        const ty = pos.y + this.rng.between(0, 2);
+    for (let row = 0; row < numRows; row++) {
+      const y = startY + row * rowSpacing;
+      if (y >= MAP_CONFIG.TILES_Y || y >= 88) break;
 
-        if (tx >= MAP_CONFIG.TILES_X || ty >= MAP_CONFIG.TILES_Y) continue;
-        if (data[ty][tx] !== -1) continue;
+      const rowOffset = (row % 2 === 0) ? 0 : 1;
+      const stonesInRow = 3 + (row % 2 === 0 ? 2 : 1);
+
+      for (let col = 0; col < stonesInRow; col++) {
+        const x = startX + rowOffset + col * colSpacing;
+        if (x >= 45 || x >= MAP_CONFIG.TILES_X) break;
+        if (this.isInSpawnZone(x, y)) continue;
 
         const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
-        data[ty][tx] = GRAVESTONE_FRAMES[frameIdx];
+        data[y][x] = GRAVESTONE_FRAMES[frameIdx];
       }
+    }
+  }
+
+
+  /**
+   * Place decor pairs and triples in the combat zone (cols 30-55, rows 42-65).
+   */
+  private placeCombatZoneDecor(data: number[][]): void {
+    const pairs: [number, number][] = [
+      [32, 43], [36, 45], [40, 47], [44, 44], [48, 46],
+      [52, 48], [34, 50], [38, 52], [42, 54], [46, 56],
+      [50, 58], [54, 60], [33, 56], [37, 58], [41, 62],
+      [45, 64], [49, 43], [53, 45], [31, 63], [35, 65],
+    ];
+
+    for (const [baseX, baseY] of pairs) {
+      this.placePair(data, baseX, baseY);
+    }
+
+    const triples: [number, number][] = [
+      [30, 42], [54, 42], [30, 64], [54, 64],
+    ];
+    for (const [baseX, baseY] of triples) {
+      this.placeTriple(data, baseX, baseY);
+    }
+  }
+
+  /**
+   * Place decor items along the corridor fence at row 38.
+   */
+  private placePathSideDecor(data: number[][]): void {
+    const positions: [number, number][] = [
+      [8, 36], [12, 36], [16, 36], [25, 40], [30, 40],
+      [44, 40], [48, 40], [52, 36], [56, 36], [60, 40],
+    ];
+
+    for (const [x, y] of positions) {
+      if (x >= MAP_CONFIG.TILES_X || y >= MAP_CONFIG.TILES_Y) continue;
+      if (this.isInSpawnZone(x, y)) continue;
+      if (data[y][x] !== -1) continue;
+      const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
+      data[y][x] = GRAVESTONE_FRAMES[frameIdx];
+    }
+  }
+
+
+  /**
+   * Place a tight cluster of decor items in a defined region.
+   * Items are spaced 2 tiles apart for a dense grouped feel.
+   */
+  private placeDebrisCluster(
+    data: number[][],
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    count: number
+  ): void {
+    let placed = 0;
+    let attempts = 0;
+    const maxAttempts = count * 4;
+
+    while (placed < count && attempts < maxAttempts) {
+      attempts++;
+      const tx = this.rng.between(x1, x2);
+      const ty = this.rng.between(y1, y2);
+
+      if (tx >= MAP_CONFIG.TILES_X || ty >= MAP_CONFIG.TILES_Y) continue;
+      if (data[ty][tx] !== -1) continue;
+      if (this.isInSpawnZone(tx, ty)) continue;
+
+      // Check minimum spacing (2 tiles from other decor in this cluster)
+      let tooClose = false;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const ny = ty + dy;
+          const nx = tx + dx;
+          if (ny >= 0 && ny < MAP_CONFIG.TILES_Y && nx >= 0 && nx < MAP_CONFIG.TILES_X) {
+            if (data[ny][nx] !== -1) { tooClose = true; break; }
+          }
+        }
+        if (tooClose) break;
+      }
+      if (tooClose) continue;
+
+      const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
+      data[ty][tx] = GRAVESTONE_FRAMES[frameIdx];
+      placed++;
+    }
+  }
+
+  /** Place a pair of decorations at a base position. */
+  private placePair(data: number[][], baseX: number, baseY: number): void {
+    const positions: [number, number][] = [
+      [baseX, baseY],
+      [baseX + 2, baseY + 1],
+    ];
+    for (const [x, y] of positions) {
+      if (x >= MAP_CONFIG.TILES_X || y >= MAP_CONFIG.TILES_Y) continue;
+      if (this.isInSpawnZone(x, y)) continue;
+      if (data[y][x] !== -1) continue;
+      const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
+      data[y][x] = GRAVESTONE_FRAMES[frameIdx];
+    }
+  }
+
+  /** Place a triple of decorations at a base position. */
+  private placeTriple(data: number[][], baseX: number, baseY: number): void {
+    const positions: [number, number][] = [
+      [baseX, baseY],
+      [baseX + 2, baseY],
+      [baseX + 1, baseY + 2],
+    ];
+    for (const [x, y] of positions) {
+      if (x >= MAP_CONFIG.TILES_X || y >= MAP_CONFIG.TILES_Y) continue;
+      if (this.isInSpawnZone(x, y)) continue;
+      if (data[y][x] !== -1) continue;
+      const frameIdx = this.rng.between(0, GRAVESTONE_FRAMES.length - 1);
+      data[y][x] = GRAVESTONE_FRAMES[frameIdx];
     }
   }
 
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // LAYER 6: OBJECTS (rocks, debris near walls and elevated areas)
+  // LAYER 6: OBJECTS (grouped formations, clusters, and hedges)
   // ═══════════════════════════════════════════════════════════════════════════
 
   private createObjectsLayer(): Phaser.Tilemaps.TilemapLayer | null {
@@ -669,11 +783,69 @@ export class MapGenerator {
       data.push(new Array(TILES_X).fill(-1));
     }
 
-    // Place objects near walls (10-15 total)
-    this.placeWallAdjacentObjects(data);
+    // ─── A. Rock wall formation (cols 35-42, rows 45-48) L-shaped ───────────
+    this.placeObjectCluster(data, [
+      [35, 45], [36, 45], [37, 45], [38, 45],
+      [35, 46], [36, 46], [37, 46],
+      [35, 47], [36, 47],
+      [35, 48], [36, 48], [37, 48],
+    ], 'rocks');
 
-    // Place objects near center paths as light obstacles (3-5)
-    this.placeCenterPathObjects(data);
+    // ─── B. Boulder cluster NW (cols 30-35, rows 8-12) ──────────────────────
+    this.placeObjectCluster(data, [
+      [30, 8], [32, 8], [34, 9],
+      [31, 10], [33, 10],
+      [30, 11], [32, 12], [34, 11],
+    ], 'rocks');
+
+    // ─── C. Debris field SE (cols 100-108, rows 78-83) ──────────────────────
+    this.placeObjectCluster(data, [
+      [100, 78], [102, 79], [104, 78], [106, 79],
+      [101, 81], [103, 80], [105, 82],
+      [107, 81], [100, 83], [104, 83],
+    ], 'debris');
+
+    // ─── D. Path obstacles — 6 clusters of 3 rocks each ─────────────────────
+    const pathObstacles: [number, number][] = [
+      [28, 55], [45, 38], [60, 72], [75, 50], [50, 85], [95, 60],
+    ];
+    for (const [bx, by] of pathObstacles) {
+      this.placeObjectCluster(data, [
+        [bx, by], [bx + 1, by], [bx, by + 1],
+      ], 'rocks');
+    }
+
+    // ─── E. Bush hedges — 4 lines of 5-8 bushes ─────────────────────────────
+    // Horizontal hedge at (8-15, 45)
+    this.placeObjectCluster(data, [
+      [8, 45], [9, 45], [10, 45], [11, 45],
+      [12, 45], [13, 45], [14, 45], [15, 45],
+    ], 'bushes');
+    // Horizontal hedge at (85-93, 55)
+    this.placeObjectCluster(data, [
+      [85, 55], [86, 55], [87, 55], [88, 55],
+      [89, 55], [90, 55], [91, 55], [92, 55], [93, 55],
+    ], 'bushes');
+    // Vertical hedge at (48, 70-77)
+    this.placeObjectCluster(data, [
+      [48, 70], [48, 71], [48, 72], [48, 73],
+      [48, 74], [48, 75], [48, 76], [48, 77],
+    ], 'bushes');
+    // Horizontal hedge at (25-32, 95)
+    this.placeObjectCluster(data, [
+      [25, 95], [26, 95], [27, 95], [28, 95],
+      [29, 95], [30, 95], [31, 95], [32, 95],
+    ], 'bushes');
+
+    // ─── F. Lone stumps at strategic positions ───────────────────────────────
+    this.placeSingleObject(data, 5, 50);
+    this.placeSingleObject(data, 120, 30);
+    this.placeSingleObject(data, 115, 75);
+    this.placeSingleObject(data, 25, 105);
+    this.placeSingleObject(data, 70, 98);
+    this.placeSingleObject(data, 40, 15);
+    this.placeSingleObject(data, 100, 40);
+    this.placeSingleObject(data, 85, 110);
 
     const map = this.scene.make.tilemap({
       data,
@@ -696,55 +868,55 @@ export class MapGenerator {
     return layer;
   }
 
+
   /**
-   * Place 10-15 objects near walls and elevated terrain edges.
+   * Place a cluster of objects at specified positions.
+   * Type determines which subset of OBSTACLE_FRAMES to use.
    */
-  private placeWallAdjacentObjects(data: number[][]): void {
-    const positions = [
-      // Near top wall
-      { x: 15, y: 4 }, { x: 35, y: 3 }, { x: 55, y: 4 },
-      { x: 75, y: 3 }, { x: 100, y: 4 },
-      // Near bottom wall
-      { x: 20, y: 123 }, { x: 50, y: 124 }, { x: 80, y: 123 },
-      // Near left wall
-      { x: 3, y: 40 }, { x: 4, y: 70 },
-      // Near right wall
-      { x: 124, y: 45 }, { x: 123, y: 75 },
-      // Near elevated terrain
-      { x: 30, y: 28 }, { x: 88, y: 28 }, { x: 88, y: 92 },
-    ];
+  private placeObjectCluster(
+    data: number[][],
+    positions: [number, number][],
+    type: 'rocks' | 'debris' | 'bushes'
+  ): void {
+    for (const [x, y] of positions) {
+      if (x >= MAP_CONFIG.TILES_X || y >= MAP_CONFIG.TILES_Y) continue;
+      if (x < 0 || y < 0) continue;
+      if (data[y][x] !== -1) continue;
+      if (this.isInSpawnZone(x, y)) continue;
 
-    for (const pos of positions) {
-      if (pos.x >= MAP_CONFIG.TILES_X || pos.y >= MAP_CONFIG.TILES_Y) continue;
-      if (data[pos.y][pos.x] !== -1) continue;
-
-      const frameIdx = this.rng.between(0, OBSTACLE_FRAMES.length - 1);
-      data[pos.y][pos.x] = OBSTACLE_FRAMES[frameIdx];
+      let frameIdx: number;
+      switch (type) {
+        case 'rocks':
+          // Use first 5 frames (ROCK_1 through ROCK_5)
+          frameIdx = this.rng.between(0, 4);
+          break;
+        case 'debris':
+          // Use frames 5-7 (DEBRIS_1, DEBRIS_2, STUMP)
+          frameIdx = this.rng.between(5, 7);
+          break;
+        case 'bushes':
+          // Use last 2 frames (BUSH_1, BUSH_2)
+          frameIdx = this.rng.between(8, 9);
+          break;
+      }
+      data[y][x] = OBSTACLE_FRAMES[frameIdx];
     }
   }
 
   /**
-   * Place 3-5 objects along center paths as light obstacles.
+   * Place a single stump/bush object at a position.
    */
-  private placeCenterPathObjects(data: number[][]): void {
-    const pathPositions = [
-      { x: 45, y: 55 },
-      { x: 55, y: 65 },
-      { x: 50, y: 75 },
-      { x: 60, y: 50 },
-      { x: 40, y: 80 },
-    ];
+  private placeSingleObject(data: number[][], x: number, y: number): void {
+    if (x >= MAP_CONFIG.TILES_X || y >= MAP_CONFIG.TILES_Y) return;
+    if (x < 0 || y < 0) return;
+    if (data[y][x] !== -1) return;
+    if (this.isInSpawnZone(x, y)) return;
 
-    for (const pos of pathPositions) {
-      // Don't place in direct spawn zone
-      if (this.isInSpawnZone(pos.x, pos.y)) continue;
-      if (pos.x >= MAP_CONFIG.TILES_X || pos.y >= MAP_CONFIG.TILES_Y) continue;
-      if (data[pos.y][pos.x] !== -1) continue;
-
-      const frameIdx = this.rng.between(0, OBSTACLE_FRAMES.length - 1);
-      data[pos.y][pos.x] = OBSTACLE_FRAMES[frameIdx];
-    }
+    // Use STUMP or BUSH frames
+    const frameIdx = this.rng.between(7, 9);
+    data[y][x] = OBSTACLE_FRAMES[frameIdx];
   }
+
 
   // ═══════════════════════════════════════════════════════════════════════════
   // UTILITY

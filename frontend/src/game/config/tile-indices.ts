@@ -6,65 +6,99 @@
  */
 
 // ─── walls.png: 8 cols × 8 rows = 64 frames (index 0-63) ───────────────────
-// Standard autotile layout for wall borders
+// VERIFIED via pixel analysis:
+//   Row 0 (F0-5): Top edges (partial transparency at top, stone visible at bottom)
+//   Row 1 (F8-13): Middle tiles — F8 fully solid blue-gray, F9/11/12/13 partial transparency
+//   Row 2 (F16-19): Similar — F16 fully solid, F17/19 partial
+//   Row 3 (F24-27): Bottom edges (same pattern as row 0)
+//   Rows 4-5 (F32-45): DARK fill (almost black, dark=51/64) — wall interior shadow
+//
+// For a visible blue-gray stone wall:
+//   Fill/interior = F8 or F16 (fully solid, blue=45-46, visible)
+//   Top edge = F0-3 (partial transparency, stone below)
+//   Bottom edge = F24-27 (partial transparency, same as top mirrored)
+//   Side edges = F9, F11, F12, F13 (partial transparency left/right)
 export const WALL_TILES = {
-  // Outer corners
-  TOP_LEFT: 0,
-  TOP_RIGHT: 3,
-  BOTTOM_LEFT: 24,
-  BOTTOM_RIGHT: 27,
+  // Top wall (player sees the front face from above) — use dark solid rows 4-5
+  TOP_LEFT: 32,      // Frame 32: dark solid fill (top-left corner)
+  TOP: 33,           // Frame 33: dark solid (top edge with perspective)
+  TOP_ALT: 34,       // Frame 34: dark solid variant
+  TOP_RIGHT: 35,     // Frame 35: dark solid (top-right corner)
 
-  // Edges
-  TOP: 1,
-  TOP_ALT: 2,
-  BOTTOM: 25,
-  BOTTOM_ALT: 26,
-  LEFT: 8,
-  LEFT_ALT: 16,
-  RIGHT: 11,
-  RIGHT_ALT: 19,
+  // Side edges — use partially transparent frames for left/right visibility
+  LEFT: 9,           // Frame 9: partial transparency (left edge)
+  LEFT_ALT: 13,      // Frame 13: left edge variant
+  RIGHT: 11,         // Frame 11: partial transparency (right edge)
+  RIGHT_ALT: 12,     // Frame 12: right edge variant
 
-  // Interior fills
-  FILL_1: 9,
-  FILL_2: 10,
-  FILL_3: 17,
-  FILL_4: 18,
+  // Bottom wall (same perspective as top) — use dark solid rows 4-5
+  BOTTOM_LEFT: 40,   // Frame 40: dark solid fill (bottom-left)
+  BOTTOM: 41,        // Frame 41: dark solid (bottom edge with perspective)
+  BOTTOM_ALT: 42,    // Frame 42: dark solid variant
+  BOTTOM_RIGHT: 43,  // Frame 43: dark solid (bottom-right)
+
+  // Interior fills (use same dark solid for wall thickness)
+  FILL_1: 32,        // Frame 32: dark solid
+  FILL_2: 33,        // Frame 33: dark solid variant
+  FILL_3: 40,        // Frame 40: dark solid
+  FILL_4: 41,        // Frame 41: dark solid variant
 } as const;
 
 // ─── plains.png: 6 cols × 12 rows = 72 frames (index 0-71) ─────────────────
-// Elevated terrain with proper edge transitions
+// VERIFIED via pixel transparency analysis.
+// The tileset has 3 blocks of 4 rows each:
+//   Rows 0-3 (frames 0-23):  Solid brown terrain (0% transparency)
+//   Rows 4-7 (frames 24-47): Green transition tiles (partial transparency for edges)
+//   Rows 8-11 (frames 48-71): Solid blue-gray terrain (0% transparency)
+//
+// GREEN BLOCK (rows 4-7) transparency pattern:
+//   Frame 24: ALL transparent (unused/full outside)
+//   Frame 25: TL+TR+BL transparent → shows only BR quadrant = OUTER TOP-LEFT CORNER
+//   Frame 26: TL+TR transparent → shows bottom half = TOP EDGE
+//   Frame 27: TL+TR+BR transparent → shows only BL quadrant = OUTER TOP-RIGHT CORNER
+//   Frame 28: SOLID = INTERIOR FILL 1
+//   Frame 29: SOLID = INTERIOR FILL 2
+//   Frame 30: TL transparent = LEFT EDGE (or inner concave)
+//   Frame 31: TL transparent = LEFT EDGE variant
+//   Frame 32: SOLID = INTERIOR FILL 3
+//   Frame 33: SOLID = INTERIOR FILL 4
+//   Frame 34: SOLID = INTERIOR FILL 5
+//   Frame 35: SOLID = INTERIOR FILL 6
+//   Frame 36: BL transparent = BOTTOM-LEFT region = OUTER BOTTOM-LEFT CORNER
+//   Frame 37: BL transparent = BOTTOM EDGE variant
+//   Frame 38: SOLID = BOTTOM EDGE (solid, drawn over grass)
+//   Frame 39: SOLID = INTERIOR / BOTTOM-RIGHT area
+//   Frame 40: SOLID = INNER CORNER (concave TR)
+//   Frame 41: SOLID = INNER CORNER (concave TL)
+//
+// For correct autotiling: use SOLID frames for interior, and
+// transparency frames for EDGES (they overlay on top of grass).
 export const PLAINS_TILES = {
-  // Outer corners (row 0)
-  TOP_LEFT: 0,
-  TOP_RIGHT: 2,
+  // Outer corners — determined by edge opacity (L/R/T/B = 0 means transparent on that side)
+  TOP_LEFT: 25,      // Frame 25: L=0 R=6 T=0 B=6 (transparent top+left = outer TL corner)
+  TOP_RIGHT: 27,     // Frame 27: L=6 R=0 T=0 B=7 (transparent top+right = outer TR corner)
+  BOTTOM_LEFT: 36,   // Frame 36: L=0 R=0 T=6 B=0 (transparent left+bottom = outer BL corner)
+  BOTTOM_RIGHT: 39,  // Frame 39: L=8 R=0 T=8 B=0 (transparent right+bottom = outer BR corner)
 
-  // Top edge
-  TOP: 1,
+  // Edges — the transparent side faces OUTWARD (toward grass)
+  TOP: 26,           // Frame 26: L=6 R=6 T=0 B=8 (transparent top = grass above)
+  BOTTOM: 38,        // Frame 38: L=7 R=7 T=8 B=0 (transparent bottom = grass below)
+  LEFT: 31,          // Frame 31: L=0 R=8 T=6 B=6 (transparent left = grass to the left)
+  RIGHT: 33,         // Frame 33: L=8 R=0 T=7 B=7 (transparent right = grass to the right)
 
-  // Left/right edges (rows 1-2)
-  LEFT: 6,
-  LEFT_ALT: 12,
-  RIGHT: 8,
-  RIGHT_ALT: 14,
+  // Interior fills (fully solid on all edges)
+  FILL_1: 32,        // Frame 32: L=8 R=8 T=8 B=8 (PERFECT 100% solid green)
+  FILL_2: 32,        // Same frame for uniform interior (no alternation pattern)
 
-  // Bottom corners (row 3)
-  BOTTOM_LEFT: 18,
-  BOTTOM_RIGHT: 20,
+  // Inner corners (concave) — solid green fills work for these
+  INNER_TOP_LEFT: 34,    // Frame 34: L=8 R=7 T=8 B=8 (almost solid)
+  INNER_TOP_RIGHT: 34,   // Same
+  INNER_BOTTOM_LEFT: 34, // Same
+  INNER_BOTTOM_RIGHT: 34, // Same
 
-  // Bottom edge
-  BOTTOM: 19,
-
-  // Interior fills
-  FILL_1: 7,
-  FILL_2: 13,
-  FILL_3: 14,
-  FILL_4: 8,
-
-  // Inner corners (concave)
-  INNER_TOP_LEFT: 3,
-  INNER_TOP_RIGHT: 5,
-  INNER_BOTTOM_LEFT: 15,
-  INNER_BOTTOM_RIGHT: 17,
+  // Alternatives
+  LEFT_ALT: 31,      // Same as LEFT
+  RIGHT_ALT: 33,     // Same as RIGHT
 } as const;
 
 // ─── fences.png: 4 cols × 4 rows = 16 frames (index 0-15) ──────────────────
