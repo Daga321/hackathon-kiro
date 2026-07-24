@@ -1,0 +1,34 @@
+name: Validate Source Branch for Main
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-branch:
+    name: Check Source Branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        run: |
+          SOURCE_BRANCH="${{ github.head_ref }}"
+          TARGET_BRANCH="${{ github.base_ref }}"
+          echo "Source branch: $SOURCE_BRANCH"
+          echo "Target branch: $TARGET_BRANCH"
+          
+          # Only enforce rules when targeting main
+          if [[ "$TARGET_BRANCH" != "main" ]]; then
+            echo "Target is not main. Skipping validation."
+            exit 0
+          fi
+          
+          # Allow if branch is 'develop' or starts with 'hotfix/'
+          if [[ "$SOURCE_BRANCH" == "develop" || "$SOURCE_BRANCH" =~ ^hotfix/ ]]; then
+            echo "Valid branch. Allowing Pull Request."
+            exit 0
+          else
+            echo "ERROR: Merging into main is only allowed from 'develop' or 'hotfix/*' branches."
+            exit 1
+          fi
