@@ -44,11 +44,8 @@ export class GameScene extends Phaser.Scene {
     // Create player at a random valid position
     this.player = new Player(this, collisionLayer);
 
-    // Debug: log player position
-    const sprite = this.player.getSprite();
-    console.log(`Player spawned at: (${sprite.x.toFixed(0)}, ${sprite.y.toFixed(0)})`);
-
     // Camera follows the player
+    const sprite = this.player.getSprite();
     this.cameras.main.startFollow(sprite, true, 0.1, 0.1);
     this.cameras.main.setZoom(2);
 
