@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import { App } from 'aws-cdk-lib';
 import { StaticSiteStack } from '../lib/stacks/static-site.stack';
+import { AuthStack } from '../lib/stacks/auth.stack';
+import { DatabaseStack } from '../lib/stacks/database.stack';
+import { ApiStack } from '../lib/stacks/api.stack';
 
 const app = new App();
 
@@ -20,9 +23,21 @@ new StaticSiteStack(app, `StaticSiteStack${suffix}`, {
   // zoneName: process.env.ZONE_NAME,
 });
 
-// ─── Future Stacks ───────────────────────────────────────────────────────────
-// new AuthStack(app, `AuthStack${suffix}`, { env });
-// new DatabaseStack(app, `DatabaseStack${suffix}`, { env });
-// new ApiStack(app, `ApiStack${suffix}`, { env });
+// ─── Auth (Cognito) ──────────────────────────────────────────────────────────
+const auth = new AuthStack(app, `AuthStack${suffix}`, { env });
+
+// ─── Database (DynamoDB) ─────────────────────────────────────────────────────
+const database = new DatabaseStack(app, `DatabaseStack${suffix}`, { env });
+
+// ─── API (API Gateway + Lambda) ──────────────────────────────────────────────
+new ApiStack(app, `ApiStack${suffix}`, {
+  env,
+  userPool: auth.userPool,
+  tables: database.tables,
+  // Custom domain — uncomment when ready:
+  // domainName: process.env.API_DOMAIN_NAME,
+  // hostedZoneId: process.env.HOSTED_ZONE_ID,
+  // zoneName: process.env.ZONE_NAME,
+});
 
 app.synth();
