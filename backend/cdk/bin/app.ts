@@ -1,9 +1,13 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
 import { App } from 'aws-cdk-lib';
 import { StaticSiteStack } from '../lib/stacks/static-site.stack';
 import { AuthStack } from '../lib/stacks/auth.stack';
 import { DatabaseStack } from '../lib/stacks/database.stack';
 import { ApiStack } from '../lib/stacks/api.stack';
+
+// Load .env from project root
+config({ path: resolve(__dirname, '..', '..', '..', '.env') });
 
 const app = new App();
 

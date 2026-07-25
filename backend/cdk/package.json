@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "synth": "cdk synth",
-    "deploy": "cdk deploy --all",
+    "predeploy:infra": "ts-node scripts/ensure-bootstrap.ts",
+    "deploy:infra": "cdk deploy --all --require-approval never",
     "diff": "cdk diff",
     "bootstrap": "cdk bootstrap",
     "destroy": "cdk destroy --all"
