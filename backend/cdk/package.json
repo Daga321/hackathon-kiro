@@ -1,0 +1,23 @@
+{
+  "name": "@hackathon-kiro/cdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AWS CDK infrastructure definitions",
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --all",
+    "diff": "cdk diff",
+    "bootstrap": "cdk bootstrap",
+    "destroy": "cdk destroy --all"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.178.0",
+    "constructs": "10.4.2",
+    "dotenv": "16.4.7"
+  },
+  "devDependencies": {
+    "aws-cdk": "2.178.0",
+    "typescript": "5.7.3"
+  }
+}
