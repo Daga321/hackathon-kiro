@@ -14,6 +14,7 @@ import { Player } from '../entities/Player';
  */
 export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
   private keyQ!: Phaser.Input.Keyboard.Key;
   private keyE!: Phaser.Input.Keyboard.Key;
   private keyF!: Phaser.Input.Keyboard.Key;
@@ -51,15 +52,21 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(sprite, true, 0.1, 0.1);
     this.cameras.main.setZoom(2);
 
-    // Camera controls
+    // Camera controls & WASD
     this.cursors = this.input.keyboard!.createCursorKeys();
+    this.wasd = {
+      W: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+      A: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+      S: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+      D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+    };
     this.keyQ = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
     this.keyE = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.keyF = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.keyR = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 
     // HUD text
-    this.add.text(10, 10, 'Arrows: Pan | Q/E: Zoom | F: Full map | R: Reset', {
+    this.add.text(10, 10, 'WASD/Arrows: Look | Q/E: Zoom | F: Full map | R: Reset', {
       fontSize: '12px',
       color: '#ffffff',
       backgroundColor: '#00000088',
@@ -68,14 +75,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(): void {
-    const cam = this.cameras.main;
-    const panSpeed = 8;
+    // Player orientation (WASD + arrows change facing direction only, no movement)
+    this.player.handleInput(this.cursors, this.wasd);
 
-    // Pan with arrow keys
-    if (this.cursors.left.isDown) cam.scrollX -= panSpeed;
-    if (this.cursors.right.isDown) cam.scrollX += panSpeed;
-    if (this.cursors.up.isDown) cam.scrollY -= panSpeed;
-    if (this.cursors.down.isDown) cam.scrollY += panSpeed;
+    const cam = this.cameras.main;
 
     // Zoom with Q/E
     if (this.keyQ.isDown) cam.zoom = Math.min(4, cam.zoom + 0.02);

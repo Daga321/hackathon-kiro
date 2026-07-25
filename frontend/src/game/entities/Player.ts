@@ -1,50 +1,89 @@
 import Phaser from 'phaser';
 import { MAP_CONFIG, LAYER_DEPTH } from '../config/map-config';
 
+/** Player facing direction */
+export type PlayerDirection = 'up' | 'down' | 'left' | 'right';
+
 /**
- * Player entity — manages the player sprite and spawn positioning.
+ * Player entity — manages the player sprite, spawn positioning, and orientation.
  *
  * Spritesheet: player.png (288×480, 6 cols × 10 rows, 48×48 frames)
  * Frame layout (rows 0-based):
- *   Rows 0-2: Idle (down / right / up — flip right for left)
- *   Rows 3-5: Move (down / right / up)
- *   Rows 6-8: Attack (down / right / up)
- *   Row 9:    Death
+ *   Row 0 (frames 0-5):   Idle Down
+ *   Row 1 (frames 6-11):  Idle Right (flipX for Left)
+ *   Row 2 (frames 12-17): Idle Up
+ *   Rows 3-5: Move (down / right / up) — NOT used yet
+ *   Rows 6-8: Attack (down / right / up) — NOT used yet
+ *   Row 9:    Death — NOT used yet
  *
- * Current scope: static sprite at a valid random spawn position.
- * Movement, input, animations, and combat are NOT implemented here.
+ * Current scope: static sprite with directional orientation via WASD/arrows.
+ * Movement, animations, and combat are NOT implemented here.
  */
 export class Player {
   private sprite: Phaser.GameObjects.Sprite;
+  private direction: PlayerDirection = 'down';
+
+  // Idle frame indices (first frame of each idle row)
+  private static readonly IDLE_FRAMES: Record<PlayerDirection, number> = {
+    down: 0,    // Row 0, first frame
+    right: 6,   // Row 1, first frame
+    left: 6,    // Row 1, first frame (flipped horizontally)
+    up: 12,     // Row 2, first frame
+  };
 
   constructor(scene: Phaser.Scene, collisionLayer: Phaser.Tilemaps.TilemapLayer | null) {
     const spawnPos = this.findValidSpawnPosition(scene, collisionLayer);
 
-    this.sprite = scene.add.sprite(spawnPos.x, spawnPos.y, 'player', 0);
-
-    // Scale: each frame is 48×48 but tiles are 16×16.
-    // Keep sprite at native size (48×48) so the character is ~3 tiles tall,
-    // which is proportionally correct for a top-down RPG character.
-    this.sprite.setOrigin(0.5, 0.75); // Anchor near feet for proper Y-sorting later
-
-    // Depth: render above map layers. Use OBJECTS + 1 so player appears over decorations.
-    // Future: replace with dynamic y-based depth sorting.
+    this.sprite = scene.add.sprite(spawnPos.x, spawnPos.y, 'player', Player.IDLE_FRAMES.down);
+    this.sprite.setOrigin(0.5, 0.75);
     this.sprite.setDepth(LAYER_DEPTH.OBJECTS + 1);
   }
 
-  /** Get the player sprite (for camera follow, future physics, etc.) */
+  /** Get the player sprite (for camera follow, etc.) */
   getSprite(): Phaser.GameObjects.Sprite {
     return this.sprite;
   }
 
+  /** Get the current facing direction */
+  getDirection(): PlayerDirection {
+    return this.direction;
+  }
+
+  /**
+   * Set the player's facing direction — updates the idle frame and flipX.
+   * Does NOT change position. The player remains completely static.
+   */
+  setDirection(dir: PlayerDirection): void {
+    if (dir === this.direction) return;
+    this.direction = dir;
+
+    // Set the correct idle frame
+    this.sprite.setFrame(Player.IDLE_FRAMES[dir]);
+
+    // Flip horizontally for left (the spritesheet only has right-facing)
+    this.sprite.setFlipX(dir === 'left');
+  }
+
+  /**
+   * Called each frame from GameScene.update().
+   * Checks directional input and updates orientation.
+   * Does NOT move the player.
+   */
+  handleInput(cursors: Phaser.Types.Input.Keyboard.CursorKeys, wasd: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key }): void {
+    if (cursors.up.isDown || wasd.W.isDown) {
+      this.setDirection('up');
+    } else if (cursors.down.isDown || wasd.S.isDown) {
+      this.setDirection('down');
+    } else if (cursors.left.isDown || wasd.A.isDown) {
+      this.setDirection('left');
+    } else if (cursors.right.isDown || wasd.D.isDown) {
+      this.setDirection('right');
+    }
+    // If no key is pressed, direction stays unchanged (last pressed direction persists)
+  }
+
   /**
    * Find a valid random spawn position within the map.
-   * A valid position must:
-   * - Be within map bounds (excluding wall border)
-   * - Not collide with the wall/collision layer
-   * - Be within the spawn-safe radius from center (if defined)
-   *
-   * Falls back to map center if no valid position is found after max attempts.
    */
   private findValidSpawnPosition(
     scene: Phaser.Scene,
@@ -61,25 +100,21 @@ export class Player {
     const maxY = HEIGHT - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      // Generate random position within spawn radius of center
       const angle = Math.random() * Math.PI * 2;
       const radius = Math.random() * SPAWN_SAFE_RADIUS;
       const x = centerX + Math.cos(angle) * radius;
       const y = centerY + Math.sin(angle) * radius;
 
-      // Check bounds
       if (x < minX || x > maxX || y < minY || y > maxY) continue;
 
-      // Check collision layer — ensure not on a wall tile
       if (collisionLayer) {
         const tile = collisionLayer.getTileAtWorldXY(x, y);
-        if (tile && tile.index !== -1) continue; // Occupied by wall
+        if (tile && tile.index !== -1) continue;
       }
 
       return { x, y };
     }
 
-    // Fallback: center of map (always safe since spawn zone is kept clear)
     return { x: centerX, y: centerY };
   }
 }
