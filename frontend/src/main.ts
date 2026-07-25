@@ -26,6 +26,9 @@ const config: Phaser.Types.Core.GameConfig = {
     max: { width: 1920, height: 1080 },
   },
   pixelArt: true,
+  input: {
+    activePointers: 3, // Support multitouch (joystick + attack + UI)
+  },
   scene: DEBUG_TILES
     ? [PreloadScene, TileDebugScene]
     : [PreloadScene, GameScene],

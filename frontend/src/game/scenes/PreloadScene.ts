@@ -65,6 +65,13 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+
+    // ─── Player character ───────────────────────────────────────────────
+    // player.png: 288×480, 6 cols × 10 rows, 48×48 frames
+    this.load.spritesheet('player', 'characters/player.png', {
+      frameWidth: 48,
+      frameHeight: 48,
+    });
   }
 
   create(): void {
