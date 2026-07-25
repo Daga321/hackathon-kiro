@@ -1,0 +1,27 @@
+{
+  "name": "@hackathon-kiro/cdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AWS CDK infrastructure definitions",
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth",
+    "predeploy:infra": "ts-node scripts/ensure-bootstrap.ts",
+    "deploy:infra": "cdk deploy --all --require-approval never",
+    "diff": "cdk diff",
+    "bootstrap": "cdk bootstrap",
+    "destroy": "cdk destroy --all"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.178.0",
+    "constructs": "10.4.2",
+    "dotenv": "16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.12",
+    "aws-cdk": "2.178.0",
+    "esbuild": "0.24.2",
+    "ts-node": "10.9.2",
+    "typescript": "5.7.3"
+  }
+}

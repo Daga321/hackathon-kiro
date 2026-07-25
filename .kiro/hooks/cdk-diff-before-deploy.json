@@ -1,0 +1,13 @@
+{
+  "name": "CDK Diff Before Deploy",
+  "version": "1.0.0",
+  "description": "Runs cdk diff when CDK infrastructure files are edited",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["infra/**/*.ts", "infra/cdk.json"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd infra && npx cdk diff 2>&1 | head -50"
+  }
+}

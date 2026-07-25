@@ -1,0 +1,13 @@
+{
+  "name": "TypeScript Lint on Save",
+  "version": "1.0.0",
+  "description": "Runs tsc type check when TypeScript files are saved",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["**/*.ts", "**/*.tsx"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npx tsc --noEmit --project frontend/tsconfig.json 2>&1 | head -20"
+  }
+}
