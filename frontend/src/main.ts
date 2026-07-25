@@ -1,4 +1,10 @@
 import Phaser from 'phaser';
+import { PreloadScene } from './game/scenes/PreloadScene';
+import { GameScene } from './game/scenes/GameScene';
+import { TileDebugScene } from './game/scenes/TileDebugScene';
+
+// Toggle: set to true to inspect tile indices visually
+const DEBUG_TILES = false;
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -20,7 +26,9 @@ const config: Phaser.Types.Core.GameConfig = {
     max: { width: 1920, height: 1080 },
   },
   pixelArt: true,
-  scene: [],
+  scene: DEBUG_TILES
+    ? [PreloadScene, TileDebugScene]
+    : [PreloadScene, GameScene],
 };
 
 const game = new Phaser.Game(config);
