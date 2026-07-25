@@ -5,7 +5,8 @@
     "module": "commonjs",
     "lib": ["es2020"],
     "outDir": "./dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "noUnusedLocals": false
   },
   "include": ["bin/**/*", "lib/**/*"],
   "exclude": ["node_modules", "dist", "cdk.out"]

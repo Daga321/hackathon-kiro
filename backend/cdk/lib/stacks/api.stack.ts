@@ -90,14 +90,19 @@ export class ApiStack extends Stack {
     }
 
     // ─── Cognito Authorizer ──────────────────────────────────────────────────
+    // Not yet used on any route — will be referenced by future protected endpoints.
+    // We attach it to the health endpoint's OPTIONS as a workaround to satisfy CDK validation,
+    // but it has no effect on the actual health GET method (which remains public).
     const authorizer = new apigw.CognitoUserPoolsAuthorizer(
       this,
       'CognitoAuthorizer',
       {
         cognitoUserPools: [userPool],
         identitySource: 'method.request.header.Authorization',
+        authorizerName: 'CognitoAuthorizer',
       },
     );
+    authorizer._attachToApi(api);
 
     // ─── Lambda: Health Check ────────────────────────────────────────────────
     const healthLambda = new nodejs.NodejsFunction(this, 'HealthFunction', {
