@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MapGenerator } from '../map/MapGenerator';
 import { MAP_CONFIG } from '../config/map-config';
+import { Player } from '../entities/Player';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -17,6 +18,7 @@ export class GameScene extends Phaser.Scene {
   private keyE!: Phaser.Input.Keyboard.Key;
   private keyF!: Phaser.Input.Keyboard.Key;
   private keyR!: Phaser.Input.Keyboard.Key;
+  private player!: Player;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -32,12 +34,22 @@ export class GameScene extends Phaser.Scene {
 
     // Set up camera bounds and center
     this.cameras.main.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
-    this.cameras.main.centerOn(MAP_CONFIG.WIDTH / 2, MAP_CONFIG.HEIGHT / 2);
 
     // Enable collision detection on the wall/border layer
     if (collisionLayer) {
       collisionLayer.setCollisionByExclusion([-1]);
     }
+
+    // Create player at a random valid position
+    this.player = new Player(this, collisionLayer);
+
+    // Debug: log player position
+    const sprite = this.player.getSprite();
+    console.log(`Player spawned at: (${sprite.x.toFixed(0)}, ${sprite.y.toFixed(0)})`);
+
+    // Camera follows the player
+    this.cameras.main.startFollow(sprite, true, 0.1, 0.1);
+    this.cameras.main.setZoom(2);
 
     // Camera controls
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -79,8 +91,8 @@ export class GameScene extends Phaser.Scene {
 
     // R: Reset to center at normal zoom
     if (Phaser.Input.Keyboard.JustDown(this.keyR)) {
-      cam.zoom = 1;
-      cam.centerOn(MAP_CONFIG.WIDTH / 2, MAP_CONFIG.HEIGHT / 2);
+      cam.zoom = 2;
+      this.cameras.main.startFollow(this.player.getSprite(), true, 0.1, 0.1);
     }
   }
 }
