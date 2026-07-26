@@ -1074,6 +1074,9 @@ export class MapGenerator {
     // H. Skulls and skeletons scattered across the ENTIRE map
     this.placeSkullsEverywhere(data);
 
+    // Manual placement: tile 24 (objects.png) at tile position (75, 62)
+    data[62][75] = 24;
+
     const map = this.scene.make.tilemap({ data, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
     const tileset = map.addTilesetImage(TILESET_KEYS.OBJECTS, TILESET_KEYS.OBJECTS, TILE_SIZE, TILE_SIZE);
     if (!tileset) return null;
@@ -1306,7 +1309,7 @@ export class MapGenerator {
     //   73 (row4,col9): pot/bucket — solid
     //   74 (row4,col10): stool/table — solid
     //   75 (row4,col11): table — solid
-    const SOLID_OBJECT_FRAMES = new Set<number>([9, 40, 41, 42, 57, 58, 60, 73, 74, 75]);
+    const SOLID_OBJECT_FRAMES = new Set<number>([9, 24, 40, 41, 42, 57, 58, 60, 73, 74, 75]);
 
     // Composite obstacle frames (all rows — these are solid throughout):
     // Stumps/cut trees: cols 6-7, rows 5-8 → ALL tiles are solid log/trunk
@@ -1339,7 +1342,7 @@ export class MapGenerator {
       // Bush canopy frame (depth-sorted walk-behind sprite)
       104, 105,
       // Decorative items — too small/flat to justify collision
-      24,  // dark cross/detail — purely decorative ground marking
+      // (none currently — frame 24 moved to SOLID_OBJECT_FRAMES)
     ]);
 
     objectsLayer.forEachTile((tile) => {

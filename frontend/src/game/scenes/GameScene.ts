@@ -22,6 +22,7 @@ export class GameScene extends Phaser.Scene {
   private keyF!: Phaser.Input.Keyboard.Key;
   private keyR!: Phaser.Input.Keyboard.Key;
   private keyP!: Phaser.Input.Keyboard.Key;
+  private keyL!: Phaser.Input.Keyboard.Key;
   private player!: Player;
   private skeleton!: Enemy;
   private touchControls!: TouchControls;
@@ -66,7 +67,7 @@ export class GameScene extends Phaser.Scene {
     if (obstacleColliders) this.physics.add.collider(playerSprite, obstacleColliders);
 
     // Create a test skeleton enemy
-    const skeletonPos = Enemy.findSpawnPosition(collisionLayer);
+    const skeletonPos = Enemy.findSpawnPosition(collisionLayer, elevatedLayer);
     this.skeleton = new Enemy(this, skeletonPos.x, skeletonPos.y, ENEMY_TYPES.SKELETON);
 
     // Add same colliders to skeleton
@@ -99,6 +100,9 @@ export class GameScene extends Phaser.Scene {
     this.keyF = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.keyR = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.keyP = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Debug key: L = log position to console
+    this.keyL = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.L);
 
     // HUD text (desktop only)
     if (!isMobile) {
@@ -152,6 +156,15 @@ export class GameScene extends Phaser.Scene {
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
     this.skeleton.updateDepth();
+    this.skeleton.update(this.player.getSprite());
+
+    // Debug: press L to log player position
+    if (Phaser.Input.Keyboard.JustDown(this.keyL)) {
+      const sprite = this.player.getSprite();
+      const tileX = Math.floor(sprite.x / 16);
+      const tileY = Math.floor(sprite.y / 16);
+      console.log(`[POS] Pixel: (${Math.round(sprite.x)}, ${Math.round(sprite.y)}) | Tile: (${tileX}, ${tileY})`);
+    }
 
     const cam = this.cameras.main;
 
