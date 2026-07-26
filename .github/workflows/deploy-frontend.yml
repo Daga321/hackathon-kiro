@@ -1,15 +1,14 @@
 name: Deploy Frontend (S3)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# This workflow builds the frontend and syncs it to the S3 bucket served
-# by CloudFront.
+# This workflow builds the frontend and syncs it to the S3 bucket configured
+# for static website hosting.
 #
 # On push: only runs if files in frontend/** changed in the merge.
 # On manual dispatch: always runs regardless of file changes.
 #
-# The S3 bucket name and CloudFront distribution ID are obtained dynamically
-# from CloudFormation stack outputs. This ensures we always target the correct
-# resources even if CDK recreates them.
+# The S3 bucket name is obtained dynamically from CloudFormation stack outputs.
+# This ensures we always target the correct bucket even if CDK recreates it.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -74,28 +73,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
 
-      # Retrieve bucket name and distribution ID from CloudFormation outputs.
-      # These are not hardcoded — if CDK recreates resources, this always
-      # resolves to the current values.
-      - name: Get CloudFormation outputs
+      # Retrieve bucket name from CloudFormation outputs.
+      # Not hardcoded — if CDK recreates the bucket, this resolves to the current one.
+      - name: Get S3 bucket name
         id: cfn
         run: |
-          STACK_NAME="StaticSiteStack-${{ env.ENVIRONMENT }}"
+          STACK_NAME="S3HostingStack-${{ env.ENVIRONMENT }}"
 
           BUCKET_NAME=$(aws cloudformation describe-stacks \
             --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" \
             --output text)
 
-          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-            --stack-name "$STACK_NAME" \
-            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
-            --output text)
-
-          echo "::add-mask::$BUCKET_NAME"
-          echo "::add-mask::$DISTRIBUTION_ID"
           echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
-          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
 
       - name: Sync to S3
         run: |
@@ -107,9 +97,3 @@ jobs:
           # index.html gets a short cache so updates are picked up quickly
           aws s3 cp frontend/dist/index.html s3://${{ steps.cfn.outputs.bucket_name }}/index.html \
             --cache-control "public, max-age=60"
-
-      - name: Invalidate CloudFront cache
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ steps.cfn.outputs.distribution_id }} \
-            --paths "/index.html"
