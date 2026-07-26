@@ -14,6 +14,8 @@ export interface MapGeneratorResult {
   collisionLayer: Phaser.Tilemaps.TilemapLayer | null;
   /** The elevated terrain collision layer */
   elevatedLayer: Phaser.Tilemaps.TilemapLayer | null;
+  /** The fence collision layer */
+  fenceLayer: Phaser.Tilemaps.TilemapLayer | null;
 }
 
 /**
@@ -46,7 +48,7 @@ export class MapGenerator {
     const elevatedLayer = this.createElevatedLayer();
     const sandLayer = this.createSandLayer(); // After elevated & path so positions are populated
     const collisionLayer = this.createWallLayer();
-    this.createFenceLayer();
+    const fenceLayer = this.createFenceLayer();
     this.createDecorLayer();
     this.createObjectsLayer();
 
@@ -57,7 +59,7 @@ export class MapGenerator {
     elevatedLayer?.setDepth(LAYER_DEPTH.ELEVATED);
     collisionLayer?.setDepth(LAYER_DEPTH.WALLS);
 
-    return { collisionLayer, elevatedLayer };
+    return { collisionLayer, elevatedLayer, fenceLayer };
   }
 
 
@@ -769,13 +771,7 @@ export class MapGenerator {
     // West fence
     this.placeFenceSegment(data, 'vertical', 40, 50, 40, 75);
 
-    // ─── 2. Small NW enclosure (cols 10-25, rows 42-55) ────────────────────
-    this.placeFenceSegment(data, 'horizontal', 10, 42, 25, 42);
-    this.placeFenceSegment(data, 'vertical', 25, 42, 25, 55);
-    // South with gap at cols 15-18
-    this.placeFenceSegment(data, 'horizontal', 10, 55, 14, 55);
-    this.placeFenceSegment(data, 'horizontal', 19, 55, 25, 55);
-    this.placeFenceSegment(data, 'vertical', 10, 42, 10, 55);
+    // ─── 2. Small NW enclosure — REMOVED ──────────────────────────────────
 
     // ─── 3. Horizontal separator row 35, cols 30-55, gap at 40-43 ──────────
     this.placeFenceSegment(data, 'horizontal', 30, 35, 39, 35);
@@ -788,6 +784,15 @@ export class MapGenerator {
     this.placeFenceSegment(data, 'horizontal', 55, 85, 62, 85);
     // SW vertical fragment
     this.placeFenceSegment(data, 'vertical', 50, 80, 50, 86);
+
+    // Remove fence tiles where paths cross (keep paths open for navigation)
+    for (let y = 0; y < TILES_Y; y++) {
+      for (let x = 0; x < TILES_X; x++) {
+        if (data[y][x] !== -1 && this.pathPositions.has(`${x},${y}`)) {
+          data[y][x] = -1;
+        }
+      }
+    }
 
     const map = this.scene.make.tilemap({
       data,

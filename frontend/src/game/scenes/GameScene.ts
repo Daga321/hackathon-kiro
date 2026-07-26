@@ -31,7 +31,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     // Generate the tilemap layers
     const mapGen = new MapGenerator(this);
-    const { collisionLayer } = mapGen.generate();
+    const { collisionLayer, elevatedLayer, fenceLayer } = mapGen.generate();
 
     // Set up physics world bounds to match the full map
     this.physics.world.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
@@ -39,13 +39,25 @@ export class GameScene extends Phaser.Scene {
     // Set up camera bounds and center
     this.cameras.main.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
 
-    // Enable collision detection on the wall/border layer
+    // Enable collision detection on tilemap layers
     if (collisionLayer) {
       collisionLayer.setCollisionByExclusion([-1]);
+    }
+    if (elevatedLayer) {
+      elevatedLayer.setCollisionByExclusion([-1]);
+    }
+    if (fenceLayer) {
+      fenceLayer.setCollisionByExclusion([-1]);
     }
 
     // Create player at a random valid position
     this.player = new Player(this, collisionLayer);
+
+    // Add physics colliders between player and all collidable layers
+    const playerSprite = this.player.getSprite();
+    if (collisionLayer) this.physics.add.collider(playerSprite, collisionLayer);
+    if (elevatedLayer) this.physics.add.collider(playerSprite, elevatedLayer);
+    if (fenceLayer) this.physics.add.collider(playerSprite, fenceLayer);
 
     // Camera follows the player
     const sprite = this.player.getSprite();
