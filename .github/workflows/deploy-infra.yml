@@ -42,6 +42,7 @@ jobs:
           filters: |
             cdk:
               - 'backend/cdk/**'
+              - 'backend/lambdas/**'
 
   deploy:
     name: Deploy CDK Stack
