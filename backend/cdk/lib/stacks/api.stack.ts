@@ -298,6 +298,75 @@ export class ApiStack extends Stack {
       { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
     );
 
+    // ─── Lambda: Leaderboard Get Global ──────────────────────────────────────
+    const getGlobalLeaderboardLambda = new nodejs.NodejsFunction(this, 'GetGlobalLeaderboardFunction', {
+      entry: '../lambdas/leaderboard/get-global.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        USERS_TABLE: tables['users'].tableName,
+      },
+    });
+    tables['users'].grantReadData(getGlobalLeaderboardLambda);
+
+    // ─── Lambda: Leaderboard Submit Score ────────────────────────────────────
+    const submitScoreLambda = new nodejs.NodejsFunction(this, 'SubmitScoreFunction', {
+      entry: '../lambdas/leaderboard/submit-score.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        USERS_TABLE: tables['users'].tableName,
+        SCORES_TABLE: tables['scores'].tableName,
+      },
+    });
+    tables['users'].grantReadWriteData(submitScoreLambda);
+    tables['scores'].grantWriteData(submitScoreLambda);
+
+    // ─── Lambda: Leaderboard Get Friends ─────────────────────────────────────
+    const getFriendsLeaderboardLambda = new nodejs.NodejsFunction(this, 'GetFriendsLeaderboardFunction', {
+      entry: '../lambdas/leaderboard/get-friends.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        USERS_TABLE: tables['users'].tableName,
+        FRIENDS_TABLE: tables['friends'].tableName,
+      },
+    });
+    tables['users'].grantReadData(getFriendsLeaderboardLambda);
+    tables['friends'].grantReadData(getFriendsLeaderboardLambda);
+
+    // ─── Leaderboard Routes ──────────────────────────────────────────────────
+    const leaderboardResource = api.root.addResource('leaderboard');
+
+    // GET /leaderboard/global — public (top 100)
+    const globalResource = leaderboardResource.addResource('global');
+    globalResource.addMethod(
+      'GET',
+      new apigw.LambdaIntegration(getGlobalLeaderboardLambda),
+    );
+
+    // POST /leaderboard/scores — protected (submit score after game)
+    const scoresResource = leaderboardResource.addResource('scores');
+    scoresResource.addMethod(
+      'POST',
+      new apigw.LambdaIntegration(submitScoreLambda),
+      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
+    );
+
+    // GET /leaderboard/friends — protected (friends leaderboard)
+    const friendsLeaderboardResource = leaderboardResource.addResource('friends');
+    friendsLeaderboardResource.addMethod(
+      'GET',
+      new apigw.LambdaIntegration(getFriendsLeaderboardLambda),
+      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
+    );
+
     // ─── Outputs ─────────────────────────────────────────────────────────────
     new CfnOutput(this, 'ApiUrl', {
       value: api.url,
