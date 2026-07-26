@@ -189,6 +189,115 @@ export class ApiStack extends Stack {
       },
     );
 
+    // ─── Lambda: Friends List ────────────────────────────────────────────────
+    const listFriendsLambda = new nodejs.NodejsFunction(this, 'ListFriendsFunction', {
+      entry: '../lambdas/friends/list.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        FRIENDS_TABLE: tables['friends'].tableName,
+      },
+    });
+    tables['friends'].grantReadData(listFriendsLambda);
+
+    // ─── Lambda: Friends Request ─────────────────────────────────────────────
+    const requestFriendLambda = new nodejs.NodejsFunction(this, 'RequestFriendFunction', {
+      entry: '../lambdas/friends/request.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        FRIENDS_TABLE: tables['friends'].tableName,
+        USERS_TABLE: tables['users'].tableName,
+      },
+    });
+    tables['friends'].grantReadWriteData(requestFriendLambda);
+    tables['users'].grantReadData(requestFriendLambda);
+
+    // ─── Lambda: Friends Accept ──────────────────────────────────────────────
+    const acceptFriendLambda = new nodejs.NodejsFunction(this, 'AcceptFriendFunction', {
+      entry: '../lambdas/friends/accept.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        FRIENDS_TABLE: tables['friends'].tableName,
+      },
+    });
+    tables['friends'].grantReadWriteData(acceptFriendLambda);
+
+    // ─── Lambda: Friends Reject ──────────────────────────────────────────────
+    const rejectFriendLambda = new nodejs.NodejsFunction(this, 'RejectFriendFunction', {
+      entry: '../lambdas/friends/reject.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        FRIENDS_TABLE: tables['friends'].tableName,
+      },
+    });
+    tables['friends'].grantReadWriteData(rejectFriendLambda);
+
+    // ─── Lambda: Friends Remove ──────────────────────────────────────────────
+    const removeFriendLambda = new nodejs.NodejsFunction(this, 'RemoveFriendFunction', {
+      entry: '../lambdas/friends/remove.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        FRIENDS_TABLE: tables['friends'].tableName,
+      },
+    });
+    tables['friends'].grantReadWriteData(removeFriendLambda);
+
+    // ─── Friends Routes (all protected) ──────────────────────────────────────
+    const friendsResource = api.root.addResource('friends');
+
+    // GET /friends — list confirmed friends
+    friendsResource.addMethod(
+      'GET',
+      new apigw.LambdaIntegration(listFriendsLambda),
+      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
+    );
+
+    // POST /friends/request — send friend request
+    const friendsRequestResource = friendsResource.addResource('request');
+    friendsRequestResource.addMethod(
+      'POST',
+      new apigw.LambdaIntegration(requestFriendLambda),
+      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
+    );
+
+    // POST /friends/accept — accept friend request
+    const friendsAcceptResource = friendsResource.addResource('accept');
+    friendsAcceptResource.addMethod(
+      'POST',
+      new apigw.LambdaIntegration(acceptFriendLambda),
+      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
+    );
+
+    // POST /friends/reject — reject friend request
+    const friendsRejectResource = friendsResource.addResource('reject');
+    friendsRejectResource.addMethod(
+      'POST',
+      new apigw.LambdaIntegration(rejectFriendLambda),
+      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
+    );
+
+    // DELETE /friends/{friendId} — remove friendship
+    const friendIdResource = friendsResource.addResource('{friendId}');
+    friendIdResource.addMethod(
+      'DELETE',
+      new apigw.LambdaIntegration(removeFriendLambda),
+      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
+    );
+
     // ─── Outputs ─────────────────────────────────────────────────────────────
     new CfnOutput(this, 'ApiUrl', {
       value: api.url,
