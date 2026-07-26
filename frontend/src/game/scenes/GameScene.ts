@@ -31,7 +31,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     // Generate the tilemap layers
     const mapGen = new MapGenerator(this);
-    const { collisionLayer, elevatedLayer, fenceLayer, graveColliders, treeColliders } = mapGen.generate();
+    const { collisionLayer, elevatedLayer, fenceLayer, graveColliders, treeColliders, obstacleColliders } = mapGen.generate();
 
     // Set up physics world bounds to match the full map
     this.physics.world.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
@@ -61,6 +61,7 @@ export class GameScene extends Phaser.Scene {
     if (fenceLayer) this.physics.add.collider(playerSprite, fenceLayer);
     if (graveColliders) this.physics.add.collider(playerSprite, graveColliders);
     if (treeColliders) this.physics.add.collider(playerSprite, treeColliders);
+    if (obstacleColliders) this.physics.add.collider(playerSprite, obstacleColliders);
 
     // Camera follows the player
     const sprite = this.player.getSprite();

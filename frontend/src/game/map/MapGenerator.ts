@@ -23,6 +23,8 @@ export interface MapGeneratorResult {
   treeColliders: Phaser.Physics.Arcade.StaticGroup | null;
   /** Sprites for tree canopies rendered above the player for depth sorting */
   treeCanopySprites: Phaser.GameObjects.Sprite[];
+  /** Static physics group for obstacle colliders (rocks, stumps, bushes, etc.) */
+  obstacleColliders: Phaser.Physics.Arcade.StaticGroup | null;
 }
 
 /**
@@ -65,6 +67,9 @@ export class MapGenerator {
     // Create circular physics bodies for tree trunks (smooth sliding around trunks)
     const treeColliders = this.createTreeColliders(objectsLayer);
 
+    // Create circular physics bodies for obstacles (rocks, stumps, bushes)
+    const obstacleColliders = this.createObstacleColliders(objectsLayer);
+
     // Create canopy sprites above the player for depth sorting (walk-behind effect)
     const treeCanopySprites = this.createTreeCanopySprites(objectsLayer);
 
@@ -75,7 +80,7 @@ export class MapGenerator {
     elevatedLayer?.setDepth(LAYER_DEPTH.ELEVATED);
     collisionLayer?.setDepth(LAYER_DEPTH.WALLS);
 
-    return { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders, treeColliders, treeCanopySprites };
+    return { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders, treeColliders, treeCanopySprites, obstacleColliders };
   }
 
 
@@ -1222,6 +1227,85 @@ export class MapGenerator {
     });
 
     return sprites;
+  }
+
+
+  /**
+   * Create circular static bodies for obstacle objects (rocks, stumps, bushes, small plants).
+   * 
+   * Collision rules:
+   * - Single-tile rocks/stones (frames 0-5, 16-18): circular collision
+   * - Composite stumps (2×4, cols 6-7, rows 5-8): collision on bottom 2 rows only (frames 118,119,134,135)
+   * - Composite bushes (2×4, cols 8-9, rows 5-8): collision on bottom 2 rows only (frames 120,121,136,137)
+   * - Composite small plants (2×4, cols 10-11, rows 5-8): collision on bottom 2 rows only (frames 122,123,138,139)
+   * 
+   * NO collision for:
+   * - Skulls (frames 8, 9)
+   * - Gravestones (frames 6, 7) — already handled by graveColliders
+   * - Tree frames — already handled by treeColliders
+   * - Decorative small items (frames 24, 41, 42, 57, 58, 60, 73, 74, 75)
+   */
+  private createObstacleColliders(objectsLayer: Phaser.Tilemaps.TilemapLayer | null): Phaser.Physics.Arcade.StaticGroup {
+    const { TILE_SIZE } = MAP_CONFIG;
+    const group = this.scene.physics.add.staticGroup();
+
+    if (!objectsLayer) return group;
+
+    // Single-tile solid obstacles: rocks and stones
+    const ROCK_FRAMES = new Set<number>([0, 1, 2, 3, 4, 5, 16, 17, 18]);
+
+    // Composite obstacle bottom rows (trunk/base portion):
+    // Stumps: cols 6-7, rows 7-8 → frames 118,119,134,135
+    // Bushes: cols 8-9, rows 7-8 → frames 120,121,136,137
+    // Small plants: cols 10-11, rows 7-8 → frames 122,123,138,139
+    const COMPOSITE_BOTTOM_FRAMES = new Set<number>([
+      // Stump bottom (rows 7-8, cols 6-7)
+      7 * 16 + 6, 7 * 16 + 7,     // 118, 119
+      8 * 16 + 6, 8 * 16 + 7,     // 134, 135
+      // Bush bottom (rows 7-8, cols 8-9)
+      7 * 16 + 8, 7 * 16 + 9,     // 120, 121
+      8 * 16 + 8, 8 * 16 + 9,     // 136, 137
+      // Small plant bottom (rows 7-8, cols 10-11)
+      7 * 16 + 10, 7 * 16 + 11,   // 122, 123
+      8 * 16 + 10, 8 * 16 + 11,   // 138, 139
+    ]);
+
+    // Frames that are already handled or explicitly excluded from collision
+    const EXCLUDED_FRAMES = new Set<number>([
+      6, 7,    // Gravestones/tombs — handled by graveColliders
+      8, 9,    // Skulls — explicitly no collision
+      // Tree trunk frames — handled by treeColliders
+      112, 113, 114, 115, 116, 117, 128, 129, 130, 131, 132, 133,
+      176, 177, 178, 179, 180, 181, 192, 193, 194, 195, 196, 197,
+      // Tree canopy frames — no collision (handled separately)
+      80, 81, 82, 83, 84, 85, 96, 97, 98, 99, 100, 101,
+      144, 145, 146, 147, 148, 149, 160, 161, 162, 163, 164, 165,
+      // Decorative items — too small to justify collision, keeps map traversable
+      24, 41, 42, 57, 58, 60, 73, 74, 75,
+    ]);
+
+    objectsLayer.forEachTile((tile) => {
+      if (tile.index === -1) return;
+      if (EXCLUDED_FRAMES.has(tile.index)) return;
+
+      const isRock = ROCK_FRAMES.has(tile.index);
+      const isCompositeBottom = COMPOSITE_BOTTOM_FRAMES.has(tile.index);
+
+      if (isRock || isCompositeBottom) {
+        const worldX = tile.pixelX + TILE_SIZE / 2;
+        const worldY = tile.pixelY + TILE_SIZE / 2;
+
+        const zone = this.scene.add.zone(worldX, worldY, TILE_SIZE, TILE_SIZE);
+        group.add(zone);
+
+        const body = zone.body as Phaser.Physics.Arcade.StaticBody;
+        // Circular body with radius 6px for smooth sliding
+        body.setCircle(6, TILE_SIZE / 2 - 6, TILE_SIZE / 2 - 6);
+        body.updateFromGameObject();
+      }
+    });
+
+    return group;
   }
 
 
