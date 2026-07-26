@@ -19,6 +19,7 @@
       align-items: center;
       min-height: 100vh;
       overflow: hidden;
+      margin: 0;
     }
 
     .scene {
@@ -29,6 +30,29 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+    }
+
+    /* Portrait orientation message */
+    .rotate-message {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0a0a0f;
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .rotate-message p {
+      font-size: 0.7rem;
+      color: #aaa;
+      line-height: 2;
+    }
+
+    @media (orientation: portrait) and (max-width: 480px) {
+      .rotate-message { display: flex; }
     }
 
     /* ─── Title ─────────────────────────────────────────── */
@@ -54,39 +78,47 @@
       text-shadow: 2px 2px 0px #000;
     }
 
-    /* ─── Ground ────────────────────────────────────────── */
-    .ground {
+    /* ─── Terrain (single container, no gaps) ─────────── */
+    .terrain {
       position: absolute;
       bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      height: 48px; /* 16px × 3 scale */
+      flex-direction: column;
       image-rendering: pixelated;
+      font-size: 0;
+      line-height: 0;
+    }
+
+    .terrain-row {
+      display: flex;
+      height: 48px;
+      margin: 0;
+      padding: 0;
     }
 
     .tile {
-      width: 48px;  /* 16px × 3 */
+      width: 48px;
       height: 48px;
       background-image: url('../tilesets/plains.png');
       background-size: 288px 576px; /* 96×3, 192×3 */
       background-repeat: no-repeat;
       image-rendering: pixelated;
+      flex-shrink: 0;
     }
 
-    .tile-left   { background-position: -48px -288px; }      /* col 1, row 6 (0-based) — border top-left */
-    .tile-center { background-position: -96px -288px; }     /* col 2, row 6 (0-based) — border top-center */
-    .tile-right  { background-position: -144px -288px; }    /* col 3, row 6 (0-based) — border top-right */
+    .tile-left   { background-position: -48px -288px; }
+    .tile-center { background-position: -96px -288px; }
+    .tile-right  { background-position: -144px -288px; }
 
-    /* Ground surface tiles (row 6, cols 2-4, 1-based) — used behind decorations */
-    .tile-surface-left   { background-position: -48px -240px; }   /* col 2, row 6 (1-based) → col 1, row 5 (0-based) */
-    .tile-surface-center { background-position: -96px -240px; }   /* col 3 */
-    .tile-surface-right  { background-position: -144px -240px; }  /* col 4 */
+    .tile-surface-left   { background-position: -48px -240px; }
+    .tile-surface-center { background-position: -96px -240px; }
+    .tile-surface-right  { background-position: -144px -240px; }
 
-    /* Ground top edge tiles (row 5, cols 2-4, 1-based) — rounded grass top */
-    .tile-top-left   { background-position: -48px -192px; }   /* col 2, row 5 (1-based) → col 1, row 4 (0-based) */
-    .tile-top-center { background-position: -96px -192px; }   /* col 3 */
-    .tile-top-right  { background-position: -144px -192px; }  /* col 4 */
+    .tile-top-left   { background-position: -48px -192px; }
+    .tile-top-center { background-position: -96px -192px; }
+    .tile-top-right  { background-position: -144px -192px; }
 
     /* ─── Objects ───────────────────────────────────────── */
     .object {
@@ -97,53 +129,22 @@
       background-size: 768px 624px; /* 256×3, 208×3 */
       background-repeat: no-repeat;
       image-rendering: pixelated;
+      z-index: 1;
     }
 
-    .tomb  { background-position: -288px 0px; }     /* row 1, col 7 (1-based) → col 6 × 48, row 0 × 48 */
-    .skull { background-position: -384px 0px; }    /* row 1, col 9 (1-based) → col 8 × 48, row 0 × 48 */
-    .rock  { background-position: 0px -48px; }     /* row 2, col 1 (1-based) → col 0 × 48, row 1 × 48 */
+    .tomb  { background-position: -288px 0px; }
+    .skull { background-position: -384px 0px; }
+    .rock  { background-position: 0px -48px; }
 
-    /* Object positions on the scene */
     .obj-tomb  { bottom: 128px; left: 150px; }
     .obj-skull { bottom: 128px; right: 190px; }
     .obj-rock1 { bottom: 272px; left: 50px; }
     .obj-rock2 { bottom: 272px; right: 80px; }
 
-    /* Ground behind decorations */
-    .ground-behind {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      height: 48px;
-      image-rendering: pixelated;
-      z-index: 0;
-    }
-
-    .ground-behind-1 { bottom: 128px; }
-    .ground-behind-2 { bottom: 176px; }
-    .ground-behind-3 { bottom: 224px; }
-
-    /* Ground top edge (above surface) */
-    .ground-top {
-      position: absolute;
-      bottom: 272px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      height: 48px;
-      image-rendering: pixelated;
-      z-index: 0;
-    }
-
-    .object {
-      z-index: 1;
-    }
-
     /* ─── Characters ────────────────────────────────────── */
     .character {
       position: absolute;
-      width: 144px;   /* 48px × 3 scale */
+      width: 144px;
       height: 144px;
       background-repeat: no-repeat;
       image-rendering: pixelated;
@@ -152,7 +153,7 @@
 
     .player {
       background-image: url('../characters/player.png');
-      background-size: 864px 1440px; /* 288×3, 480×3 */
+      background-size: 864px 1440px;
       bottom: 160px;
       left: 15px;
       animation: player-idle 0.8s steps(6) infinite;
@@ -160,7 +161,7 @@
 
     .skeleton {
       background-image: url('../characters/skeleton_swordless.png');
-      background-size: 864px 1440px; /* 288×3, 480×3 */
+      background-size: 864px 1440px;
       bottom: 100px;
       left: 480px;
       animation: skeleton-idle 0.8s steps(6) infinite;
@@ -168,8 +169,8 @@
 
     .slime {
       background-image: url('../characters/slime.png');
-      background-size: 672px 1248px; /* 224×3, 416×3 */
-      width: 96px;   /* 32px × 3 scale */
+      background-size: 672px 1248px;
+      width: 96px;
       height: 96px;
       bottom: 196px;
       left: 528px;
@@ -188,7 +189,7 @@
 
     @keyframes slime-idle {
       from { background-position: 0px 0px; }
-      to { background-position: -384px 0px; } /* 4 frames × 96px */
+      to { background-position: -384px 0px; }
     }
 
     /* ─── Loading text ──────────────────────────────────── */
@@ -204,17 +205,22 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-
-    /* ─── Responsive ────────────────────────────────────── */
-    @media (max-width: 520px) {
-      .scene { width: 100vw; padding: 0 1rem; }
-      .title h1 { font-size: 1.2rem; }
-      .title h2 { font-size: 0.6rem; }
-      .ground { width: 90vw; }
-    }
   </style>
 </head>
 <body>
+  <!-- Rotate device message for portrait mobile -->
+  <div class="rotate-message">
+    <div>
+      <h1 style="font-size:1.4rem; color:#c0392b; text-shadow:3px 3px 0px #000; line-height:1.8;">Horde Battle</h1>
+      <h2 style="font-size:0.6rem; color:#8e8e8e; letter-spacing:0.15em; margin-top:0.4rem; text-shadow:2px 2px 0px #000;">Graveyard Guard</h2>
+      <div style="display:flex; justify-content:center; gap:24px; margin-top:1.5rem;">
+        <div style="width:48px; height:48px; background:url('../objects/objects.png') -288px 0px; background-size:768px 624px; image-rendering:pixelated;"></div>
+        <div style="width:48px; height:48px; background:url('../objects/objects.png') -384px 0px; background-size:768px 624px; image-rendering:pixelated;"></div>
+      </div>
+      <p style="font-size:0.55rem; color:#aaa; margin-top:1.5rem; line-height:2.5;">Please rotate your device<br>to landscape mode</p>
+    </div>
+  </div>
+
   <div class="scene">
     <!-- Title -->
     <div class="title">
@@ -222,74 +228,88 @@
       <h2>Graveyard Guard</h2>
     </div>
 
-    <!-- Ground top edge (rounded grass) -->
-    <div class="ground-top">
-      <div class="tile tile-top-left"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-center"></div>
-      <div class="tile tile-top-right"></div>
-    </div>
-
-    <!-- Ground behind decorations (surface tiles) -->
-    <div class="ground-behind ground-behind-1">
-      <div class="tile tile-surface-left"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-right"></div>
-    </div>
-
-    <div class="ground-behind ground-behind-2">
-      <div class="tile tile-surface-left"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-right"></div>
-    </div>
-
-    <div class="ground-behind ground-behind-3">
-      <div class="tile tile-surface-left"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-center"></div>
-      <div class="tile tile-surface-right"></div>
+    <!-- Terrain: single container, rows stacked with no gaps -->
+    <div class="terrain">
+      <div class="terrain-row">
+        <div class="tile tile-top-left"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-center"></div>
+        <div class="tile tile-top-right"></div>
+      </div>
+      <div class="terrain-row">
+        <div class="tile tile-surface-left"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-right"></div>
+      </div>
+      <div class="terrain-row">
+        <div class="tile tile-surface-left"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-right"></div>
+      </div>
+      <div class="terrain-row">
+        <div class="tile tile-surface-left"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-center"></div>
+        <div class="tile tile-surface-right"></div>
+      </div>
+      <div class="terrain-row">
+        <div class="tile tile-left"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-center"></div>
+        <div class="tile tile-right"></div>
+      </div>
     </div>
 
     <!-- Decorative objects -->
@@ -302,24 +322,6 @@
     <div class="character player"></div>
     <div class="character slime"></div>
     <div class="character skeleton"></div>
-
-    <!-- Ground tiles -->
-    <div class="ground">
-      <div class="tile tile-left"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-center"></div>
-      <div class="tile tile-right"></div>
-    </div>
 
     <!-- Loading -->
     <p class="loading">Loading...</p>
