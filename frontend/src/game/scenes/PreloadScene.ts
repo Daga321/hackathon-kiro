@@ -79,6 +79,20 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48,
     });
+
+    // ─── Skeleton enemy (with sword) ────────────────────────────────────
+    // skeleton.png: 288×624, 6 cols × 13 rows, 48×48 frames
+    this.load.spritesheet('skeleton', 'characters/skeleton.png', {
+      frameWidth: 48,
+      frameHeight: 48,
+    });
+
+    // ─── Slime enemy ────────────────────────────────────────────────────
+    // slime.png: 224×416, 7 cols × 13 rows, 32×32 frames
+    this.load.spritesheet('slime', 'characters/slime.png', {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
   }
 
   create(): void {

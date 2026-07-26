@@ -45,6 +45,8 @@ export interface CombatConfig {
   knockbackForce?: number;
   /** Duration of invulnerability after taking damage in ms (default: 1000) */
   invulnerabilityDuration?: number;
+  /** Whether to show a health bar above the character (default: false) */
+  showHealthBar?: boolean;
 }
 
 /**
@@ -89,6 +91,12 @@ export abstract class Character {
   private knockbackForce: number;
   private invulnerabilityDurationMs: number;
   private attackHitTargets: Set<Character> = new Set();
+
+  // ─── Health bar ───
+  private healthBarBg: Phaser.GameObjects.Graphics | null = null;
+  private healthBarFill: Phaser.GameObjects.Graphics | null = null;
+  private healthBarVisible: boolean = false;
+  private showHealthBar: boolean = false;
 
   // ─── Combat system ───
   private attackCooldownMs: number;
@@ -164,6 +172,15 @@ export abstract class Character {
     const body = this.sprite.body as Phaser.Physics.Arcade.Body;
     body.setCircle(bodyRadius, bodyOffsetX, bodyOffsetY);
 
+    // Health bar (hidden until first damage)
+    this.showHealthBar = combatConfig?.showHealthBar ?? false;
+    if (this.showHealthBar) {
+      this.healthBarBg = scene.add.graphics();
+      this.healthBarFill = scene.add.graphics();
+      this.healthBarBg.setVisible(false);
+      this.healthBarFill.setVisible(false);
+    }
+
     // Start idle
     this.playAnimation(this.idleAnims.down);
   }
@@ -181,6 +198,45 @@ export abstract class Character {
    */
   updateDepth(): void {
     this.sprite.setDepth(LAYER_DEPTH.OBJECTS + this.sprite.y / 10000);
+    this.updateHealthBar();
+  }
+
+  /**
+   * Draw/update the health bar above the sprite.
+   */
+  private updateHealthBar(): void {
+    if (!this.showHealthBar || !this.healthBarBg || !this.healthBarFill) return;
+    if (!this.healthBarVisible) return;
+
+    const barWidth = 24;
+    const barHeight = 3;
+    const offsetY = -20; // above the sprite
+
+    const x = this.sprite.x - barWidth / 2;
+    const y = this.sprite.y + offsetY;
+    const depth = this.sprite.depth + 0.01;
+
+    // Background (dark)
+    this.healthBarBg.clear();
+    this.healthBarBg.fillStyle(0x000000, 0.6);
+    this.healthBarBg.fillRect(x - 1, y - 1, barWidth + 2, barHeight + 2);
+    this.healthBarBg.setDepth(depth);
+
+    // Fill (red → green gradient based on health %)
+    const ratio = this.currentHealth / this.maxHealth;
+    const color = ratio > 0.5 ? 0x44cc44 : ratio > 0.25 ? 0xcccc44 : 0xcc4444;
+    this.healthBarFill.clear();
+    this.healthBarFill.fillStyle(color, 1);
+    this.healthBarFill.fillRect(x, y, barWidth * ratio, barHeight);
+    this.healthBarFill.setDepth(depth);
+  }
+
+  /**
+   * Destroy the health bar graphics. Call from subclass destroy methods.
+   */
+  protected destroyHealthBar(): void {
+    if (this.healthBarBg) { this.healthBarBg.destroy(); this.healthBarBg = null; }
+    if (this.healthBarFill) { this.healthBarFill.destroy(); this.healthBarFill = null; }
   }
 
   /**
@@ -321,8 +377,16 @@ export abstract class Character {
 
     this.currentHealth = Math.max(0, this.currentHealth - amount);
 
+    // Show health bar on first damage
+    if (this.showHealthBar && !this.healthBarVisible) {
+      this.healthBarVisible = true;
+      if (this.healthBarBg) this.healthBarBg.setVisible(true);
+      if (this.healthBarFill) this.healthBarFill.setVisible(true);
+    }
+
     if (this.currentHealth <= 0) {
       this.isDead = true;
+      this.onDeath();
     }
 
     // Knockback: impulse away from attacker
@@ -369,6 +433,11 @@ export abstract class Character {
 
   getIsDead(): boolean {
     return this.isDead;
+  }
+
+  /** Called when HP reaches 0. Override in subclasses for death behavior. */
+  protected onDeath(): void {
+    // Base implementation does nothing — subclasses override
   }
 
   // ─── Hit target tracking (prevents multi-hit per swing) ───

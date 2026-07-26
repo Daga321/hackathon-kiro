@@ -45,6 +45,9 @@ const PLAYER_COMBAT_CONFIG: CombatConfig = {
 };
 
 export class Player extends Character {
+  /** Death animation keys */
+  private deathAnims: Record<string, string> | null = null;
+
   constructor(scene: Phaser.Scene, collisionLayer: Phaser.Tilemaps.TilemapLayer | null) {
     const spawnPos = Character.findValidSpawnPosition(
       collisionLayer,
@@ -54,6 +57,49 @@ export class Player extends Character {
     );
 
     super(scene, spawnPos.x, spawnPos.y, PLAYER_ANIM_CONFIG, 120, 5, 19, 33, PLAYER_COMBAT_CONFIG);
+
+    // Create death animations (Row 9: frames 54-59, same for all orientations)
+    this.createDeathAnimations(scene);
+  }
+
+  private createDeathAnimations(scene: Phaser.Scene): void {
+    if (scene.anims.exists('player_death_down')) return;
+
+    scene.anims.create({ key: 'player_death_down', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
+    scene.anims.create({ key: 'player_death_right', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
+    scene.anims.create({ key: 'player_death_up', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
+
+    this.deathAnims = {
+      down: 'player_death_down',
+      right: 'player_death_right',
+      left: 'player_death_right',
+      up: 'player_death_up',
+    };
+  }
+
+  /**
+   * Called when HP reaches 0. Plays death animation and disables the player.
+   */
+  protected override onDeath(): void {
+    // Stop all movement
+    this.sprite.setVelocity(0, 0);
+    this.isInKnockback = false;
+
+    // Disable physics body
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    if (body) body.enable = false;
+
+    // Stop any blink tweens and ensure full visibility
+    this.scene.tweens.killTweensOf(this.sprite);
+    this.sprite.alpha = 1;
+
+    // Play death animation based on direction
+    if (this.deathAnims) {
+      const deathKey = this.deathAnims[this.direction];
+      this.sprite.setFlipX(this.direction === 'left');
+      this.sprite.play(deathKey);
+      // Player stays in last frame — no destroy, ready for future Game Over/Respawn
+    }
   }
 
   /**

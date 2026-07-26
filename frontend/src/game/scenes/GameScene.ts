@@ -24,7 +24,7 @@ export class GameScene extends Phaser.Scene {
   private keyP!: Phaser.Input.Keyboard.Key;
   private keyL!: Phaser.Input.Keyboard.Key;
   private player!: Player;
-  private skeleton!: Enemy;
+  private enemies: Enemy[] = [];
   private touchControls!: TouchControls;
 
   constructor() {
@@ -66,18 +66,22 @@ export class GameScene extends Phaser.Scene {
     if (treeColliders) this.physics.add.collider(playerSprite, treeColliders);
     if (obstacleColliders) this.physics.add.collider(playerSprite, obstacleColliders);
 
-    // Create a test skeleton enemy
-    const skeletonPos = Enemy.findSpawnPosition(collisionLayer, elevatedLayer);
-    this.skeleton = new Enemy(this, skeletonPos.x, skeletonPos.y, ENEMY_TYPES.SKELETON, pathfinder);
+    // Create enemies
+    const enemyConfigs = [ENEMY_TYPES.SKELETON, ENEMY_TYPES.SKELETON_SWORD, ENEMY_TYPES.SLIME];
+    for (const config of enemyConfigs) {
+      const pos = Enemy.findSpawnPosition(collisionLayer, elevatedLayer);
+      const enemy = new Enemy(this, pos.x, pos.y, config, pathfinder);
 
-    // Add same colliders to skeleton
-    const skeletonSprite = this.skeleton.getSprite();
-    if (collisionLayer) this.physics.add.collider(skeletonSprite, collisionLayer);
-    if (elevatedLayer) this.physics.add.collider(skeletonSprite, elevatedLayer);
-    if (fenceLayer) this.physics.add.collider(skeletonSprite, fenceLayer);
-    if (graveColliders) this.physics.add.collider(skeletonSprite, graveColliders);
-    if (treeColliders) this.physics.add.collider(skeletonSprite, treeColliders);
-    if (obstacleColliders) this.physics.add.collider(skeletonSprite, obstacleColliders);
+      const enemySprite = enemy.getSprite();
+      if (collisionLayer) this.physics.add.collider(enemySprite, collisionLayer);
+      if (elevatedLayer) this.physics.add.collider(enemySprite, elevatedLayer);
+      if (fenceLayer) this.physics.add.collider(enemySprite, fenceLayer);
+      if (graveColliders) this.physics.add.collider(enemySprite, graveColliders);
+      if (treeColliders) this.physics.add.collider(enemySprite, treeColliders);
+      if (obstacleColliders) this.physics.add.collider(enemySprite, obstacleColliders);
+
+      this.enemies.push(enemy);
+    }
 
     // Camera follows the player
     const sprite = this.player.getSprite();
@@ -155,35 +159,46 @@ export class GameScene extends Phaser.Scene {
 
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
-    this.skeleton.updateDepth();
-    this.skeleton.update(this.player.getSprite());
 
-    // ─── Combat damage detection ───
-
-    // Player attacks enemy
-    if (this.player.isHitboxActive()) {
-      const hitbox = this.player.getHitbox();
-      if (hitbox && !this.player.hasAlreadyHitTarget(this.skeleton)) {
-        const skSprite = this.skeleton.getSprite();
-        const hb = hitbox;
-        const dist = Phaser.Math.Distance.Between(hb.x, hb.y, skSprite.x, skSprite.y);
-        if (dist < 20) {
-          this.player.registerHit(this.skeleton);
-          this.skeleton.takeDamage(1, this.player);
+    // Update enemies (skip if player is dead — enemies stop targeting)
+    for (const enemy of this.enemies) {
+      if (!enemy.getIsDead()) {
+        enemy.updateDepth();
+        if (!this.player.getIsDead()) {
+          enemy.update(this.player.getSprite());
         }
       }
     }
 
-    // Enemy attacks player
-    if (this.skeleton.isHitboxActive()) {
-      const hitbox = this.skeleton.getHitbox();
-      if (hitbox && !this.skeleton.hasAlreadyHitTarget(this.player)) {
-        const plSprite = this.player.getSprite();
-        const hb = hitbox;
-        const dist = Phaser.Math.Distance.Between(hb.x, hb.y, plSprite.x, plSprite.y);
-        if (dist < 20) {
-          this.skeleton.registerHit(this.player);
-          this.player.takeDamage(1, this.skeleton);
+    // ─── Combat damage detection (skip if player dead) ───
+    if (!this.player.getIsDead()) {
+      for (const enemy of this.enemies) {
+        if (enemy.getIsDead()) continue;
+
+        // Player attacks enemy
+        if (this.player.isHitboxActive()) {
+          const hitbox = this.player.getHitbox();
+          if (hitbox && !this.player.hasAlreadyHitTarget(enemy)) {
+            const enemySprite = enemy.getSprite();
+            const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, enemySprite.x, enemySprite.y);
+            if (dist < 20) {
+              this.player.registerHit(enemy);
+              enemy.takeDamage(1, this.player);
+            }
+          }
+        }
+
+        // Enemy attacks player
+        if (enemy.isHitboxActive()) {
+          const hitbox = enemy.getHitbox();
+          if (hitbox && !enemy.hasAlreadyHitTarget(this.player)) {
+            const plSprite = this.player.getSprite();
+            const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, plSprite.x, plSprite.y);
+            if (dist < 20) {
+              enemy.registerHit(this.player);
+              this.player.takeDamage(1, enemy);
+            }
+          }
         }
       }
     }

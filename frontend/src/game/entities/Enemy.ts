@@ -37,6 +37,16 @@ export interface EnemyConfig {
   detectionRadius?: number;
   /** Attack range in pixels (skeleton attacks when player is within this distance) */
   attackRange?: number;
+  /** Death animation frame ranges per orientation (optional) */
+  deathAnim?: { down: [number, number]; right: [number, number]; up: [number, number] };
+  /** Death animation frame rate */
+  deathAnimFrameRate?: number;
+  /** Override idle frame ranges (for spritesheets with different column counts) */
+  idleFrames?: { down: [number, number]; right: [number, number]; up: [number, number] };
+  /** Override walk frame ranges */
+  walkFrames?: { down: [number, number]; right: [number, number]; up: [number, number] };
+  /** Override attack frame ranges */
+  attackFrames?: { down: [number, number]; right: [number, number]; up: [number, number] };
 }
 
 /**
@@ -44,6 +54,9 @@ export interface EnemyConfig {
  */
 export class Enemy extends Character {
   readonly enemyType: string;
+
+  // ─── Death animation ───
+  private deathAnims: Record<CharacterDirection, string> | null = null;
 
   // ─── Special idle ───
   private specialIdleAnims: Record<CharacterDirection, string> | null = null;
@@ -99,9 +112,9 @@ export class Enemy extends Character {
     const animConfig: CharacterAnimConfig = {
       textureKey: config.textureKey,
       prefix: config.prefix,
-      idle: { down: [0, 5], right: [6, 11], up: [12, 17] },
-      walk: { down: [18, 23], right: [24, 29], up: [30, 35] },
-      attack: { down: [36, 41], right: [42, 47], up: [48, 53] },
+      idle: config.idleFrames ?? { down: [0, 5], right: [6, 11], up: [12, 17] },
+      walk: config.walkFrames ?? { down: [18, 23], right: [24, 29], up: [30, 35] },
+      attack: config.attackFrames ?? { down: [36, 41], right: [42, 47], up: [48, 53] },
       idleFrameRate: config.idleFrameRate ?? 5,
       walkFrameRate: config.walkFrameRate ?? 8,
       attackFrameRate: config.attackFrameRate ?? 10,
@@ -125,6 +138,7 @@ export class Enemy extends Character {
         maxHealth: 3,
         knockbackForce: 70,
         invulnerabilityDuration: 300,
+        showHealthBar: true,
       }
     );
 
@@ -140,6 +154,10 @@ export class Enemy extends Character {
     if (config.specialIdle) {
       this.createSpecialIdleAnimations(scene, config);
       this.scheduleNextSpecialIdle();
+    }
+
+    if (config.deathAnim) {
+      this.createDeathAnimations(scene, config);
     }
   }
 
@@ -527,6 +545,87 @@ export class Enemy extends Character {
     this.scene.time.delayedCall(500, checkComplete);
   }
 
+  // ─── Death Animation System ─────────────────────────────────────────
+
+  private createDeathAnimations(scene: Phaser.Scene, config: EnemyConfig): void {
+    if (!config.deathAnim) return;
+
+    const p = config.prefix;
+    const key = config.textureKey;
+    const rate = config.deathAnimFrameRate ?? 8;
+
+    if (!scene.anims.exists(`${p}_death_down`)) {
+      scene.anims.create({
+        key: `${p}_death_down`,
+        frames: scene.anims.generateFrameNumbers(key, { start: config.deathAnim.down[0], end: config.deathAnim.down[1] }),
+        frameRate: rate,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+      scene.anims.create({
+        key: `${p}_death_right`,
+        frames: scene.anims.generateFrameNumbers(key, { start: config.deathAnim.right[0], end: config.deathAnim.right[1] }),
+        frameRate: rate,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+      scene.anims.create({
+        key: `${p}_death_up`,
+        frames: scene.anims.generateFrameNumbers(key, { start: config.deathAnim.up[0], end: config.deathAnim.up[1] }),
+        frameRate: rate,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+    }
+
+    this.deathAnims = {
+      down: `${p}_death_down`,
+      right: `${p}_death_right`,
+      left: `${p}_death_right`,
+      up: `${p}_death_up`,
+    };
+  }
+
+  /**
+   * Play death animation and destroy the enemy when complete.
+   */
+  die(): void {
+    if (!this.isDead) return;
+
+    // Stop all movement and AI
+    this.sprite.setVelocity(0, 0);
+    this.isInKnockback = false;
+
+    // Disable physics body so it doesn't block the player
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    if (body) body.enable = false;
+
+    // Play death animation based on current direction
+    if (this.deathAnims) {
+      const deathKey = this.deathAnims[this.direction];
+      this.sprite.setFlipX(this.direction === 'left');
+      this.sprite.play(deathKey);
+
+      this.sprite.once('animationcomplete', () => {
+        this.destroy();
+      });
+    } else {
+      // No death animation — destroy immediately
+      this.destroy();
+    }
+  }
+
+  private destroy(): void {
+    this.destroyHealthBar();
+    this.sprite.destroy();
+  }
+
+  // ─── onDeath override ─────────────────────────────────────────────────
+
+  protected override onDeath(): void {
+    this.die();
+  }
+
   // ─── Spawn Position ────────────────────────────────────────────────────
 
   static findSpawnPosition(
@@ -582,5 +681,61 @@ export const ENEMY_TYPES = {
     specialIdleFrameRate: 6,
     specialIdleMinInterval: 4,
     specialIdleMaxInterval: 10,
+    deathAnim: {
+      down: [72, 77],
+      right: [72, 77],
+      up: [72, 77],
+    },
+    deathAnimFrameRate: 8,
+  } satisfies EnemyConfig,
+
+  SKELETON_SWORD: {
+    textureKey: 'skeleton',
+    prefix: 'skeleton_sword',
+    speed: 100,
+    detectionRadius: 160,
+    attackRange: 24,
+    specialIdle: {
+      down: [54, 56],
+      right: [60, 62],
+      up: [66, 68],
+    },
+    specialIdleFrameRate: 6,
+    specialIdleMinInterval: 5,
+    specialIdleMaxInterval: 12,
+    deathAnim: {
+      down: [72, 77],
+      right: [72, 77],
+      up: [72, 77],
+    },
+    deathAnimFrameRate: 8,
+  } satisfies EnemyConfig,
+
+  SLIME: {
+    textureKey: 'slime',
+    prefix: 'slime',
+    speed: 70,
+    detectionRadius: 120,
+    attackRange: 18,
+    bodyRadius: 4,
+    bodyOffsetX: 12,
+    bodyOffsetY: 20,
+    idleFrames: { down: [0, 3], right: [7, 10], up: [14, 17] },
+    walkFrames: { down: [21, 26], right: [28, 33], up: [35, 40] },
+    attackFrames: { down: [42, 48], right: [49, 55], up: [56, 62] },
+    specialIdle: {
+      down: [63, 65],
+      right: [70, 72],
+      up: [77, 79],
+    },
+    specialIdleFrameRate: 5,
+    specialIdleMinInterval: 5,
+    specialIdleMaxInterval: 12,
+    deathAnim: {
+      down: [84, 88],
+      right: [84, 88],
+      up: [84, 88],
+    },
+    deathAnimFrameRate: 8,
   } satisfies EnemyConfig,
 } as const;
