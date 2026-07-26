@@ -168,14 +168,25 @@ export class Player {
       // to help player slide around tile corners
       this.applyCornerSliding(vx, vy);
 
-      // Determine facing direction based on dominant axis
+      // Determine facing direction
+      // On keyboard (PC): prioritize horizontal facing when diagonal
+      // On touch: use dominant axis as-is
       let newDir: PlayerDirection;
-      if (Math.abs(vx) > Math.abs(vy)) {
-        // Horizontal dominant
-        newDir = vx < 0 ? 'left' : 'right';
+      const isKeyboard = !touchMove || (touchMove.x === 0 && touchMove.y === 0);
+      if (isKeyboard) {
+        // Keyboard: prioritize horizontal (side-facing) when moving diagonally
+        if (Math.abs(vx) >= Math.abs(vy) && vx !== 0) {
+          newDir = vx < 0 ? 'left' : 'right';
+        } else {
+          newDir = vy < 0 ? 'up' : 'down';
+        }
       } else {
-        // Vertical dominant (or equal)
-        newDir = vy < 0 ? 'up' : 'down';
+        // Touch: use strict dominant axis
+        if (Math.abs(vx) > Math.abs(vy)) {
+          newDir = vx < 0 ? 'left' : 'right';
+        } else {
+          newDir = vy < 0 ? 'up' : 'down';
+        }
       }
 
       this.direction = newDir;
