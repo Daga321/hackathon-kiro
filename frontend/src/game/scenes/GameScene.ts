@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { MapGenerator } from '../map/MapGenerator';
 import { MAP_CONFIG } from '../config/map-config';
 import { Player } from '../entities/Player';
+import { Enemy, ENEMY_TYPES } from '../entities/Enemy';
 import { TouchControls } from '../ui/TouchControls';
 
 /**
@@ -22,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   private keyR!: Phaser.Input.Keyboard.Key;
   private keyP!: Phaser.Input.Keyboard.Key;
   private player!: Player;
+  private skeleton!: Enemy;
   private touchControls!: TouchControls;
 
   constructor() {
@@ -62,6 +64,19 @@ export class GameScene extends Phaser.Scene {
     if (graveColliders) this.physics.add.collider(playerSprite, graveColliders);
     if (treeColliders) this.physics.add.collider(playerSprite, treeColliders);
     if (obstacleColliders) this.physics.add.collider(playerSprite, obstacleColliders);
+
+    // Create a test skeleton enemy
+    const skeletonPos = Enemy.findSpawnPosition(collisionLayer);
+    this.skeleton = new Enemy(this, skeletonPos.x, skeletonPos.y, ENEMY_TYPES.SKELETON);
+
+    // Add same colliders to skeleton
+    const skeletonSprite = this.skeleton.getSprite();
+    if (collisionLayer) this.physics.add.collider(skeletonSprite, collisionLayer);
+    if (elevatedLayer) this.physics.add.collider(skeletonSprite, elevatedLayer);
+    if (fenceLayer) this.physics.add.collider(skeletonSprite, fenceLayer);
+    if (graveColliders) this.physics.add.collider(skeletonSprite, graveColliders);
+    if (treeColliders) this.physics.add.collider(skeletonSprite, treeColliders);
+    if (obstacleColliders) this.physics.add.collider(skeletonSprite, obstacleColliders);
 
     // Camera follows the player
     const sprite = this.player.getSprite();
@@ -136,6 +151,7 @@ export class GameScene extends Phaser.Scene {
 
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
+    this.skeleton.updateDepth();
 
     const cam = this.cameras.main;
 

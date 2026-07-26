@@ -72,6 +72,13 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 48,
       frameHeight: 48,
     });
+
+    // ─── Skeleton enemy (swordless) ─────────────────────────────────────
+    // skeleton_swordless.png: 288×624, 6 cols × 13 rows, 48×48 frames
+    this.load.spritesheet('skeleton_swordless', 'characters/skeleton_swordless.png', {
+      frameWidth: 48,
+      frameHeight: 48,
+    });
   }
 
   create(): void {

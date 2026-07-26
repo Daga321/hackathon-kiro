@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
-import { MAP_CONFIG, LAYER_DEPTH } from '../config/map-config';
+import { MAP_CONFIG } from '../config/map-config';
+import { Character, CharacterAnimConfig } from './Character';
 
-/** Player facing direction */
-export type PlayerDirection = 'up' | 'down' | 'left' | 'right';
+export type { CharacterDirection as PlayerDirection } from './Character';
 
 /**
- * Player entity — manages sprite, spawn, orientation, animations, movement, and attack.
+ * Player entity — extends Character with keyboard/touch input handling.
  *
  * Spritesheet: player.png (288×480, 6 cols × 10 rows, 48×48 frames)
  *   Row 0 (frames 0-5):   Idle Down
@@ -19,79 +19,29 @@ export type PlayerDirection = 'up' | 'down' | 'left' | 'right';
  *   Row 8 (frames 48-53): Attack Up
  *   Row 9 (frames 54-59): Death — NOT used yet
  */
-export class Player {
-  private sprite: Phaser.Physics.Arcade.Sprite;
-  private direction: PlayerDirection = 'down';
-  private isMoving: boolean = false;
-  private isAttacking: boolean = false;
-  private currentAnimKey: string = '';
 
-  /** Movement speed in pixels per second */
-  private static readonly SPEED = 120;
+/** Player animation configuration */
+const PLAYER_ANIM_CONFIG: CharacterAnimConfig = {
+  textureKey: 'player',
+  prefix: 'player',
+  idle: { down: [0, 5], right: [6, 11], up: [12, 17] },
+  walk: { down: [18, 23], right: [24, 29], up: [30, 35] },
+  attack: { down: [36, 39], right: [42, 45], up: [48, 51] },
+  idleFrameRate: 5,
+  walkFrameRate: 8,
+  attackFrameRate: 12,
+};
 
-  /** Animation frame rates */
-  private static readonly IDLE_FRAME_RATE = 5;
-  private static readonly WALK_FRAME_RATE = 8;
-  private static readonly ATTACK_FRAME_RATE = 12;
-
-  /** Idle animation keys */
-  private static readonly IDLE_ANIMS: Record<PlayerDirection, string> = {
-    down: 'player_idle_down',
-    right: 'player_idle_right',
-    left: 'player_idle_right',
-    up: 'player_idle_up',
-  };
-
-  /** Walk animation keys */
-  private static readonly WALK_ANIMS: Record<PlayerDirection, string> = {
-    down: 'player_walk_down',
-    right: 'player_walk_right',
-    left: 'player_walk_right',
-    up: 'player_walk_up',
-  };
-
-  /** Attack animation keys */
-  private static readonly ATTACK_ANIMS: Record<PlayerDirection, string> = {
-    down: 'player_attack_down',
-    right: 'player_attack_right',
-    left: 'player_attack_right',
-    up: 'player_attack_up',
-  };
-
+export class Player extends Character {
   constructor(scene: Phaser.Scene, collisionLayer: Phaser.Tilemaps.TilemapLayer | null) {
-    this.createAnimations(scene);
+    const spawnPos = Character.findValidSpawnPosition(
+      collisionLayer,
+      MAP_CONFIG.WIDTH / 2,
+      MAP_CONFIG.HEIGHT / 2,
+      MAP_CONFIG.SPAWN_SAFE_RADIUS
+    );
 
-    const spawnPos = this.findValidSpawnPosition(scene, collisionLayer);
-
-    this.sprite = scene.physics.add.sprite(spawnPos.x, spawnPos.y, 'player', 0);
-    this.sprite.setOrigin(0.5, 0.75);
-    // Depth will be updated dynamically based on Y position for proper depth sorting with trees
-    this.sprite.setDepth(LAYER_DEPTH.OBJECTS + 1);
-    // Configure physics body — very small circular hitbox at feet for smooth navigation
-    this.sprite.setCollideWorldBounds(true);
-    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-    body.setCircle(5, 19, 33); // radius=5px, centered at feet — allows tight navigation between tiles
-
-    // Start idle
-    this.playAnimation(Player.IDLE_ANIMS.down, 'down');
-  }
-
-  getSprite(): Phaser.Physics.Arcade.Sprite {
-    return this.sprite;
-  }
-
-  getDirection(): PlayerDirection {
-    return this.direction;
-  }
-
-  /**
-   * Update the player's depth based on Y position for proper depth sorting with trees.
-   * Called each frame from the scene's update loop.
-   */
-  updateDepth(): void {
-    // Use the sprite's Y (feet position due to origin 0.75) as depth
-    // Add OBJECTS base depth so player always renders above ground/wall layers
-    this.sprite.setDepth(LAYER_DEPTH.OBJECTS + this.sprite.y / 10000);
+    super(scene, spawnPos.x, spawnPos.y, PLAYER_ANIM_CONFIG, 120, 5, 19, 33);
   }
 
   /**
@@ -108,27 +58,12 @@ export class Player {
     // ─── Attack (keyboard or touch) ───
     const keyboardAttack = Phaser.Input.Keyboard.JustDown(attackKey);
     if ((keyboardAttack || touchAttack) && !this.isAttacking) {
-      this.isAttacking = true;
-      this.sprite.setVelocity(0, 0);
-      this.sprite.setFlipX(this.direction === 'left');
-      const attackAnim = Player.ATTACK_ANIMS[this.direction];
-      const idleAnim = Player.IDLE_ANIMS[this.direction];
-      this.currentAnimKey = attackAnim;
-      this.sprite.play(attackAnim);
-      this.sprite.chain(idleAnim);
+      this.triggerAttack();
       return;
     }
 
-    // ─── While attacking, block movement/animation changes ───
-    if (this.isAttacking) {
-      this.sprite.setVelocity(0, 0);
-      if (this.sprite.anims.currentAnim &&
-          !this.sprite.anims.currentAnim.key.startsWith('player_attack_')) {
-        this.isAttacking = false;
-        this.currentAnimKey = Player.IDLE_ANIMS[this.direction];
-      }
-      return;
-    }
+    // ─── While attacking, block movement ───
+    if (this.updateAttackState()) return;
 
     // ─── Movement (keyboard + touch combined) ───
     let vx = 0;
@@ -151,7 +86,8 @@ export class Player {
     }
 
     // Normalize diagonal (only for keyboard; touch is already normalized by joystick)
-    if (!touchMove || (touchMove.x === 0 && touchMove.y === 0)) {
+    const isKeyboard = !touchMove || (touchMove.x === 0 && touchMove.y === 0);
+    if (isKeyboard) {
       if (vx !== 0 && vy !== 0) {
         const factor = Math.SQRT1_2;
         vx *= factor;
@@ -159,146 +95,7 @@ export class Player {
       }
     }
 
-    const moving = vx !== 0 || vy !== 0;
-
-    if (moving) {
-      this.sprite.setVelocity(vx * Player.SPEED, vy * Player.SPEED);
-
-      // Corner sliding: when blocked on one axis, nudge on perpendicular axis
-      // to help player slide around tile corners
-      this.applyCornerSliding(vx, vy);
-
-      // Determine facing direction
-      // On keyboard (PC): prioritize horizontal facing when diagonal
-      // On touch: use dominant axis as-is
-      let newDir: PlayerDirection;
-      const isKeyboard = !touchMove || (touchMove.x === 0 && touchMove.y === 0);
-      if (isKeyboard) {
-        // Keyboard: prioritize horizontal (side-facing) when moving diagonally
-        if (Math.abs(vx) >= Math.abs(vy) && vx !== 0) {
-          newDir = vx < 0 ? 'left' : 'right';
-        } else {
-          newDir = vy < 0 ? 'up' : 'down';
-        }
-      } else {
-        // Touch: use strict dominant axis
-        if (Math.abs(vx) > Math.abs(vy)) {
-          newDir = vx < 0 ? 'left' : 'right';
-        } else {
-          newDir = vy < 0 ? 'up' : 'down';
-        }
-      }
-
-      this.direction = newDir;
-      this.sprite.setFlipX(newDir === 'left');
-      this.playAnimation(Player.WALK_ANIMS[newDir], newDir);
-      this.isMoving = true;
-    } else {
-      this.sprite.setVelocity(0, 0);
-
-      if (this.isMoving) {
-        this.isMoving = false;
-        this.sprite.setFlipX(this.direction === 'left');
-        this.playAnimation(Player.IDLE_ANIMS[this.direction], this.direction);
-      }
-    }
-  }
-
-  /**
-   * Corner sliding: helps the player slide around tile corners smoothly.
-   * When moving cardinally and about to hit a corner, nudges perpendicular.
-   */
-  private applyCornerSliding(vx: number, vy: number): void {
-    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-    if (!body) return;
-
-    // Only for cardinal movement
-    const isCardinalX = Math.abs(vx) > 0.5 && Math.abs(vy) < 0.3;
-    const isCardinalY = Math.abs(vy) > 0.5 && Math.abs(vx) < 0.3;
-    if (!isCardinalX && !isCardinalY) return;
-
-    const blocked = body.blocked;
-    const touching = body.touching;
-    const isBlocked = blocked.left || blocked.right || blocked.up || blocked.down ||
-                      touching.left || touching.right || touching.up || touching.down;
-
-    if (!isBlocked) return;
-
-    const slideForce = Player.SPEED * 0.6;
-    const tileSize = 16;
-    const threshold = 11;
-
-    if (isCardinalX && (blocked.left || blocked.right || touching.left || touching.right)) {
-      const offsetY = ((body.center.y % tileSize) + tileSize) % tileSize;
-      if (offsetY > 2 && offsetY <= threshold) {
-        body.velocity.y = -slideForce;
-      } else if (offsetY >= tileSize - threshold && offsetY < tileSize - 2) {
-        body.velocity.y = slideForce;
-      }
-    }
-
-    if (isCardinalY && (blocked.up || blocked.down || touching.up || touching.down)) {
-      const offsetX = ((body.center.x % tileSize) + tileSize) % tileSize;
-      if (offsetX > 2 && offsetX <= threshold) {
-        body.velocity.x = -slideForce;
-      } else if (offsetX >= tileSize - threshold && offsetX < tileSize - 2) {
-        body.velocity.x = slideForce;
-      }
-    }
-  }
-
-  private playAnimation(animKey: string, _dir: PlayerDirection): void {
-    if (this.currentAnimKey === animKey) return;
-    this.currentAnimKey = animKey;
-    this.sprite.play(animKey);
-  }
-
-  private createAnimations(scene: Phaser.Scene): void {
-    if (scene.anims.exists('player_idle_down')) return;
-
-    // Idle (rows 0-2)
-    scene.anims.create({ key: 'player_idle_down', frames: scene.anims.generateFrameNumbers('player', { start: 0, end: 5 }), frameRate: Player.IDLE_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_idle_right', frames: scene.anims.generateFrameNumbers('player', { start: 6, end: 11 }), frameRate: Player.IDLE_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_idle_up', frames: scene.anims.generateFrameNumbers('player', { start: 12, end: 17 }), frameRate: Player.IDLE_FRAME_RATE, repeat: -1 });
-
-    // Walk (rows 3-5)
-    scene.anims.create({ key: 'player_walk_down', frames: scene.anims.generateFrameNumbers('player', { start: 18, end: 23 }), frameRate: Player.WALK_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_walk_right', frames: scene.anims.generateFrameNumbers('player', { start: 24, end: 29 }), frameRate: Player.WALK_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_walk_up', frames: scene.anims.generateFrameNumbers('player', { start: 30, end: 35 }), frameRate: Player.WALK_FRAME_RATE, repeat: -1 });
-
-    // Attack (rows 6-8) — single play, no loop. Use only 4 frames (frames 5-6 are empty/transparent)
-    scene.anims.create({ key: 'player_attack_down', frames: scene.anims.generateFrameNumbers('player', { start: 36, end: 39 }), frameRate: Player.ATTACK_FRAME_RATE, repeat: 0, hideOnComplete: false });
-    scene.anims.create({ key: 'player_attack_right', frames: scene.anims.generateFrameNumbers('player', { start: 42, end: 45 }), frameRate: Player.ATTACK_FRAME_RATE, repeat: 0, hideOnComplete: false });
-    scene.anims.create({ key: 'player_attack_up', frames: scene.anims.generateFrameNumbers('player', { start: 48, end: 51 }), frameRate: Player.ATTACK_FRAME_RATE, repeat: 0, hideOnComplete: false });
-  }
-
-  private findValidSpawnPosition(
-    _scene: Phaser.Scene,
-    collisionLayer: Phaser.Tilemaps.TilemapLayer | null
-  ): { x: number; y: number } {
-    const { WIDTH, HEIGHT, TILE_SIZE, BORDER_THICKNESS, SPAWN_SAFE_RADIUS } = MAP_CONFIG;
-    const centerX = WIDTH / 2;
-    const centerY = HEIGHT / 2;
-
-    const minX = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
-    const maxX = WIDTH - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE;
-    const minY = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
-    const maxY = HEIGHT - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE;
-
-    for (let attempt = 0; attempt < 100; attempt++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * SPAWN_SAFE_RADIUS;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
-
-      if (x < minX || x > maxX || y < minY || y > maxY) continue;
-      if (collisionLayer) {
-        const tile = collisionLayer.getTileAtWorldXY(x, y);
-        if (tile && tile.index !== -1) continue;
-      }
-      return { x, y };
-    }
-
-    return { x: centerX, y: centerY };
+    // Apply movement with keyboard prioritizing horizontal facing
+    this.applyMovement(vx, vy, isKeyboard);
   }
 }
