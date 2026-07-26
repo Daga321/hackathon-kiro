@@ -4,7 +4,6 @@ import {
   WALL_TILES,
   PLAINS_TILES,
   FENCE_TILES,
-  GRAVESTONE_FRAMES,
   OBSTACLE_FRAMES,
 } from '../config/tile-indices';
 
@@ -20,6 +19,10 @@ export interface MapGeneratorResult {
   objectsLayer: Phaser.Tilemaps.TilemapLayer | null;
   /** Static physics group for grave colliders (circular bodies) */
   graveColliders: Phaser.Physics.Arcade.StaticGroup | null;
+  /** Static physics group for tree trunk colliders (circular bodies) */
+  treeColliders: Phaser.Physics.Arcade.StaticGroup | null;
+  /** Sprites for tree canopies rendered above the player for depth sorting */
+  treeCanopySprites: Phaser.GameObjects.Sprite[];
 }
 
 /**
@@ -59,6 +62,12 @@ export class MapGenerator {
     // Create circular physics bodies for graves (smooth sliding)
     const graveColliders = this.createGraveColliders(objectsLayer);
 
+    // Create circular physics bodies for tree trunks (smooth sliding around trunks)
+    const treeColliders = this.createTreeColliders(objectsLayer);
+
+    // Create canopy sprites above the player for depth sorting (walk-behind effect)
+    const treeCanopySprites = this.createTreeCanopySprites(objectsLayer);
+
     // Set depths
     groundLayer?.setDepth(LAYER_DEPTH.GROUND);
     sandLayer?.setDepth(LAYER_DEPTH.GROUND + 0.5);
@@ -66,7 +75,7 @@ export class MapGenerator {
     elevatedLayer?.setDepth(LAYER_DEPTH.ELEVATED);
     collisionLayer?.setDepth(LAYER_DEPTH.WALLS);
 
-    return { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders };
+    return { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders, treeColliders, treeCanopySprites };
   }
 
 
@@ -401,6 +410,7 @@ export class MapGenerator {
   /**
    * Add irregular indentations to the zone mask for a natural look.
    */
+  // @ts-ignore — unused method kept for potential future use
   private addIndentations(
     mask: boolean[][],
     width: number,
@@ -1093,6 +1103,7 @@ export class MapGenerator {
     return group;
   }
 
+  // @ts-ignore — unused method kept for potential future use
   private addGraveBody(group: Phaser.Physics.Arcade.StaticGroup, tileX: number, tileY: number, tileSize: number): void {
     const worldX = tileX * tileSize + tileSize / 2;
     const worldY = tileY * tileSize + tileSize / 2;
@@ -1103,6 +1114,114 @@ export class MapGenerator {
     const body = zone.body as Phaser.Physics.Arcade.StaticBody;
     body.setCircle(6, tileSize / 2 - 6, tileSize / 2 - 6);
     body.updateFromGameObject();
+  }
+
+
+  /**
+   * Create circular static bodies at each tree TRUNK position (bottom 2 rows of each tree).
+   * Trees are 3×4 composites. Rows 0-1 are canopy (no collision), rows 2-3 are trunk (collision).
+   * 
+   * Tree types and their trunk frame indices:
+   * - deciduous_A: rows 7-8, cols 0-2 → frames 112,113,114,128,129,130
+   * - pine_B: rows 7-8, cols 3-5 → frames 115,116,117,131,132,133
+   * - deciduous_D: rows 11-12, cols 0-2 → frames 176,177,178,192,193,194
+   * - pine_E: rows 11-12, cols 3-5 → frames 179,180,181,195,196,197
+   */
+  private createTreeColliders(objectsLayer: Phaser.Tilemaps.TilemapLayer | null): Phaser.Physics.Arcade.StaticGroup {
+    const { TILE_SIZE } = MAP_CONFIG;
+    const group = this.scene.physics.add.staticGroup();
+
+    if (!objectsLayer) return group;
+
+    // Tree trunk frames (bottom 2 rows of each tree type)
+    // Format: row * 16 + col
+    const TRUNK_FRAMES = new Set<number>([
+      // deciduous_A: rows 7-8, cols 0-2
+      7 * 16 + 0, 7 * 16 + 1, 7 * 16 + 2,   // 112, 113, 114
+      8 * 16 + 0, 8 * 16 + 1, 8 * 16 + 2,   // 128, 129, 130
+      // pine_B: rows 7-8, cols 3-5
+      7 * 16 + 3, 7 * 16 + 4, 7 * 16 + 5,   // 115, 116, 117
+      8 * 16 + 3, 8 * 16 + 4, 8 * 16 + 5,   // 131, 132, 133
+      // deciduous_D: rows 11-12, cols 0-2
+      11 * 16 + 0, 11 * 16 + 1, 11 * 16 + 2, // 176, 177, 178
+      12 * 16 + 0, 12 * 16 + 1, 12 * 16 + 2, // 192, 193, 194
+      // pine_E: rows 11-12, cols 3-5
+      11 * 16 + 3, 11 * 16 + 4, 11 * 16 + 5, // 179, 180, 181
+      12 * 16 + 3, 12 * 16 + 4, 12 * 16 + 5, // 195, 196, 197
+    ]);
+
+    objectsLayer.forEachTile((tile) => {
+      if (TRUNK_FRAMES.has(tile.index)) {
+        const worldX = tile.pixelX + TILE_SIZE / 2;
+        const worldY = tile.pixelY + TILE_SIZE / 2;
+
+        const zone = this.scene.add.zone(worldX, worldY, TILE_SIZE, TILE_SIZE);
+        group.add(zone);
+
+        const body = zone.body as Phaser.Physics.Arcade.StaticBody;
+        // Circular body with radius 6px for smooth sliding around trunks
+        body.setCircle(6, TILE_SIZE / 2 - 6, TILE_SIZE / 2 - 6);
+        body.updateFromGameObject();
+      }
+    });
+
+    return group;
+  }
+
+  /**
+   * Create standalone sprites for tree canopy tiles (top 2 rows of each tree).
+   * These sprites render at a high depth so the player can walk "behind" the canopy.
+   * The canopy tiles are removed from the objects tilemap layer to avoid double-rendering.
+   * 
+   * Tree canopy frame indices:
+   * - deciduous_A: rows 5-6, cols 0-2 → frames 80,81,82,96,97,98
+   * - pine_B: rows 5-6, cols 3-5 → frames 83,84,85,99,100,101
+   * - deciduous_D: rows 9-10, cols 0-2 → frames 144,145,146,160,161,162
+   * - pine_E: rows 9-10, cols 3-5 → frames 147,148,149,163,164,165
+   */
+  private createTreeCanopySprites(objectsLayer: Phaser.Tilemaps.TilemapLayer | null): Phaser.GameObjects.Sprite[] {
+    const { TILE_SIZE } = MAP_CONFIG;
+    const sprites: Phaser.GameObjects.Sprite[] = [];
+
+    if (!objectsLayer) return sprites;
+
+    // Tree canopy frames (top 2 rows of each tree type)
+    const CANOPY_FRAMES = new Set<number>([
+      // deciduous_A: rows 5-6, cols 0-2
+      5 * 16 + 0, 5 * 16 + 1, 5 * 16 + 2,   // 80, 81, 82
+      6 * 16 + 0, 6 * 16 + 1, 6 * 16 + 2,   // 96, 97, 98
+      // pine_B: rows 5-6, cols 3-5
+      5 * 16 + 3, 5 * 16 + 4, 5 * 16 + 5,   // 83, 84, 85
+      6 * 16 + 3, 6 * 16 + 4, 6 * 16 + 5,   // 99, 100, 101
+      // deciduous_D: rows 9-10, cols 0-2
+      9 * 16 + 0, 9 * 16 + 1, 9 * 16 + 2,   // 144, 145, 146
+      10 * 16 + 0, 10 * 16 + 1, 10 * 16 + 2, // 160, 161, 162
+      // pine_E: rows 9-10, cols 3-5
+      9 * 16 + 3, 9 * 16 + 4, 9 * 16 + 5,   // 147, 148, 149
+      10 * 16 + 3, 10 * 16 + 4, 10 * 16 + 5, // 163, 164, 165
+    ]);
+
+    objectsLayer.forEachTile((tile) => {
+      if (CANOPY_FRAMES.has(tile.index)) {
+        const worldX = tile.pixelX + TILE_SIZE / 2;
+        const worldY = tile.pixelY + TILE_SIZE / 2;
+
+        // Create a sprite for this canopy tile
+        const sprite = this.scene.add.sprite(worldX, worldY, TILESET_KEYS.OBJECTS, tile.index);
+        sprite.setOrigin(0.5, 0.5);
+        // Depth based on the trunk's Y position (canopy is 2 tiles above trunk bottom)
+        // The trunk bottom is 2 tiles below the canopy, so use canopy Y + 3 tiles worth
+        // This ensures depth sorting: player south of trunk → player renders on top
+        const trunkBottomY = worldY + TILE_SIZE * 3; // approximate trunk base Y
+        sprite.setDepth(LAYER_DEPTH.OBJECTS + trunkBottomY / 10000);
+        sprites.push(sprite);
+
+        // Remove from tilemap layer to avoid double-rendering
+        tile.index = -1;
+      }
+    });
+
+    return sprites;
   }
 
 
@@ -1611,6 +1730,7 @@ export class MapGenerator {
   }
 
   /** Place random items in an area with optional priority frame. */
+  // @ts-ignore — unused method kept for potential future use
   private placeRandomInArea(
     data: number[][], x1: number, y1: number, x2: number, y2: number,
     count: number, frames: readonly number[] | number[], priorityFrame?: number

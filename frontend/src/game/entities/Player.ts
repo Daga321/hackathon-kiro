@@ -65,6 +65,7 @@ export class Player {
 
     this.sprite = scene.physics.add.sprite(spawnPos.x, spawnPos.y, 'player', 0);
     this.sprite.setOrigin(0.5, 0.75);
+    // Depth will be updated dynamically based on Y position for proper depth sorting with trees
     this.sprite.setDepth(LAYER_DEPTH.OBJECTS + 1);
     // Configure physics body — very small circular hitbox at feet for smooth navigation
     this.sprite.setCollideWorldBounds(true);
@@ -81,6 +82,16 @@ export class Player {
 
   getDirection(): PlayerDirection {
     return this.direction;
+  }
+
+  /**
+   * Update the player's depth based on Y position for proper depth sorting with trees.
+   * Called each frame from the scene's update loop.
+   */
+  updateDepth(): void {
+    // Use the sprite's Y (feet position due to origin 0.75) as depth
+    // Add OBJECTS base depth so player always renders above ground/wall layers
+    this.sprite.setDepth(LAYER_DEPTH.OBJECTS + this.sprite.y / 10000);
   }
 
   /**
@@ -251,7 +262,7 @@ export class Player {
   }
 
   private findValidSpawnPosition(
-    scene: Phaser.Scene,
+    _scene: Phaser.Scene,
     collisionLayer: Phaser.Tilemaps.TilemapLayer | null
   ): { x: number; y: number } {
     const { WIDTH, HEIGHT, TILE_SIZE, BORDER_THICKNESS, SPAWN_SAFE_RADIUS } = MAP_CONFIG;

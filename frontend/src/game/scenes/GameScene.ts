@@ -31,7 +31,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     // Generate the tilemap layers
     const mapGen = new MapGenerator(this);
-    const { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders } = mapGen.generate();
+    const { collisionLayer, elevatedLayer, fenceLayer, graveColliders, treeColliders } = mapGen.generate();
 
     // Set up physics world bounds to match the full map
     this.physics.world.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
@@ -49,7 +49,7 @@ export class GameScene extends Phaser.Scene {
     if (fenceLayer) {
       fenceLayer.setCollisionByExclusion([-1]);
     }
-    // Objects layer: NO tilemap collision — graves use circular physics bodies instead
+    // Objects layer: NO tilemap collision — graves and trees use circular physics bodies instead
 
     // Create player at a random valid position
     this.player = new Player(this, collisionLayer);
@@ -60,6 +60,7 @@ export class GameScene extends Phaser.Scene {
     if (elevatedLayer) this.physics.add.collider(playerSprite, elevatedLayer);
     if (fenceLayer) this.physics.add.collider(playerSprite, fenceLayer);
     if (graveColliders) this.physics.add.collider(playerSprite, graveColliders);
+    if (treeColliders) this.physics.add.collider(playerSprite, treeColliders);
 
     // Camera follows the player
     const sprite = this.player.getSprite();
@@ -131,6 +132,9 @@ export class GameScene extends Phaser.Scene {
 
     // Player movement + attack (keyboard + touch)
     this.player.handleInput(this.cursors, this.wasd, this.keyP, touchMove, touchAttack);
+
+    // Update player depth for proper Y-sorting with tree canopies
+    this.player.updateDepth();
 
     const cam = this.cameras.main;
 
