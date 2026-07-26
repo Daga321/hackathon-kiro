@@ -58,7 +58,7 @@ export class MapGenerator {
     const sandLayer = this.createSandLayer(); // After elevated & path so positions are populated
     const collisionLayer = this.createWallLayer();
     const fenceLayer = this.createFenceLayer();
-    this.createDecorLayer();
+    const decorLayer = this.createDecorLayer();
     const objectsLayer = this.createObjectsLayer();
 
     // Create circular physics bodies for graves (smooth sliding)
@@ -67,11 +67,14 @@ export class MapGenerator {
     // Create circular physics bodies for tree trunks (smooth sliding around trunks)
     const treeColliders = this.createTreeColliders(objectsLayer);
 
-    // Create circular physics bodies for obstacles (rocks, stumps, bushes)
-    const obstacleColliders = this.createObstacleColliders(objectsLayer);
+    // Create circular physics bodies for obstacles (rocks, stumps, bushes, tables, logs)
+    const obstacleColliders = this.createObstacleColliders(objectsLayer, decorLayer);
 
     // Create canopy sprites above the player for depth sorting (walk-behind effect)
     const treeCanopySprites = this.createTreeCanopySprites(objectsLayer);
+
+    // Extract bush top tiles as sprites that render behind the player (never overlap)
+    this.createBushTopSprites(objectsLayer);
 
     // Set depths
     groundLayer?.setDepth(LAYER_DEPTH.GROUND);
@@ -1204,6 +1207,8 @@ export class MapGenerator {
       // pine_E: rows 9-10, cols 3-5
       9 * 16 + 3, 9 * 16 + 4, 9 * 16 + 5,   // 147, 148, 149
       10 * 16 + 3, 10 * 16 + 4, 10 * 16 + 5, // 163, 164, 165
+      // Bush canopy: row 6, cols 8-9 (depth-sorted walk-behind)
+      6 * 16 + 8, 6 * 16 + 9,   // 104, 105
     ]);
 
     objectsLayer.forEachTile((tile) => {
@@ -1229,12 +1234,43 @@ export class MapGenerator {
     return sprites;
   }
 
+  /**
+   * Extract bush/plant top tiles (frames 88, 89) as sprites that render BEHIND the player.
+   * This prevents them from visually overlapping the character.
+   * They are removed from the tilemap to avoid double-rendering.
+   */
+  private createBushTopSprites(objectsLayer: Phaser.Tilemaps.TilemapLayer | null): void {
+    const { TILE_SIZE } = MAP_CONFIG;
+    if (!objectsLayer) return;
+
+    // Frames 88, 89 = top row of bush composite (cols 8-9, row 5)
+    const BUSH_TOP_FRAMES = new Set<number>([88, 89]);
+
+    objectsLayer.forEachTile((tile) => {
+      if (BUSH_TOP_FRAMES.has(tile.index)) {
+        const worldX = tile.pixelX + TILE_SIZE / 2;
+        const worldY = tile.pixelY + TILE_SIZE / 2;
+
+        // Create sprite that always renders BELOW the player
+        const sprite = this.scene.add.sprite(worldX, worldY, TILESET_KEYS.OBJECTS, tile.index);
+        sprite.setOrigin(0.5, 0.5);
+        // Low depth — always behind the player (player depth starts at OBJECTS + y/10000)
+        sprite.setDepth(LAYER_DEPTH.OBJECTS - 0.5);
+
+        // Remove from tilemap to avoid double-rendering
+        tile.index = -1;
+      }
+    });
+  }
+
 
   /**
-   * Create circular static bodies for obstacle objects (rocks, stumps, bushes, small plants).
+   * Create circular static bodies for obstacle objects (rocks, stumps, bushes, small plants,
+   * tables, fallen logs, buckets/pots).
    * 
    * Collision rules:
    * - Single-tile rocks/stones (frames 0-5, 16-18): circular collision
+   * - Solid objects: tables (60, 74, 75), fallen logs (57, 58), buckets/pots (41, 42, 73)
    * - Composite stumps (2×4, cols 6-7, rows 5-8): collision on bottom 2 rows only (frames 118,119,134,135)
    * - Composite bushes (2×4, cols 8-9, rows 5-8): collision on bottom 2 rows only (frames 120,121,136,137)
    * - Composite small plants (2×4, cols 10-11, rows 5-8): collision on bottom 2 rows only (frames 122,123,138,139)
@@ -1243,25 +1279,45 @@ export class MapGenerator {
    * - Skulls (frames 8, 9)
    * - Gravestones (frames 6, 7) — already handled by graveColliders
    * - Tree frames — already handled by treeColliders
-   * - Decorative small items (frames 24, 41, 42, 57, 58, 60, 73, 74, 75)
+   * - Frame 24 (dark cross/detail) — purely decorative ground marking
    */
-  private createObstacleColliders(objectsLayer: Phaser.Tilemaps.TilemapLayer | null): Phaser.Physics.Arcade.StaticGroup {
+  private createObstacleColliders(objectsLayer: Phaser.Tilemaps.TilemapLayer | null, _decorLayer: Phaser.Tilemaps.TilemapLayer | null): Phaser.Physics.Arcade.StaticGroup {
     const { TILE_SIZE } = MAP_CONFIG;
     const group = this.scene.physics.add.staticGroup();
 
     if (!objectsLayer) return group;
 
-    // Single-tile solid obstacles: rocks and stones
-    const ROCK_FRAMES = new Set<number>([0, 1, 2, 3, 4, 5, 16, 17, 18]);
+    // Single-tile solid obstacles: large rocks + barrels/crates/vases/signs from objects.png
+    const ROCK_FRAMES = new Set<number>([
+      0,                // sign/signpost (row 0)
+      1, 2, 3, 4, 5,   // barrels, crates, vases (row 0)
+      16, 17, 18,       // large rocks (row 1)
+    ]);
 
-    // Composite obstacle bottom rows (trunk/base portion):
-    // Stumps: cols 6-7, rows 7-8 → frames 118,119,134,135
-    // Bushes: cols 8-9, rows 7-8 → frames 120,121,136,137
-    // Small plants: cols 10-11, rows 7-8 → frames 122,123,138,139
+    // Additional solid objects: tables, fallen logs, buckets/pots
+    // Frame layout in objects.png (16 cols per row):
+    //   9  (row0,col9): table/desk (brown with legs) — solid
+    //   40 (row2,col8): table/crate with legs — solid
+    //   41 (row2,col9): pot/bucket — solid
+    //   42 (row2,col10): bucket/vase — solid
+    //   57 (row3,col9): fallen log/plank — solid
+    //   58 (row3,col10): fallen log/plank — solid
+    //   60 (row3,col12): table/bench — solid
+    //   73 (row4,col9): pot/bucket — solid
+    //   74 (row4,col10): stool/table — solid
+    //   75 (row4,col11): table — solid
+    const SOLID_OBJECT_FRAMES = new Set<number>([9, 40, 41, 42, 57, 58, 60, 73, 74, 75]);
+
+    // Composite obstacle frames (all rows — these are solid throughout):
+    // Stumps/cut trees: cols 6-7, rows 5-8 → ALL tiles are solid log/trunk
+    // Bushes: cols 8-9, rows 7-8 → bottom 2 rows only (top is canopy)
+    // Small plants: cols 10-11, rows 7-8 → bottom 2 rows only
     const COMPOSITE_BOTTOM_FRAMES = new Set<number>([
-      // Stump bottom (rows 7-8, cols 6-7)
-      7 * 16 + 6, 7 * 16 + 7,     // 118, 119
-      8 * 16 + 6, 8 * 16 + 7,     // 134, 135
+      // Stump/cut tree — ALL 4 rows are solid (cols 6-7, rows 5-8)
+      5 * 16 + 6, 5 * 16 + 7,     // 86, 87 (top log with moss/flower)
+      6 * 16 + 6, 6 * 16 + 7,     // 102, 103 (log body)
+      7 * 16 + 6, 7 * 16 + 7,     // 118, 119 (trunk base)
+      8 * 16 + 6, 8 * 16 + 7,     // 134, 135 (roots/bottom)
       // Bush bottom (rows 7-8, cols 8-9)
       7 * 16 + 8, 7 * 16 + 9,     // 120, 121
       8 * 16 + 8, 8 * 16 + 9,     // 136, 137
@@ -1273,15 +1329,17 @@ export class MapGenerator {
     // Frames that are already handled or explicitly excluded from collision
     const EXCLUDED_FRAMES = new Set<number>([
       6, 7,    // Gravestones/tombs — handled by graveColliders
-      8, 9,    // Skulls — explicitly no collision
+      8,       // Skull — explicitly no collision (decorative, walkable)
       // Tree trunk frames — handled by treeColliders
       112, 113, 114, 115, 116, 117, 128, 129, 130, 131, 132, 133,
       176, 177, 178, 179, 180, 181, 192, 193, 194, 195, 196, 197,
-      // Tree canopy frames — no collision (handled separately)
+      // Tree canopy frames — no collision (handled separately as sprites)
       80, 81, 82, 83, 84, 85, 96, 97, 98, 99, 100, 101,
       144, 145, 146, 147, 148, 149, 160, 161, 162, 163, 164, 165,
-      // Decorative items — too small to justify collision, keeps map traversable
-      24, 41, 42, 57, 58, 60, 73, 74, 75,
+      // Bush canopy frame (depth-sorted walk-behind sprite)
+      104, 105,
+      // Decorative items — too small/flat to justify collision
+      24,  // dark cross/detail — purely decorative ground marking
     ]);
 
     objectsLayer.forEachTile((tile) => {
@@ -1290,8 +1348,9 @@ export class MapGenerator {
 
       const isRock = ROCK_FRAMES.has(tile.index);
       const isCompositeBottom = COMPOSITE_BOTTOM_FRAMES.has(tile.index);
+      const isSolidObject = SOLID_OBJECT_FRAMES.has(tile.index);
 
-      if (isRock || isCompositeBottom) {
+      if (isRock || isCompositeBottom || isSolidObject) {
         const worldX = tile.pixelX + TILE_SIZE / 2;
         const worldY = tile.pixelY + TILE_SIZE / 2;
 
@@ -1304,6 +1363,10 @@ export class MapGenerator {
         body.updateFromGameObject();
       }
     });
+
+    // ─── Decor layer: NO collision for any decor tiles ───
+    // decor_16x16.png tiles are purely decorative (small stones, flowers, grass details)
+    // They should all be walkable.
 
     return group;
   }
