@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { MapGenerator } from '../map/MapGenerator';
 import { MAP_CONFIG } from '../config/map-config';
 import { Player } from '../entities/Player';
+import { Enemy, ENEMY_TYPES } from '../entities/Enemy';
 import { TouchControls } from '../ui/TouchControls';
 
 /**
@@ -21,7 +22,9 @@ export class GameScene extends Phaser.Scene {
   private keyF!: Phaser.Input.Keyboard.Key;
   private keyR!: Phaser.Input.Keyboard.Key;
   private keyP!: Phaser.Input.Keyboard.Key;
+  private keyL!: Phaser.Input.Keyboard.Key;
   private player!: Player;
+  private enemies: Enemy[] = [];
   private touchControls!: TouchControls;
 
   constructor() {
@@ -31,7 +34,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     // Generate the tilemap layers
     const mapGen = new MapGenerator(this);
-    const { collisionLayer } = mapGen.generate();
+    const { collisionLayer, elevatedLayer, fenceLayer, graveColliders, treeColliders, obstacleColliders, pathfinder } = mapGen.generate();
 
     // Set up physics world bounds to match the full map
     this.physics.world.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
@@ -39,13 +42,46 @@ export class GameScene extends Phaser.Scene {
     // Set up camera bounds and center
     this.cameras.main.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
 
-    // Enable collision detection on the wall/border layer
+    // Enable collision detection on tilemap layers
     if (collisionLayer) {
       collisionLayer.setCollisionByExclusion([-1]);
     }
+    if (elevatedLayer) {
+      elevatedLayer.setCollisionByExclusion([-1]);
+    }
+    if (fenceLayer) {
+      fenceLayer.setCollisionByExclusion([-1]);
+    }
+    // Objects layer: NO tilemap collision — graves and trees use circular physics bodies instead
 
     // Create player at a random valid position
     this.player = new Player(this, collisionLayer);
+
+    // Add physics colliders between player and all collidable layers
+    const playerSprite = this.player.getSprite();
+    if (collisionLayer) this.physics.add.collider(playerSprite, collisionLayer);
+    if (elevatedLayer) this.physics.add.collider(playerSprite, elevatedLayer);
+    if (fenceLayer) this.physics.add.collider(playerSprite, fenceLayer);
+    if (graveColliders) this.physics.add.collider(playerSprite, graveColliders);
+    if (treeColliders) this.physics.add.collider(playerSprite, treeColliders);
+    if (obstacleColliders) this.physics.add.collider(playerSprite, obstacleColliders);
+
+    // Create enemies
+    const enemyConfigs = [ENEMY_TYPES.SKELETON, ENEMY_TYPES.SKELETON_SWORD, ENEMY_TYPES.SLIME];
+    for (const config of enemyConfigs) {
+      const pos = Enemy.findSpawnPosition(collisionLayer, elevatedLayer);
+      const enemy = new Enemy(this, pos.x, pos.y, config, pathfinder);
+
+      const enemySprite = enemy.getSprite();
+      if (collisionLayer) this.physics.add.collider(enemySprite, collisionLayer);
+      if (elevatedLayer) this.physics.add.collider(enemySprite, elevatedLayer);
+      if (fenceLayer) this.physics.add.collider(enemySprite, fenceLayer);
+      if (graveColliders) this.physics.add.collider(enemySprite, graveColliders);
+      if (treeColliders) this.physics.add.collider(enemySprite, treeColliders);
+      if (obstacleColliders) this.physics.add.collider(enemySprite, obstacleColliders);
+
+      this.enemies.push(enemy);
+    }
 
     // Camera follows the player
     const sprite = this.player.getSprite();
@@ -68,6 +104,9 @@ export class GameScene extends Phaser.Scene {
     this.keyF = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
     this.keyR = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.keyP = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Debug key: L = log position to console
+    this.keyL = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.L);
 
     // HUD text (desktop only)
     if (!isMobile) {
@@ -117,6 +156,60 @@ export class GameScene extends Phaser.Scene {
 
     // Player movement + attack (keyboard + touch)
     this.player.handleInput(this.cursors, this.wasd, this.keyP, touchMove, touchAttack);
+
+    // Update player depth for proper Y-sorting with tree canopies
+    this.player.updateDepth();
+
+    // Update enemies (skip if player is dead — enemies stop targeting)
+    for (const enemy of this.enemies) {
+      if (!enemy.getIsDead()) {
+        enemy.updateDepth();
+        if (!this.player.getIsDead()) {
+          enemy.update(this.player.getSprite());
+        }
+      }
+    }
+
+    // ─── Combat damage detection (skip if player dead) ───
+    if (!this.player.getIsDead()) {
+      for (const enemy of this.enemies) {
+        if (enemy.getIsDead()) continue;
+
+        // Player attacks enemy
+        if (this.player.isHitboxActive()) {
+          const hitbox = this.player.getHitbox();
+          if (hitbox && !this.player.hasAlreadyHitTarget(enemy)) {
+            const enemySprite = enemy.getSprite();
+            const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, enemySprite.x, enemySprite.y);
+            if (dist < 20) {
+              this.player.registerHit(enemy);
+              enemy.takeDamage(1, this.player);
+            }
+          }
+        }
+
+        // Enemy attacks player
+        if (enemy.isHitboxActive()) {
+          const hitbox = enemy.getHitbox();
+          if (hitbox && !enemy.hasAlreadyHitTarget(this.player)) {
+            const plSprite = this.player.getSprite();
+            const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, plSprite.x, plSprite.y);
+            if (dist < 20) {
+              enemy.registerHit(this.player);
+              this.player.takeDamage(1, enemy);
+            }
+          }
+        }
+      }
+    }
+
+    // Debug: press L to log player position
+    if (Phaser.Input.Keyboard.JustDown(this.keyL)) {
+      const sprite = this.player.getSprite();
+      const tileX = Math.floor(sprite.x / 16);
+      const tileY = Math.floor(sprite.y / 16);
+      console.log(`[POS] Pixel: (${Math.round(sprite.x)}, ${Math.round(sprite.y)}) | Tile: (${tileX}, ${tileY})`);
+    }
 
     const cam = this.cameras.main;
 

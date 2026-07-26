@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
-import { MAP_CONFIG, LAYER_DEPTH } from '../config/map-config';
+import { MAP_CONFIG } from '../config/map-config';
+import { Character, CharacterAnimConfig, CombatConfig } from './Character';
 
-/** Player facing direction */
-export type PlayerDirection = 'up' | 'down' | 'left' | 'right';
+export type { CharacterDirection as PlayerDirection } from './Character';
 
 /**
- * Player entity — manages sprite, spawn, orientation, animations, movement, and attack.
+ * Player entity — extends Character with keyboard/touch input handling.
  *
  * Spritesheet: player.png (288×480, 6 cols × 10 rows, 48×48 frames)
  *   Row 0 (frames 0-5):   Idle Down
@@ -19,67 +19,87 @@ export type PlayerDirection = 'up' | 'down' | 'left' | 'right';
  *   Row 8 (frames 48-53): Attack Up
  *   Row 9 (frames 54-59): Death — NOT used yet
  */
-export class Player {
-  private sprite: Phaser.Physics.Arcade.Sprite;
-  private direction: PlayerDirection = 'down';
-  private isMoving: boolean = false;
-  private isAttacking: boolean = false;
-  private currentAnimKey: string = '';
 
-  /** Movement speed in pixels per second */
-  private static readonly SPEED = 120;
+/** Player animation configuration */
+const PLAYER_ANIM_CONFIG: CharacterAnimConfig = {
+  textureKey: 'player',
+  prefix: 'player',
+  idle: { down: [0, 5], right: [6, 11], up: [12, 17] },
+  walk: { down: [18, 23], right: [24, 29], up: [30, 35] },
+  attack: { down: [36, 39], right: [42, 45], up: [48, 51] },
+  idleFrameRate: 5,
+  walkFrameRate: 8,
+  attackFrameRate: 12,
+};
 
-  /** Animation frame rates */
-  private static readonly IDLE_FRAME_RATE = 5;
-  private static readonly WALK_FRAME_RATE = 8;
-  private static readonly ATTACK_FRAME_RATE = 12;
+/** Player combat configuration */
+const PLAYER_COMBAT_CONFIG: CombatConfig = {
+  attackCooldown: 500,
+  hitWindowStart: 100,
+  hitWindowDuration: 150,
+  hitboxOffset: 18,
+  hitboxRadius: 12,
+  maxHealth: 100,
+  knockbackForce: 70,
+  invulnerabilityDuration: 1000,
+};
 
-  /** Idle animation keys */
-  private static readonly IDLE_ANIMS: Record<PlayerDirection, string> = {
-    down: 'player_idle_down',
-    right: 'player_idle_right',
-    left: 'player_idle_right',
-    up: 'player_idle_up',
-  };
-
-  /** Walk animation keys */
-  private static readonly WALK_ANIMS: Record<PlayerDirection, string> = {
-    down: 'player_walk_down',
-    right: 'player_walk_right',
-    left: 'player_walk_right',
-    up: 'player_walk_up',
-  };
-
-  /** Attack animation keys */
-  private static readonly ATTACK_ANIMS: Record<PlayerDirection, string> = {
-    down: 'player_attack_down',
-    right: 'player_attack_right',
-    left: 'player_attack_right',
-    up: 'player_attack_up',
-  };
+export class Player extends Character {
+  /** Death animation keys */
+  private deathAnims: Record<string, string> | null = null;
 
   constructor(scene: Phaser.Scene, collisionLayer: Phaser.Tilemaps.TilemapLayer | null) {
-    this.createAnimations(scene);
+    const spawnPos = Character.findValidSpawnPosition(
+      collisionLayer,
+      MAP_CONFIG.WIDTH / 2,
+      MAP_CONFIG.HEIGHT / 2,
+      MAP_CONFIG.SPAWN_SAFE_RADIUS
+    );
 
-    const spawnPos = this.findValidSpawnPosition(scene, collisionLayer);
+    super(scene, spawnPos.x, spawnPos.y, PLAYER_ANIM_CONFIG, 120, 5, 19, 33, PLAYER_COMBAT_CONFIG);
 
-    this.sprite = scene.physics.add.sprite(spawnPos.x, spawnPos.y, 'player', 0);
-    this.sprite.setOrigin(0.5, 0.75);
-    this.sprite.setDepth(LAYER_DEPTH.OBJECTS + 1);
-    this.sprite.setCollideWorldBounds(true);
-    this.sprite.body?.setSize(16, 16);
-    this.sprite.body?.setOffset(16, 28);
-
-    // Start idle
-    this.playAnimation(Player.IDLE_ANIMS.down, 'down');
+    // Create death animations (Row 9: frames 54-59, same for all orientations)
+    this.createDeathAnimations(scene);
   }
 
-  getSprite(): Phaser.Physics.Arcade.Sprite {
-    return this.sprite;
+  private createDeathAnimations(scene: Phaser.Scene): void {
+    if (scene.anims.exists('player_death_down')) return;
+
+    scene.anims.create({ key: 'player_death_down', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
+    scene.anims.create({ key: 'player_death_right', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
+    scene.anims.create({ key: 'player_death_up', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
+
+    this.deathAnims = {
+      down: 'player_death_down',
+      right: 'player_death_right',
+      left: 'player_death_right',
+      up: 'player_death_up',
+    };
   }
 
-  getDirection(): PlayerDirection {
-    return this.direction;
+  /**
+   * Called when HP reaches 0. Plays death animation and disables the player.
+   */
+  protected override onDeath(): void {
+    // Stop all movement
+    this.sprite.setVelocity(0, 0);
+    this.isInKnockback = false;
+
+    // Disable physics body
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    if (body) body.enable = false;
+
+    // Stop any blink tweens and ensure full visibility
+    this.scene.tweens.killTweensOf(this.sprite);
+    this.sprite.alpha = 1;
+
+    // Play death animation based on direction
+    if (this.deathAnims) {
+      const deathKey = this.deathAnims[this.direction];
+      this.sprite.setFlipX(this.direction === 'left');
+      this.sprite.play(deathKey);
+      // Player stays in last frame — no destroy, ready for future Game Over/Respawn
+    }
   }
 
   /**
@@ -93,30 +113,18 @@ export class Player {
     touchMove?: { x: number; y: number },
     touchAttack?: boolean
   ): void {
+    // Skip input if in knockback or dead
+    if (this.isInKnockback || this.isDead) return;
+
     // ─── Attack (keyboard or touch) ───
     const keyboardAttack = Phaser.Input.Keyboard.JustDown(attackKey);
     if ((keyboardAttack || touchAttack) && !this.isAttacking) {
-      this.isAttacking = true;
-      this.sprite.setVelocity(0, 0);
-      this.sprite.setFlipX(this.direction === 'left');
-      const attackAnim = Player.ATTACK_ANIMS[this.direction];
-      const idleAnim = Player.IDLE_ANIMS[this.direction];
-      this.currentAnimKey = attackAnim;
-      this.sprite.play(attackAnim);
-      this.sprite.chain(idleAnim);
+      this.triggerAttack();
       return;
     }
 
-    // ─── While attacking, block movement/animation changes ───
-    if (this.isAttacking) {
-      this.sprite.setVelocity(0, 0);
-      if (this.sprite.anims.currentAnim &&
-          !this.sprite.anims.currentAnim.key.startsWith('player_attack_')) {
-        this.isAttacking = false;
-        this.currentAnimKey = Player.IDLE_ANIMS[this.direction];
-      }
-      return;
-    }
+    // ─── While attacking, block movement ───
+    if (this.updateAttackState()) return;
 
     // ─── Movement (keyboard + touch combined) ───
     let vx = 0;
@@ -139,7 +147,8 @@ export class Player {
     }
 
     // Normalize diagonal (only for keyboard; touch is already normalized by joystick)
-    if (!touchMove || (touchMove.x === 0 && touchMove.y === 0)) {
+    const isKeyboard = !touchMove || (touchMove.x === 0 && touchMove.y === 0);
+    if (isKeyboard) {
       if (vx !== 0 && vy !== 0) {
         const factor = Math.SQRT1_2;
         vx *= factor;
@@ -147,88 +156,7 @@ export class Player {
       }
     }
 
-    const moving = vx !== 0 || vy !== 0;
-
-    if (moving) {
-      this.sprite.setVelocity(vx * Player.SPEED, vy * Player.SPEED);
-
-      // Determine facing direction based on dominant axis
-      let newDir: PlayerDirection;
-      if (Math.abs(vx) > Math.abs(vy)) {
-        // Horizontal dominant
-        newDir = vx < 0 ? 'left' : 'right';
-      } else {
-        // Vertical dominant (or equal)
-        newDir = vy < 0 ? 'up' : 'down';
-      }
-
-      this.direction = newDir;
-      this.sprite.setFlipX(newDir === 'left');
-      this.playAnimation(Player.WALK_ANIMS[newDir], newDir);
-      this.isMoving = true;
-    } else {
-      this.sprite.setVelocity(0, 0);
-
-      if (this.isMoving) {
-        this.isMoving = false;
-        this.sprite.setFlipX(this.direction === 'left');
-        this.playAnimation(Player.IDLE_ANIMS[this.direction], this.direction);
-      }
-    }
-  }
-
-  private playAnimation(animKey: string, _dir: PlayerDirection): void {
-    if (this.currentAnimKey === animKey) return;
-    this.currentAnimKey = animKey;
-    this.sprite.play(animKey);
-  }
-
-  private createAnimations(scene: Phaser.Scene): void {
-    if (scene.anims.exists('player_idle_down')) return;
-
-    // Idle (rows 0-2)
-    scene.anims.create({ key: 'player_idle_down', frames: scene.anims.generateFrameNumbers('player', { start: 0, end: 5 }), frameRate: Player.IDLE_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_idle_right', frames: scene.anims.generateFrameNumbers('player', { start: 6, end: 11 }), frameRate: Player.IDLE_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_idle_up', frames: scene.anims.generateFrameNumbers('player', { start: 12, end: 17 }), frameRate: Player.IDLE_FRAME_RATE, repeat: -1 });
-
-    // Walk (rows 3-5)
-    scene.anims.create({ key: 'player_walk_down', frames: scene.anims.generateFrameNumbers('player', { start: 18, end: 23 }), frameRate: Player.WALK_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_walk_right', frames: scene.anims.generateFrameNumbers('player', { start: 24, end: 29 }), frameRate: Player.WALK_FRAME_RATE, repeat: -1 });
-    scene.anims.create({ key: 'player_walk_up', frames: scene.anims.generateFrameNumbers('player', { start: 30, end: 35 }), frameRate: Player.WALK_FRAME_RATE, repeat: -1 });
-
-    // Attack (rows 6-8) — single play, no loop. Use only 4 frames (frames 5-6 are empty/transparent)
-    scene.anims.create({ key: 'player_attack_down', frames: scene.anims.generateFrameNumbers('player', { start: 36, end: 39 }), frameRate: Player.ATTACK_FRAME_RATE, repeat: 0, hideOnComplete: false });
-    scene.anims.create({ key: 'player_attack_right', frames: scene.anims.generateFrameNumbers('player', { start: 42, end: 45 }), frameRate: Player.ATTACK_FRAME_RATE, repeat: 0, hideOnComplete: false });
-    scene.anims.create({ key: 'player_attack_up', frames: scene.anims.generateFrameNumbers('player', { start: 48, end: 51 }), frameRate: Player.ATTACK_FRAME_RATE, repeat: 0, hideOnComplete: false });
-  }
-
-  private findValidSpawnPosition(
-    scene: Phaser.Scene,
-    collisionLayer: Phaser.Tilemaps.TilemapLayer | null
-  ): { x: number; y: number } {
-    const { WIDTH, HEIGHT, TILE_SIZE, BORDER_THICKNESS, SPAWN_SAFE_RADIUS } = MAP_CONFIG;
-    const centerX = WIDTH / 2;
-    const centerY = HEIGHT / 2;
-
-    const minX = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
-    const maxX = WIDTH - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE;
-    const minY = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
-    const maxY = HEIGHT - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE;
-
-    for (let attempt = 0; attempt < 100; attempt++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * SPAWN_SAFE_RADIUS;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
-
-      if (x < minX || x > maxX || y < minY || y > maxY) continue;
-      if (collisionLayer) {
-        const tile = collisionLayer.getTileAtWorldXY(x, y);
-        if (tile && tile.index !== -1) continue;
-      }
-      return { x, y };
-    }
-
-    return { x: centerX, y: centerY };
+    // Apply movement with keyboard prioritizing horizontal facing
+    this.applyMovement(vx, vy, isKeyboard);
   }
 }

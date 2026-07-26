@@ -4,7 +4,8 @@ import { GameScene } from './game/scenes/GameScene';
 import { TileDebugScene } from './game/scenes/TileDebugScene';
 
 // Toggle: set to true to inspect tile indices visually
-const DEBUG_TILES = false;
+const DEBUG_TILES = false
+;
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
