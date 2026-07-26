@@ -37,6 +37,7 @@ const database = new DatabaseStack(app, `DatabaseStack${suffix}`, { env });
 new ApiStack(app, `ApiStack${suffix}`, {
   env,
   userPool: auth.userPool,
+  userPoolClientId: auth.userPoolClient.userPoolClientId,
   tables: database.tables,
   // Custom domain — uncomment when ready:
   // domainName: process.env.API_DOMAIN_NAME,

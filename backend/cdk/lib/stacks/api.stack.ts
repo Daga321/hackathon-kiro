@@ -15,6 +15,9 @@ export interface ApiStackProps extends StackProps {
   /** Cognito User Pool for request authorization */
   userPool: cognito.UserPool;
 
+  /** Cognito User Pool Client ID — needed by auth Lambdas */
+  userPoolClientId: string;
+
   /** DynamoDB tables map — Lambdas that need DB access receive grants */
   tables: Record<string, dynamodb.ITable>;
 
@@ -31,7 +34,7 @@ export class ApiStack extends Stack {
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
-    const { userPool, tables } = props;
+    const { userPool, userPoolClientId, tables } = props;
 
     // ─── Custom Domain (optional) ────────────────────────────────────────────
     let customDomain: CustomDomain | undefined;
@@ -123,23 +126,68 @@ export class ApiStack extends Stack {
       new apigw.LambdaIntegration(healthLambda),
     );
 
-    // ─── Protected Routes (example structure) ────────────────────────────────
-    // Future Lambdas will follow this pattern:
-    //
-    // const someLambda = new nodejs.NodejsFunction(this, 'SomeFunction', {
-    //   entry: '../lambdas/some-handler/index.ts',
-    //   handler: 'handler',
-    //   runtime: lambda.Runtime.NODEJS_22_X,
-    //   timeout: Duration.seconds(10),
-    //   environment: { TABLE_NAME: tables['some-table'].tableName },
-    // });
-    // tables['some-table'].grantReadWriteData(someLambda);
-    //
-    // const someResource = api.root.addResource('some-path');
-    // someResource.addMethod('GET', new apigw.LambdaIntegration(someLambda), {
-    //   authorizer,
-    //   authorizationType: apigw.AuthorizationType.COGNITO,
-    // });
+    // ─── Lambda: Auth Register ─────────────────────────────────────────────
+    const registerLambda = new nodejs.NodejsFunction(this, 'RegisterFunction', {
+      entry: '../lambdas/auth/register.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        COGNITO_CLIENT_ID: userPoolClientId,
+        USERS_TABLE: tables['users'].tableName,
+      },
+    });
+    tables['users'].grantWriteData(registerLambda);
+
+    // ─── Lambda: Auth Login ──────────────────────────────────────────────────
+    const loginLambda = new nodejs.NodejsFunction(this, 'LoginFunction', {
+      entry: '../lambdas/auth/login.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        COGNITO_CLIENT_ID: userPoolClientId,
+      },
+    });
+
+    // ─── Lambda: Auth Logout ─────────────────────────────────────────────────
+    const logoutLambda = new nodejs.NodejsFunction(this, 'LogoutFunction', {
+      entry: '../lambdas/auth/logout.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+    });
+
+    // ─── Auth Routes ─────────────────────────────────────────────────────────
+    const authResource = api.root.addResource('auth');
+
+    // POST /auth/register — public
+    const registerResource = authResource.addResource('register');
+    registerResource.addMethod(
+      'POST',
+      new apigw.LambdaIntegration(registerLambda),
+    );
+
+    // POST /auth/login — public
+    const loginResource = authResource.addResource('login');
+    loginResource.addMethod(
+      'POST',
+      new apigw.LambdaIntegration(loginLambda),
+    );
+
+    // POST /auth/logout — protected (requires valid JWT)
+    const logoutResource = authResource.addResource('logout');
+    logoutResource.addMethod(
+      'POST',
+      new apigw.LambdaIntegration(logoutLambda),
+      {
+        authorizer,
+        authorizationType: apigw.AuthorizationType.COGNITO,
+      },
+    );
 
     // ─── Outputs ─────────────────────────────────────────────────────────────
     new CfnOutput(this, 'ApiUrl', {
