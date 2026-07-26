@@ -16,6 +16,10 @@ export interface MapGeneratorResult {
   elevatedLayer: Phaser.Tilemaps.TilemapLayer | null;
   /** The fence collision layer */
   fenceLayer: Phaser.Tilemaps.TilemapLayer | null;
+  /** The objects layer (visual only, no tilemap collision) */
+  objectsLayer: Phaser.Tilemaps.TilemapLayer | null;
+  /** Static physics group for grave colliders (circular bodies) */
+  graveColliders: Phaser.Physics.Arcade.StaticGroup | null;
 }
 
 /**
@@ -50,16 +54,19 @@ export class MapGenerator {
     const collisionLayer = this.createWallLayer();
     const fenceLayer = this.createFenceLayer();
     this.createDecorLayer();
-    this.createObjectsLayer();
+    const objectsLayer = this.createObjectsLayer();
+
+    // Create circular physics bodies for graves (smooth sliding)
+    const graveColliders = this.createGraveColliders(objectsLayer);
 
     // Set depths
     groundLayer?.setDepth(LAYER_DEPTH.GROUND);
-    sandLayer?.setDepth(LAYER_DEPTH.GROUND + 0.5); // Sand renders above grass
-    pathLayer?.setDepth(LAYER_DEPTH.DECOR + 0.5); // Path renders ABOVE grass decor
+    sandLayer?.setDepth(LAYER_DEPTH.GROUND + 0.5);
+    pathLayer?.setDepth(LAYER_DEPTH.DECOR + 0.5);
     elevatedLayer?.setDepth(LAYER_DEPTH.ELEVATED);
     collisionLayer?.setDepth(LAYER_DEPTH.WALLS);
 
-    return { collisionLayer, elevatedLayer, fenceLayer };
+    return { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders };
   }
 
 
@@ -1056,6 +1063,46 @@ export class MapGenerator {
     const layer = map.createLayer(0, tileset, 0, 0);
     if (layer) { layer.setDepth(LAYER_DEPTH.OBJECTS); }
     return layer;
+  }
+
+  /**
+   * Create invisible circular static bodies at each grave position (frame 6 and 7).
+   * Scans the actual objects tilemap layer to find all graves everywhere on the map.
+   * Circular bodies give smooth sliding collisions.
+   */
+  private createGraveColliders(objectsLayer: Phaser.Tilemaps.TilemapLayer | null): Phaser.Physics.Arcade.StaticGroup {
+    const { TILE_SIZE } = MAP_CONFIG;
+    const group = this.scene.physics.add.staticGroup();
+
+    if (!objectsLayer) return group;
+
+    objectsLayer.forEachTile((tile) => {
+      if (tile.index === 6 || tile.index === 7) {
+        const worldX = tile.pixelX + TILE_SIZE / 2;
+        const worldY = tile.pixelY + TILE_SIZE / 2;
+
+        const zone = this.scene.add.zone(worldX, worldY, TILE_SIZE, TILE_SIZE);
+        group.add(zone);
+
+        const body = zone.body as Phaser.Physics.Arcade.StaticBody;
+        body.setCircle(6, TILE_SIZE / 2 - 6, TILE_SIZE / 2 - 6);
+        body.updateFromGameObject();
+      }
+    });
+
+    return group;
+  }
+
+  private addGraveBody(group: Phaser.Physics.Arcade.StaticGroup, tileX: number, tileY: number, tileSize: number): void {
+    const worldX = tileX * tileSize + tileSize / 2;
+    const worldY = tileY * tileSize + tileSize / 2;
+
+    const zone = this.scene.add.zone(worldX, worldY, tileSize, tileSize);
+    group.add(zone);
+
+    const body = zone.body as Phaser.Physics.Arcade.StaticBody;
+    body.setCircle(6, tileSize / 2 - 6, tileSize / 2 - 6);
+    body.updateFromGameObject();
   }
 
 

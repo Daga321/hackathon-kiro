@@ -66,9 +66,10 @@ export class Player {
     this.sprite = scene.physics.add.sprite(spawnPos.x, spawnPos.y, 'player', 0);
     this.sprite.setOrigin(0.5, 0.75);
     this.sprite.setDepth(LAYER_DEPTH.OBJECTS + 1);
+    // Configure physics body — very small circular hitbox at feet for smooth navigation
     this.sprite.setCollideWorldBounds(true);
-    this.sprite.body?.setSize(16, 16);
-    this.sprite.body?.setOffset(16, 28);
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    body.setCircle(5, 19, 33); // radius=5px, centered at feet — allows tight navigation between tiles
 
     // Start idle
     this.playAnimation(Player.IDLE_ANIMS.down, 'down');
@@ -152,6 +153,10 @@ export class Player {
     if (moving) {
       this.sprite.setVelocity(vx * Player.SPEED, vy * Player.SPEED);
 
+      // Corner sliding: when blocked on one axis, nudge on perpendicular axis
+      // to help player slide around tile corners
+      this.applyCornerSliding(vx, vy);
+
       // Determine facing direction based on dominant axis
       let newDir: PlayerDirection;
       if (Math.abs(vx) > Math.abs(vy)) {
@@ -173,6 +178,49 @@ export class Player {
         this.isMoving = false;
         this.sprite.setFlipX(this.direction === 'left');
         this.playAnimation(Player.IDLE_ANIMS[this.direction], this.direction);
+      }
+    }
+  }
+
+  /**
+   * Corner sliding: helps the player slide around tile corners smoothly.
+   * When moving cardinally and about to hit a corner, nudges perpendicular.
+   */
+  private applyCornerSliding(vx: number, vy: number): void {
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    if (!body) return;
+
+    // Only for cardinal movement
+    const isCardinalX = Math.abs(vx) > 0.5 && Math.abs(vy) < 0.3;
+    const isCardinalY = Math.abs(vy) > 0.5 && Math.abs(vx) < 0.3;
+    if (!isCardinalX && !isCardinalY) return;
+
+    const blocked = body.blocked;
+    const touching = body.touching;
+    const isBlocked = blocked.left || blocked.right || blocked.up || blocked.down ||
+                      touching.left || touching.right || touching.up || touching.down;
+
+    if (!isBlocked) return;
+
+    const slideForce = Player.SPEED * 0.6;
+    const tileSize = 16;
+    const threshold = 11;
+
+    if (isCardinalX && (blocked.left || blocked.right || touching.left || touching.right)) {
+      const offsetY = ((body.center.y % tileSize) + tileSize) % tileSize;
+      if (offsetY > 2 && offsetY <= threshold) {
+        body.velocity.y = -slideForce;
+      } else if (offsetY >= tileSize - threshold && offsetY < tileSize - 2) {
+        body.velocity.y = slideForce;
+      }
+    }
+
+    if (isCardinalY && (blocked.up || blocked.down || touching.up || touching.down)) {
+      const offsetX = ((body.center.x % tileSize) + tileSize) % tileSize;
+      if (offsetX > 2 && offsetX <= threshold) {
+        body.velocity.x = -slideForce;
+      } else if (offsetX >= tileSize - threshold && offsetX < tileSize - 2) {
+        body.velocity.x = slideForce;
       }
     }
   }
