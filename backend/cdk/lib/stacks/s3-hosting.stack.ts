@@ -28,7 +28,7 @@ export class S3HostingStack extends Stack {
     // ─── S3 Bucket with Static Website Hosting ───────────────────────────────
     const bucket = new s3.Bucket(this, 'FrontendBucket', {
       websiteIndexDocument: 'index.html',
-      websiteErrorDocument: 'index.html', // SPA fallback
+      websiteErrorDocument: 'index.html',
       publicReadAccess: true,
       blockPublicAccess: new s3.BlockPublicAccess({
         blockPublicAcls: false,
@@ -40,15 +40,16 @@ export class S3HostingStack extends Stack {
       autoDeleteObjects: true,
     });
 
-    // ─── Initial content (maintenance page) ──────────────────────────────────
-    // Uploaded as index.html on first deploy so the bucket is never empty.
-    // The deploy-frontend workflow will overwrite this with the real build.
-    new s3deploy.BucketDeployment(this, 'MaintenancePage', {
-      sources: [
-        s3deploy.Source.asset(resolve(__dirname, '..', '..', '..', '..', 'frontend', 'public', 'fallback')),
-      ],
+    // ─── Upload frontend/public as-is ────────────────────────────────────────
+    // Maintains directory structure so ../tilesets/, ../objects/, ../characters/
+    // resolve correctly from fallback/index.html — both locally and in S3.
+    // The deploy-frontend workflow will overwrite with the real build later.
+    const frontendPublic = resolve(__dirname, '..', '..', '..', '..', 'frontend', 'public');
+
+    new s3deploy.BucketDeployment(this, 'FallbackSite', {
+      sources: [s3deploy.Source.asset(frontendPublic)],
       destinationBucket: bucket,
-      prune: false, // Don't delete other files in the bucket
+      prune: false,
     });
 
     this.bucketName = bucket.bucketName;
