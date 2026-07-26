@@ -4,49 +4,41 @@ name: Deploy Frontend (S3)
 # This workflow builds the frontend and syncs it to the S3 bucket configured
 # for static website hosting.
 #
-# On push: only runs if files in frontend/** changed in the merge.
-# On manual dispatch: always runs regardless of file changes.
+# Triggers:
+# 1. After deploy-infra completes successfully (ensures S3 bucket exists).
+# 2. On push to main/develop IF frontend/** files changed (infra already exists).
+# 3. On manual dispatch (always runs).
 #
 # The S3 bucket name is obtained dynamically from CloudFormation stack outputs.
 # This ensures we always target the correct bucket even if CDK recreates it.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
+  workflow_run:
+    workflows: ["Deploy Infrastructure (CDK)"]
+    types: [completed]
+    branches: [main, develop]
   push:
     branches: [main, develop]
+    paths:
+      - 'frontend/**'
   workflow_dispatch:
 
 env:
   ENVIRONMENT: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
 
 jobs:
-  detect-changes:
-    name: Detect frontend changes
-    runs-on: ubuntu-latest
-    # Skip this job on manual dispatch — we always want to proceed
-    if: github.event_name != 'workflow_dispatch'
-    outputs:
-      frontend_changed: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            frontend:
-              - 'frontend/**'
-
   deploy:
     name: Build & Deploy Frontend
     runs-on: ubuntu-latest
-    needs: [detect-changes]
-    # Run if: frontend files changed (push) OR manual dispatch
+    # Run if:
+    # - Triggered by workflow_run AND infra deploy succeeded
+    # - Triggered by push (frontend files changed, infra assumed to exist)
+    # - Triggered manually
     if: |
-      always() &&
-      (needs.detect-changes.outputs.frontend_changed == 'true' || github.event_name == 'workflow_dispatch')
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     steps:
       - uses: actions/checkout@v4
 
