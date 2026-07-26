@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { MAP_CONFIG } from '../config/map-config';
-import { Character, CharacterAnimConfig } from './Character';
+import { Character, CharacterAnimConfig, CombatConfig } from './Character';
 
 export type { CharacterDirection as PlayerDirection } from './Character';
 
@@ -32,6 +32,18 @@ const PLAYER_ANIM_CONFIG: CharacterAnimConfig = {
   attackFrameRate: 12,
 };
 
+/** Player combat configuration */
+const PLAYER_COMBAT_CONFIG: CombatConfig = {
+  attackCooldown: 500,
+  hitWindowStart: 100,
+  hitWindowDuration: 150,
+  hitboxOffset: 18,
+  hitboxRadius: 12,
+  maxHealth: 100,
+  knockbackForce: 70,
+  invulnerabilityDuration: 1000,
+};
+
 export class Player extends Character {
   constructor(scene: Phaser.Scene, collisionLayer: Phaser.Tilemaps.TilemapLayer | null) {
     const spawnPos = Character.findValidSpawnPosition(
@@ -41,7 +53,7 @@ export class Player extends Character {
       MAP_CONFIG.SPAWN_SAFE_RADIUS
     );
 
-    super(scene, spawnPos.x, spawnPos.y, PLAYER_ANIM_CONFIG, 120, 5, 19, 33);
+    super(scene, spawnPos.x, spawnPos.y, PLAYER_ANIM_CONFIG, 120, 5, 19, 33, PLAYER_COMBAT_CONFIG);
   }
 
   /**
@@ -55,6 +67,9 @@ export class Player extends Character {
     touchMove?: { x: number; y: number },
     touchAttack?: boolean
   ): void {
+    // Skip input if in knockback or dead
+    if (this.isInKnockback || this.isDead) return;
+
     // ─── Attack (keyboard or touch) ───
     const keyboardAttack = Phaser.Input.Keyboard.JustDown(attackKey);
     if ((keyboardAttack || touchAttack) && !this.isAttacking) {

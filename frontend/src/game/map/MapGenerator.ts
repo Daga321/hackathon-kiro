@@ -6,6 +6,7 @@ import {
   FENCE_TILES,
   OBSTACLE_FRAMES,
 } from '../config/tile-indices';
+import { Pathfinder } from '../ai/Pathfinder';
 
 /** Result returned by MapGenerator.generate() */
 export interface MapGeneratorResult {
@@ -25,6 +26,8 @@ export interface MapGeneratorResult {
   treeCanopySprites: Phaser.GameObjects.Sprite[];
   /** Static physics group for obstacle colliders (rocks, stumps, bushes, etc.) */
   obstacleColliders: Phaser.Physics.Arcade.StaticGroup | null;
+  /** Pathfinder with navigation grid for A* routing */
+  pathfinder: Pathfinder;
 }
 
 /**
@@ -83,7 +86,21 @@ export class MapGenerator {
     elevatedLayer?.setDepth(LAYER_DEPTH.ELEVATED);
     collisionLayer?.setDepth(LAYER_DEPTH.WALLS);
 
-    return { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders, treeColliders, treeCanopySprites, obstacleColliders };
+    return { collisionLayer, elevatedLayer, fenceLayer, objectsLayer, graveColliders, treeColliders, treeCanopySprites, obstacleColliders, pathfinder: this.buildPathfinder(collisionLayer, elevatedLayer, fenceLayer, objectsLayer) };
+  }
+
+  /**
+   * Build the pathfinder navigation grid from all collision layers.
+   */
+  private buildPathfinder(
+    collisionLayer: Phaser.Tilemaps.TilemapLayer | null,
+    elevatedLayer: Phaser.Tilemaps.TilemapLayer | null,
+    fenceLayer: Phaser.Tilemaps.TilemapLayer | null,
+    objectsLayer: Phaser.Tilemaps.TilemapLayer | null
+  ): Pathfinder {
+    const pathfinder = new Pathfinder();
+    pathfinder.buildFromLayers(collisionLayer, elevatedLayer, fenceLayer, objectsLayer);
+    return pathfinder;
   }
 
 

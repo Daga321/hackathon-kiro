@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MAP_CONFIG } from '../config/map-config';
 import { Character, CharacterAnimConfig, CharacterDirection } from './Character';
+import { Pathfinder } from '../ai/Pathfinder';
 
 /**
  * Configuration to create an enemy type.
@@ -34,6 +35,8 @@ export interface EnemyConfig {
   specialIdleMaxInterval?: number;
   /** Detection radius in pixels */
   detectionRadius?: number;
+  /** Attack range in pixels (skeleton attacks when player is within this distance) */
+  attackRange?: number;
 }
 
 /**
@@ -51,28 +54,32 @@ export class Enemy extends Character {
 
   // ─── Detection ───
   private detectionRadius: number;
+  private attackRange: number;
   private playerDetected: boolean = false;
 
   // ─── Navigation / stuck detection ───
-  /** Position snapshot for stuck detection */
   private lastPosX: number = 0;
   private lastPosY: number = 0;
-  /** Time accumulated while "stuck" (not making progress) in ms */
   private stuckTime: number = 0;
-  /** Time between position checks (ms) */
   private stuckCheckTimer: number = 0;
-  /** Whether currently in alternate navigation mode */
   private isNavigating: boolean = false;
-  /** Alternate direction vector when navigating around obstacle */
   private navDirX: number = 0;
   private navDirY: number = 0;
-  /** Remaining time to maintain alternate direction (ms) */
   private navDuration: number = 0;
-  /** Cooldown before trying direct pursuit again after navigating (ms) */
   private directPursuitCooldown: number = 0;
-  /** Position when navigation started (to detect if we're making progress around obstacle) */
   private navStartX: number = 0;
   private navStartY: number = 0;
+
+  // ─── A* Pathfinding ───
+  private pathfinder: Pathfinder | null = null;
+  /** Current A* path waypoints (world positions) */
+  private currentPath: { x: number; y: number }[] | null = null;
+  /** Index of the current waypoint being pursued */
+  private pathIndex: number = 0;
+  /** Time since last path recalculation (ms) */
+  private pathRecalcTimer: number = 0;
+  /** Whether currently following a path */
+  private isFollowingPath: boolean = false;
 
   /** Tuning constants */
   private static readonly STUCK_THRESHOLD_MS = 250;
@@ -81,8 +88,14 @@ export class Enemy extends Character {
   private static readonly NAV_MIN_DURATION = 500;
   private static readonly NAV_MAX_DURATION = 1200;
   private static readonly DIRECT_PURSUIT_COOLDOWN = 200;
+  /** How close to a waypoint before advancing to next (px) */
+  private static readonly WAYPOINT_TOLERANCE = 10;
+  /** Minimum ms between path recalculations */
+  private static readonly PATH_RECALC_INTERVAL = 1000;
+  /** Distance player must move before recalculating path */
+  private static readonly PATH_RECALC_PLAYER_DIST = 48;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, config: EnemyConfig) {
+  constructor(scene: Phaser.Scene, x: number, y: number, config: EnemyConfig, pathfinder?: Pathfinder) {
     const animConfig: CharacterAnimConfig = {
       textureKey: config.textureKey,
       prefix: config.prefix,
@@ -102,15 +115,27 @@ export class Enemy extends Character {
       config.speed ?? 95,
       config.bodyRadius ?? 5,
       config.bodyOffsetX ?? 19,
-      config.bodyOffsetY ?? 33
+      config.bodyOffsetY ?? 33,
+      { // Combat config for enemies
+        attackCooldown: 1000,
+        hitWindowStart: 200,
+        hitWindowDuration: 200,
+        hitboxOffset: 18,
+        hitboxRadius: 12,
+        maxHealth: 3,
+        knockbackForce: 70,
+        invulnerabilityDuration: 300,
+      }
     );
 
     this.enemyType = config.prefix;
     this.specialIdleMinMs = (config.specialIdleMinInterval ?? 4) * 1000;
     this.specialIdleMaxMs = (config.specialIdleMaxInterval ?? 10) * 1000;
     this.detectionRadius = config.detectionRadius ?? 150;
+    this.attackRange = config.attackRange ?? 24;
     this.lastPosX = x;
     this.lastPosY = y;
+    this.pathfinder = pathfinder ?? null;
 
     if (config.specialIdle) {
       this.createSpecialIdleAnimations(scene, config);
@@ -119,68 +144,122 @@ export class Enemy extends Character {
   }
 
   /**
-   * Update enemy each frame. Handles detection, pursuit, and obstacle avoidance.
+   * Update enemy each frame. Handles detection, pursuit, attack, and obstacle avoidance.
    */
   update(playerSprite: Phaser.Physics.Arcade.Sprite): void {
+    // Skip AI if in knockback or dead
+    if (this.isInKnockback || this.isDead) return;
+
+    // Handle ongoing attack state (blocks movement)
+    if (this.updateAttackState()) return;
+
     const dx = playerSprite.x - this.sprite.x;
     const dy = playerSprite.y - this.sprite.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const delta = this.scene.game.loop.delta;
 
     if (distance <= this.detectionRadius) {
-      // ─── Player in range: pursue ───
+      // ─── Player in range ───
       if (!this.playerDetected) {
         this.playerDetected = true;
         this.isPlayingSpecial = false;
         this.resetNavigation();
       }
 
-      // Normalized direct direction toward player
       const directX = dx / distance;
       const directY = dy / distance;
 
-      // Update stuck detection
-      this.updateStuckDetection(delta);
+      // ─── Attack range check ───
+      if (distance <= this.attackRange) {
+        // Stop moving, orient toward player, and attack
+        this.applyMovement(0, 0);
 
-      // Decrease direct pursuit cooldown
-      if (this.directPursuitCooldown > 0) {
-        this.directPursuitCooldown -= delta;
+        // Orient toward player
+        let newDir: CharacterDirection;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          newDir = dx < 0 ? 'left' : 'right';
+        } else {
+          newDir = dy < 0 ? 'up' : 'down';
+        }
+        this.direction = newDir;
+        this.sprite.setFlipX(newDir === 'left');
+
+        // Try to attack (respects cooldown)
+        if (this.canAttack()) {
+          this.triggerAttack();
+        }
+        return;
       }
+
+      // ─── Chase: player in detection range but outside attack range ───
+      this.updateStuckDetection(delta);
+      if (this.directPursuitCooldown > 0) this.directPursuitCooldown -= delta;
+      this.pathRecalcTimer += delta;
 
       let moveX: number;
       let moveY: number;
 
-      if (this.isNavigating && this.navDuration > 0) {
-        // Currently navigating around an obstacle
-        this.navDuration -= delta;
+      if (this.isFollowingPath && this.currentPath && this.pathIndex < this.currentPath.length) {
+        // ─── Following A* path ───
+        const wp = this.currentPath[this.pathIndex];
+        const wpDx = wp.x - this.sprite.x;
+        const wpDy = wp.y - this.sprite.y;
+        const wpDist = Math.sqrt(wpDx * wpDx + wpDy * wpDy);
 
-        // Blend: navigate mostly perpendicular but slightly toward player
-        // This creates a curved path that naturally routes around obstacles
+        if (wpDist < Enemy.WAYPOINT_TOLERANCE) {
+          // Reached waypoint — advance
+          this.pathIndex++;
+          if (this.pathIndex >= this.currentPath.length) {
+            // Path complete — switch to direct pursuit
+            this.isFollowingPath = false;
+            this.currentPath = null;
+          }
+        }
+
+        if (this.isFollowingPath && this.currentPath && this.pathIndex < this.currentPath.length) {
+          const nextWp = this.currentPath[this.pathIndex];
+          const nDx = nextWp.x - this.sprite.x;
+          const nDy = nextWp.y - this.sprite.y;
+          const nDist = Math.sqrt(nDx * nDx + nDy * nDy);
+          moveX = nDist > 0 ? nDx / nDist : directX;
+          moveY = nDist > 0 ? nDy / nDist : directY;
+        } else {
+          moveX = directX;
+          moveY = directY;
+        }
+
+        // Recalculate path if player moved significantly
+        if (this.pathRecalcTimer >= Enemy.PATH_RECALC_INTERVAL && this.currentPath && this.currentPath.length > 0) {
+          const lastWp = this.currentPath[this.currentPath.length - 1];
+          const pDist = Math.sqrt((playerSprite.x - lastWp.x) ** 2 + (playerSprite.y - lastWp.y) ** 2);
+          if (pDist > Enemy.PATH_RECALC_PLAYER_DIST) {
+            this.calculatePath(playerSprite.x, playerSprite.y);
+          }
+          this.pathRecalcTimer = 0;
+        }
+
+      } else if (this.isNavigating && this.navDuration > 0) {
+        // ─── Basic navigation fallback (Phase 7/8) ───
+        this.navDuration -= delta;
         moveX = this.navDirX * 0.8 + directX * 0.3;
         moveY = this.navDirY * 0.8 + directY * 0.3;
-
-        // Normalize
         const len = Math.sqrt(moveX * moveX + moveY * moveY);
         if (len > 0) { moveX /= len; moveY /= len; }
 
-        // Check if we can try direct pursuit again
         if (this.navDuration <= 0 && this.directPursuitCooldown <= 0) {
-          // Check if we've made progress from where we started navigating
           const navDistX = this.sprite.x - this.navStartX;
           const navDistY = this.sprite.y - this.navStartY;
           const navProgress = Math.sqrt(navDistX * navDistX + navDistY * navDistY);
-
           if (navProgress > 8) {
-            // Made progress — try direct pursuit again
             this.isNavigating = false;
             this.stuckTime = 0;
           } else {
-            // Didn't make enough progress — extend navigation with different direction
-            this.chooseAlternateDirection(directX, directY);
+            // Basic nav failed — try A* pathfinding
+            this.tryPathfinding(playerSprite.x, playerSprite.y, directX, directY);
           }
         }
       } else {
-        // Direct pursuit
+        // ─── Direct pursuit ───
         moveX = directX;
         moveY = directY;
       }
@@ -216,17 +295,23 @@ export class Enemy extends Character {
         this.stuckTime += Enemy.STUCK_CHECK_INTERVAL;
 
         if (this.stuckTime >= Enemy.STUCK_THRESHOLD_MS) {
-          // We're stuck — get the direct direction toward player for context
-          const body = this.sprite.body as Phaser.Physics.Arcade.Body;
-          const vx = body?.velocity.x ?? 0;
-          const vy = body?.velocity.y ?? 0;
-          const vLen = Math.sqrt(vx * vx + vy * vy);
-          const normVX = vLen > 0 ? vx / vLen : 0;
-          const normVY = vLen > 0 ? vy / vLen : 0;
-          this.chooseAlternateDirection(normVX, normVY);
+          if (this.isFollowingPath) {
+            // Stuck while following A* path — path may be invalid, recalculate
+            this.isFollowingPath = false;
+            this.currentPath = null;
+            this.stuckTime = 0;
+          } else if (!this.isNavigating) {
+            // Stuck in direct pursuit — try basic navigation first
+            const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+            const vx = body?.velocity.x ?? 0;
+            const vy = body?.velocity.y ?? 0;
+            const vLen = Math.sqrt(vx * vx + vy * vy);
+            const normVX = vLen > 0 ? vx / vLen : 0;
+            const normVY = vLen > 0 ? vy / vLen : 0;
+            this.chooseAlternateDirection(normVX, normVY);
+          }
         }
       } else {
-        // Making progress
         this.stuckTime = 0;
       }
 
@@ -320,6 +405,42 @@ export class Enemy extends Character {
     this.directPursuitCooldown = 0;
     this.lastPosX = this.sprite.x;
     this.lastPosY = this.sprite.y;
+    this.isFollowingPath = false;
+    this.currentPath = null;
+    this.pathIndex = 0;
+    this.pathRecalcTimer = 0;
+  }
+
+  /**
+   * Try A* pathfinding. If no pathfinder available or no path found, fall back to basic nav.
+   */
+  private tryPathfinding(playerX: number, playerY: number, directX: number, directY: number): void {
+    if (this.pathfinder) {
+      const path = this.calculatePath(playerX, playerY);
+      if (path) return; // Successfully started following a path
+    }
+    // Fallback: choose a new alternate direction (Phase 7/8 behavior)
+    this.chooseAlternateDirection(directX, directY);
+  }
+
+  /**
+   * Calculate A* path to the player position. Returns true if a valid path was found.
+   */
+  private calculatePath(goalX: number, goalY: number): boolean {
+    if (!this.pathfinder) return false;
+
+    const path = this.pathfinder.findPath(this.sprite.x, this.sprite.y, goalX, goalY);
+    if (path && path.length > 0) {
+      this.currentPath = path;
+      this.pathIndex = 0;
+      this.isFollowingPath = true;
+      this.isNavigating = false;
+      this.stuckTime = 0;
+      this.pathRecalcTimer = 0;
+      return true;
+    }
+
+    return false;
   }
 
   // ─── Special Idle Animation System ─────────────────────────────────────
@@ -452,6 +573,7 @@ export const ENEMY_TYPES = {
     prefix: 'skeleton',
     speed: 108,  // ~90% of player speed (120)
     detectionRadius: 150,
+    attackRange: 22,
     specialIdle: {
       down: [54, 56],
       right: [60, 62],

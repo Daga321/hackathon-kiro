@@ -26,6 +26,28 @@ export interface CharacterAnimConfig {
 }
 
 /**
+ * Combat configuration — provided by subclasses to customize attack behavior.
+ */
+export interface CombatConfig {
+  /** Cooldown between attacks in ms */
+  attackCooldown?: number;
+  /** Delay from attack start until hitbox activates (ms) */
+  hitWindowStart?: number;
+  /** Duration the hitbox stays active (ms) */
+  hitWindowDuration?: number;
+  /** Hitbox offset distance from sprite center (px) */
+  hitboxOffset?: number;
+  /** Hitbox radius (px) */
+  hitboxRadius?: number;
+  /** Maximum health points (default: 100 for player, 3 for skeleton) */
+  maxHealth?: number;
+  /** Knockback impulse force in px/s (default: 200) */
+  knockbackForce?: number;
+  /** Duration of invulnerability after taking damage in ms (default: 1000) */
+  invulnerabilityDuration?: number;
+}
+
+/**
  * Base character class — shared logic for Player and Enemy entities.
  *
  * Handles:
@@ -35,11 +57,12 @@ export interface CharacterAnimConfig {
  * - Depth sorting based on Y position
  * - Corner sliding for smooth navigation around obstacles
  * - Movement velocity application
+ * - Attack system: cooldown, hitbox, hit window
  *
  * Subclasses handle:
  * - Input source (Player: keyboard/touch, Enemy: AI)
  * - Spawn logic
- * - Attack triggers
+ * - Attack decision (WHEN to attack)
  */
 export abstract class Character {
   protected sprite: Phaser.Physics.Arcade.Sprite;
@@ -57,6 +80,29 @@ export abstract class Character {
   protected walkAnims: Record<CharacterDirection, string>;
   protected attackAnims: Record<CharacterDirection, string> | null;
 
+  // ─── Health & damage system ───
+  protected maxHealth: number;
+  protected currentHealth: number;
+  protected isInvulnerable: boolean = false;
+  protected isDead: boolean = false;
+  protected isInKnockback: boolean = false;
+  private knockbackForce: number;
+  private invulnerabilityDurationMs: number;
+  private attackHitTargets: Set<Character> = new Set();
+
+  // ─── Combat system ───
+  private attackCooldownMs: number;
+  private attackCooldownRemaining: number = 0;
+  private hitWindowStartMs: number;
+  private hitWindowDurationMs: number;
+  private hitboxOffset: number;
+  private hitboxRadius: number;
+  private attackTimer: number = 0;
+  private hitboxActive: boolean = false;
+  /** The attack hitbox zone (created once, repositioned per attack) */
+  private hitbox: Phaser.GameObjects.Zone | null = null;
+  private hitboxBody: Phaser.Physics.Arcade.Body | null = null;
+
   constructor(
     scene: Phaser.Scene,
     x: number,
@@ -65,10 +111,24 @@ export abstract class Character {
     speed: number,
     bodyRadius: number = 5,
     bodyOffsetX: number = 19,
-    bodyOffsetY: number = 33
+    bodyOffsetY: number = 33,
+    combatConfig?: CombatConfig
   ) {
     this.scene = scene;
     this.speed = speed;
+
+    // Combat config
+    this.attackCooldownMs = combatConfig?.attackCooldown ?? 600;
+    this.hitWindowStartMs = combatConfig?.hitWindowStart ?? 150;
+    this.hitWindowDurationMs = combatConfig?.hitWindowDuration ?? 200;
+    this.hitboxOffset = combatConfig?.hitboxOffset ?? 20;
+    this.hitboxRadius = combatConfig?.hitboxRadius ?? 14;
+
+    // Health & damage config
+    this.maxHealth = combatConfig?.maxHealth ?? 100;
+    this.currentHealth = this.maxHealth;
+    this.knockbackForce = combatConfig?.knockbackForce ?? 200;
+    this.invulnerabilityDurationMs = combatConfig?.invulnerabilityDuration ?? 1000;
 
     // Create animations for this character type
     this.createAnimations(scene, animConfig);
@@ -168,15 +228,27 @@ export abstract class Character {
   }
 
   /**
-   * Trigger attack animation. Returns true if attack started.
+   * Check if the character can currently attack (not attacking, cooldown expired).
+   */
+  protected canAttack(): boolean {
+    return !this.isAttacking && this.attackCooldownRemaining <= 0 && this.attackAnims !== null;
+  }
+
+  /**
+   * Trigger attack animation and start the combat sequence.
+   * Returns true if attack started successfully.
+   * Subclasses call this — they decide WHEN, this handles HOW.
    */
   protected triggerAttack(): boolean {
-    if (this.isAttacking || !this.attackAnims) return false;
+    if (!this.canAttack()) return false;
 
     this.isAttacking = true;
+    this.attackTimer = 0;
+    this.hitboxActive = false;
     this.sprite.setVelocity(0, 0);
     this.sprite.setFlipX(this.direction === 'left');
-    const attackAnim = this.attackAnims[this.direction];
+
+    const attackAnim = this.attackAnims![this.direction];
     const idleAnim = this.idleAnims[this.direction];
     this.currentAnimKey = attackAnim;
     this.sprite.play(attackAnim);
@@ -185,22 +257,173 @@ export abstract class Character {
   }
 
   /**
-   * Check if currently attacking and handle attack state transitions.
+   * Update attack state each frame. Handles hit window timing, hitbox, and cooldown.
    * Returns true if still in attack state (movement should be blocked).
+   * Must be called every frame by subclasses.
    */
   protected updateAttackState(): boolean {
+    // Update cooldown
+    if (this.attackCooldownRemaining > 0) {
+      this.attackCooldownRemaining -= this.scene.game.loop.delta;
+    }
+
     if (!this.isAttacking) return false;
 
     this.sprite.setVelocity(0, 0);
+    this.attackTimer += this.scene.game.loop.delta;
+
+    // Hit window management
+    if (!this.hitboxActive && this.attackTimer >= this.hitWindowStartMs) {
+      this.activateHitbox();
+    }
+    if (this.hitboxActive && this.attackTimer >= this.hitWindowStartMs + this.hitWindowDurationMs) {
+      this.deactivateHitbox();
+    }
+
+    // Check if attack animation finished (idle started playing via chain)
     const prefix = this.attackAnims
       ? Object.values(this.attackAnims)[0].replace(/_attack_.*$/, '_attack_')
       : '';
     if (this.sprite.anims.currentAnim &&
         !this.sprite.anims.currentAnim.key.startsWith(prefix)) {
       this.isAttacking = false;
+      this.attackCooldownRemaining = this.attackCooldownMs;
+      this.deactivateHitbox();
+      this.attackHitTargets.clear();
       this.currentAnimKey = this.idleAnims[this.direction];
     }
+
     return this.isAttacking;
+  }
+
+  /**
+   * Get the hitbox zone (for external overlap checks in GameScene).
+   */
+  getHitbox(): Phaser.GameObjects.Zone | null {
+    return this.hitbox;
+  }
+
+  /**
+   * Whether the hitbox is currently active (in hit window).
+   */
+  isHitboxActive(): boolean {
+    return this.hitboxActive;
+  }
+
+  // ─── Health & Damage ───
+
+  /**
+   * Take damage from an attacker. Applies knockback, triggers invulnerability + blink.
+   * Ignored if already invulnerable or dead.
+   */
+  takeDamage(amount: number, attacker: Character): void {
+    if (this.isInvulnerable || this.isDead) return;
+
+    this.currentHealth = Math.max(0, this.currentHealth - amount);
+
+    if (this.currentHealth <= 0) {
+      this.isDead = true;
+    }
+
+    // Knockback: impulse away from attacker
+    const attackerSprite = attacker.getSprite();
+    const dx = this.sprite.x - attackerSprite.x;
+    const dy = this.sprite.y - attackerSprite.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    this.isInKnockback = true;
+    if (dist > 0) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      this.sprite.setVelocity(nx * this.knockbackForce, ny * this.knockbackForce);
+    }
+    // Stop knockback velocity after 200ms
+    this.scene.time.delayedCall(200, () => {
+      this.isInKnockback = false;
+      if (!this.isDead) {
+        this.sprite.setVelocity(0, 0);
+      }
+    });
+
+    // Invulnerability + blink
+    this.isInvulnerable = true;
+    this.scene.tweens.add({
+      targets: this.sprite,
+      alpha: { from: 1, to: 0.3 },
+      duration: 80,
+      yoyo: true,
+      repeat: Math.floor(this.invulnerabilityDurationMs / 160) - 1,
+      onComplete: () => {
+        this.isInvulnerable = false;
+        this.sprite.alpha = 1;
+      },
+    });
+  }
+
+  getHealth(): number {
+    return this.currentHealth;
+  }
+
+  getMaxHealth(): number {
+    return this.maxHealth;
+  }
+
+  getIsDead(): boolean {
+    return this.isDead;
+  }
+
+  // ─── Hit target tracking (prevents multi-hit per swing) ───
+
+  hasAlreadyHitTarget(target: Character): boolean {
+    return this.attackHitTargets.has(target);
+  }
+
+  registerHit(target: Character): void {
+    this.attackHitTargets.add(target);
+  }
+
+  // ─── Hitbox management ───
+
+  private activateHitbox(): void {
+    this.hitboxActive = true;
+
+    // Calculate hitbox position based on direction
+    const pos = this.getHitboxPosition();
+
+    if (!this.hitbox) {
+      // Create hitbox zone once
+      this.hitbox = this.scene.add.zone(pos.x, pos.y, this.hitboxRadius * 2, this.hitboxRadius * 2);
+      this.scene.physics.add.existing(this.hitbox, false);
+      this.hitboxBody = this.hitbox.body as Phaser.Physics.Arcade.Body;
+      this.hitboxBody.setCircle(this.hitboxRadius);
+      this.hitboxBody.setAllowGravity(false);
+      this.hitbox.setActive(true);
+      this.hitbox.setVisible(false);
+    } else {
+      this.hitbox.setPosition(pos.x, pos.y);
+      this.hitbox.setActive(true);
+      if (this.hitboxBody) this.hitboxBody.enable = true;
+    }
+  }
+
+  private deactivateHitbox(): void {
+    this.hitboxActive = false;
+    if (this.hitbox && this.hitboxBody) {
+      this.hitboxBody.enable = false;
+      this.hitbox.setActive(false);
+    }
+  }
+
+  private getHitboxPosition(): { x: number; y: number } {
+    const cx = this.sprite.x;
+    const cy = this.sprite.y;
+    const offset = this.hitboxOffset;
+
+    switch (this.direction) {
+      case 'up': return { x: cx, y: cy - offset };
+      case 'down': return { x: cx, y: cy + offset };
+      case 'left': return { x: cx - offset, y: cy };
+      case 'right': return { x: cx + offset, y: cy };
+    }
   }
 
   /**

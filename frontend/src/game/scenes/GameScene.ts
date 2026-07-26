@@ -34,7 +34,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     // Generate the tilemap layers
     const mapGen = new MapGenerator(this);
-    const { collisionLayer, elevatedLayer, fenceLayer, graveColliders, treeColliders, obstacleColliders } = mapGen.generate();
+    const { collisionLayer, elevatedLayer, fenceLayer, graveColliders, treeColliders, obstacleColliders, pathfinder } = mapGen.generate();
 
     // Set up physics world bounds to match the full map
     this.physics.world.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
@@ -68,7 +68,7 @@ export class GameScene extends Phaser.Scene {
 
     // Create a test skeleton enemy
     const skeletonPos = Enemy.findSpawnPosition(collisionLayer, elevatedLayer);
-    this.skeleton = new Enemy(this, skeletonPos.x, skeletonPos.y, ENEMY_TYPES.SKELETON);
+    this.skeleton = new Enemy(this, skeletonPos.x, skeletonPos.y, ENEMY_TYPES.SKELETON, pathfinder);
 
     // Add same colliders to skeleton
     const skeletonSprite = this.skeleton.getSprite();
@@ -157,6 +157,36 @@ export class GameScene extends Phaser.Scene {
     this.player.updateDepth();
     this.skeleton.updateDepth();
     this.skeleton.update(this.player.getSprite());
+
+    // ─── Combat damage detection ───
+
+    // Player attacks enemy
+    if (this.player.isHitboxActive()) {
+      const hitbox = this.player.getHitbox();
+      if (hitbox && !this.player.hasAlreadyHitTarget(this.skeleton)) {
+        const skSprite = this.skeleton.getSprite();
+        const hb = hitbox;
+        const dist = Phaser.Math.Distance.Between(hb.x, hb.y, skSprite.x, skSprite.y);
+        if (dist < 20) {
+          this.player.registerHit(this.skeleton);
+          this.skeleton.takeDamage(1, this.player);
+        }
+      }
+    }
+
+    // Enemy attacks player
+    if (this.skeleton.isHitboxActive()) {
+      const hitbox = this.skeleton.getHitbox();
+      if (hitbox && !this.skeleton.hasAlreadyHitTarget(this.player)) {
+        const plSprite = this.player.getSprite();
+        const hb = hitbox;
+        const dist = Phaser.Math.Distance.Between(hb.x, hb.y, plSprite.x, plSprite.y);
+        if (dist < 20) {
+          this.skeleton.registerHit(this.player);
+          this.player.takeDamage(1, this.skeleton);
+        }
+      }
+    }
 
     // Debug: press L to log player position
     if (Phaser.Input.Keyboard.JustDown(this.keyL)) {
