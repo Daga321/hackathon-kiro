@@ -1,6 +1,7 @@
 import { Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
-import { aws_s3 as s3 } from 'aws-cdk-lib';
+import { aws_s3 as s3, aws_s3_deployment as s3deploy } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { resolve } from 'path';
 
 export interface S3HostingStackProps extends StackProps {}
 
@@ -37,6 +38,17 @@ export class S3HostingStack extends Stack {
       }),
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+    });
+
+    // ─── Initial content (maintenance page) ──────────────────────────────────
+    // Uploaded as index.html on first deploy so the bucket is never empty.
+    // The deploy-frontend workflow will overwrite this with the real build.
+    new s3deploy.BucketDeployment(this, 'MaintenancePage', {
+      sources: [
+        s3deploy.Source.asset(resolve(__dirname, '..', '..', '..', '..', 'frontend', 'public', 'fallback')),
+      ],
+      destinationBucket: bucket,
+      prune: false, // Don't delete other files in the bucket
     });
 
     this.bucketName = bucket.bucketName;

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horde Battle: Graveyard Guard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Press Start 2P', cursive;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .scene {
+      position: relative;
+      width: 672px;
+      height: 360px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── Title ─────────────────────────────────────────── */
+    .title {
+      text-align: center;
+      position: absolute;
+      bottom: 200px;
+      z-index: 10;
+    }
+
+    .title h1 {
+      font-size: 1.8rem;
+      color: #c0392b;
+      text-shadow: 3px 3px 0px #000;
+      line-height: 1.8;
+    }
+
+    .title h2 {
+      font-size: 0.75rem;
+      color: #8e8e8e;
+      letter-spacing: 0.15em;
+      margin-top: 0.4rem;
+      text-shadow: 2px 2px 0px #000;
+    }
+
+    /* ─── Ground ────────────────────────────────────────── */
+    .ground {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      height: 48px; /* 16px × 3 scale */
+      image-rendering: pixelated;
+    }
+
+    .tile {
+      width: 48px;  /* 16px × 3 */
+      height: 48px;
+      background-image: url('../tilesets/plains.png');
+      background-size: 288px 576px; /* 96×3, 192×3 */
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+    }
+
+    .tile-left   { background-position: -48px -288px; }      /* col 1, row 6 (0-based) — border top-left */
+    .tile-center { background-position: -96px -288px; }     /* col 2, row 6 (0-based) — border top-center */
+    .tile-right  { background-position: -144px -288px; }    /* col 3, row 6 (0-based) — border top-right */
+
+    /* Ground surface tiles (row 6, cols 2-4, 1-based) — used behind decorations */
+    .tile-surface-left   { background-position: -48px -240px; }   /* col 2, row 6 (1-based) → col 1, row 5 (0-based) */
+    .tile-surface-center { background-position: -96px -240px; }   /* col 3 */
+    .tile-surface-right  { background-position: -144px -240px; }  /* col 4 */
+
+    /* Ground top edge tiles (row 5, cols 2-4, 1-based) — rounded grass top */
+    .tile-top-left   { background-position: -48px -192px; }   /* col 2, row 5 (1-based) → col 1, row 4 (0-based) */
+    .tile-top-center { background-position: -96px -192px; }   /* col 3 */
+    .tile-top-right  { background-position: -144px -192px; }  /* col 4 */
+
+    /* ─── Objects ───────────────────────────────────────── */
+    .object {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      background-image: url('../objects/objects.png');
+      background-size: 768px 624px; /* 256×3, 208×3 */
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+    }
+
+    .tomb  { background-position: -288px 0px; }     /* row 1, col 7 (1-based) → col 6 × 48, row 0 × 48 */
+    .skull { background-position: -384px 0px; }    /* row 1, col 9 (1-based) → col 8 × 48, row 0 × 48 */
+    .rock  { background-position: 0px -48px; }     /* row 2, col 1 (1-based) → col 0 × 48, row 1 × 48 */
+
+    /* Object positions on the scene */
+    .obj-tomb  { bottom: 128px; left: 150px; }
+    .obj-skull { bottom: 128px; right: 190px; }
+    .obj-rock1 { bottom: 272px; left: 50px; }
+    .obj-rock2 { bottom: 272px; right: 80px; }
+
+    /* Ground behind decorations */
+    .ground-behind {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      height: 48px;
+      image-rendering: pixelated;
+      z-index: 0;
+    }
+
+    .ground-behind-1 { bottom: 128px; }
+    .ground-behind-2 { bottom: 176px; }
+    .ground-behind-3 { bottom: 224px; }
+
+    /* Ground top edge (above surface) */
+    .ground-top {
+      position: absolute;
+      bottom: 272px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      height: 48px;
+      image-rendering: pixelated;
+      z-index: 0;
+    }
+
+    .object {
+      z-index: 1;
+    }
+
+    /* ─── Characters ────────────────────────────────────── */
+    .character {
+      position: absolute;
+      width: 144px;   /* 48px × 3 scale */
+      height: 144px;
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+      z-index: 2;
+    }
+
+    .player {
+      background-image: url('../characters/player.png');
+      background-size: 864px 1440px; /* 288×3, 480×3 */
+      bottom: 160px;
+      left: 15px;
+      animation: player-idle 0.8s steps(6) infinite;
+    }
+
+    .skeleton {
+      background-image: url('../characters/skeleton_swordless.png');
+      background-size: 864px 1440px; /* 288×3, 480×3 */
+      bottom: 100px;
+      left: 480px;
+      animation: skeleton-idle 0.8s steps(6) infinite;
+    }
+
+    .slime {
+      background-image: url('../characters/slime.png');
+      background-size: 672px 1248px; /* 224×3, 416×3 */
+      width: 96px;   /* 32px × 3 scale */
+      height: 96px;
+      bottom: 196px;
+      left: 528px;
+      animation: slime-idle 0.6s steps(4) infinite;
+    }
+
+    @keyframes player-idle {
+      from { background-position: 0px 0px; }
+      to { background-position: -864px 0px; }
+    }
+
+    @keyframes skeleton-idle {
+      from { background-position: 0px 0px; }
+      to { background-position: -864px 0px; }
+    }
+
+    @keyframes slime-idle {
+      from { background-position: 0px 0px; }
+      to { background-position: -384px 0px; } /* 4 frames × 96px */
+    }
+
+    /* ─── Loading text ──────────────────────────────────── */
+    .loading {
+      position: absolute;
+      bottom: 30px;
+      font-size: 0.55rem;
+      color: #aaa;
+      animation: blink 1.2s steps(2) infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ─── Responsive ────────────────────────────────────── */
+    @media (max-width: 520px) {
+      .scene { width: 100vw; padding: 0 1rem; }
+      .title h1 { font-size: 1.2rem; }
+      .title h2 { font-size: 0.6rem; }
+      .ground { width: 90vw; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <!-- Title -->
+    <div class="title">
+      <h1>Horde Battle</h1>
+      <h2>Graveyard Guard</h2>
+    </div>
+
+    <!-- Ground top edge (rounded grass) -->
+    <div class="ground-top">
+      <div class="tile tile-top-left"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-center"></div>
+      <div class="tile tile-top-right"></div>
+    </div>
+
+    <!-- Ground behind decorations (surface tiles) -->
+    <div class="ground-behind ground-behind-1">
+      <div class="tile tile-surface-left"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-right"></div>
+    </div>
+
+    <div class="ground-behind ground-behind-2">
+      <div class="tile tile-surface-left"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-right"></div>
+    </div>
+
+    <div class="ground-behind ground-behind-3">
+      <div class="tile tile-surface-left"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-center"></div>
+      <div class="tile tile-surface-right"></div>
+    </div>
+
+    <!-- Decorative objects -->
+    <div class="object tomb obj-tomb"></div>
+    <div class="object rock obj-rock1"></div>
+    <div class="object skull obj-skull"></div>
+    <div class="object rock obj-rock2"></div>
+
+    <!-- Characters -->
+    <div class="character player"></div>
+    <div class="character slime"></div>
+    <div class="character skeleton"></div>
+
+    <!-- Ground tiles -->
+    <div class="ground">
+      <div class="tile tile-left"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-center"></div>
+      <div class="tile tile-right"></div>
+    </div>
+
+    <!-- Loading -->
+    <p class="loading">Loading...</p>
+  </div>
+</body>
+</html>
