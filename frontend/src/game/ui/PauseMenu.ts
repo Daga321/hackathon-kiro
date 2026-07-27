@@ -97,25 +97,33 @@ export class PauseMenu {
   }
 
   private bindButtons(): void {
-    // Resume button
-    this.btnResume?.addEventListener('click', () => {
-      this.resume();
-    });
+    // Using onclick assignment to avoid duplicate listeners on scene restart
+    if (this.btnResume) {
+      this.btnResume.onclick = () => {
+        this.resume();
+      };
+    }
 
     // Audio settings (placeholder — future implementation)
-    this.btnAudio?.addEventListener('click', () => {
-      // TODO: Open audio settings panel
-    });
+    if (this.btnAudio) {
+      this.btnAudio.onclick = () => {
+        // TODO: Open audio settings panel
+      };
+    }
 
     // Leaderboard (placeholder — future implementation)
-    this.btnLeaderboard?.addEventListener('click', () => {
-      // TODO: Open leaderboard panel
-    });
+    if (this.btnLeaderboard) {
+      this.btnLeaderboard.onclick = () => {
+        // TODO: Open leaderboard panel
+      };
+    }
 
     // Quit to main menu (placeholder — future implementation)
-    this.btnQuit?.addEventListener('click', () => {
-      // TODO: Return to main menu
-    });
+    if (this.btnQuit) {
+      this.btnQuit.onclick = () => {
+        // TODO: Return to main menu
+      };
+    }
   }
 
   /**

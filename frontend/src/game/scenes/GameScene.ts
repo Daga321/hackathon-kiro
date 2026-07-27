@@ -9,6 +9,7 @@ import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
 import { WaveAnnouncement } from '../ui/WaveAnnouncement';
 import { PauseMenu } from '../ui/PauseMenu';
+import { GameOverScreen } from '../ui/GameOverScreen';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 
@@ -44,6 +45,7 @@ export class GameScene extends Phaser.Scene {
   private hud!: HudManager;
   private waveAnnouncement!: WaveAnnouncement;
   private pauseMenu!: PauseMenu;
+  private gameOverScreen!: GameOverScreen;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
@@ -149,6 +151,12 @@ export class GameScene extends Phaser.Scene {
     });
     this.pauseMenu.onResume(() => {
       this.scene.resume();
+    });
+
+    // Game over screen
+    this.gameOverScreen = new GameOverScreen();
+    this.gameOverScreen.onRestart(() => {
+      this.scene.restart();
     });
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
@@ -291,6 +299,11 @@ export class GameScene extends Phaser.Scene {
       this.game.loop.delta,
       this.waveManager.getScoreReward(),
     );
+
+    // ─── Game Over detection ───
+    if (this.player.getIsDead() && !this.gameOverScreen.isShowing) {
+      this.gameOverScreen.show(this.hud.getScore(), this.waveManager.getWave());
+    }
 
     // Update enemies (skip if player is dead — enemies stop targeting)
     const enemies = this.waveManager.getAllEnemies();

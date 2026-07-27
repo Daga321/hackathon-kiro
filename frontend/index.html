@@ -238,7 +238,8 @@
       }
 
       /* ─── Pause Menu Overlay ─────────────────────────── */
-      #pause-menu-backdrop {
+      #pause-menu-backdrop,
+      #gameover-backdrop {
         position: fixed;
         top: 0;
         right: 0;
@@ -251,16 +252,19 @@
         background: rgba(0, 0, 0, 0.6);
         font-family: 'Press Start 2P', cursive;
       }
-      #pause-menu-backdrop.visible {
+      #pause-menu-backdrop.visible,
+      #gameover-backdrop.visible {
         display: flex;
       }
       @media (max-width: 900px) {
-        #pause-menu-backdrop {
+        #pause-menu-backdrop,
+        #gameover-backdrop {
           left: 180px;
         }
       }
       @media (max-width: 600px) {
-        #pause-menu-backdrop {
+        #pause-menu-backdrop,
+        #gameover-backdrop {
           left: 120px;
         }
       }
@@ -355,6 +359,37 @@
         color: #aaa;
         z-index: 1;
         margin-top: 4px;
+      }
+
+      /* ─── Game Over specifics ──────────────────────────── */
+      .gameover-title {
+        font-size: 1.3rem;
+        color: #c0392b;
+        text-shadow: 2px 2px 0px #000, 0 0 10px rgba(192, 57, 43, 0.4);
+        z-index: 1;
+      }
+      .gameover-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        z-index: 1;
+      }
+      .gameover-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+      }
+      .gameover-stat-label {
+        font-size: 0.5rem;
+        color: #ccc;
+      }
+      .gameover-stat-value {
+        font-size: 0.6rem;
+        color: #f0c040;
       }
 
       /* ─── Loading Screen Overlay ───────────────────────── */
@@ -818,6 +853,27 @@
         <button id="pause-btn-leaderboard" class="pause-btn">Leaderboard</button>
         <button id="pause-btn-quit" class="pause-btn">Main Menu</button>
         <p class="pause-hint">ESC or P to resume</p>
+      </div>
+    </div>
+
+    <!-- ═══ Game Over Overlay ═══ -->
+    <div id="gameover-backdrop">
+      <div class="pause-board">
+        <p class="gameover-title">Game Over</p>
+        <div class="pause-board-divider"></div>
+        <div class="gameover-stats">
+          <div class="gameover-stat">
+            <span class="gameover-stat-label">Score</span>
+            <span id="gameover-score" class="gameover-stat-value">0</span>
+          </div>
+          <div class="gameover-stat">
+            <span class="gameover-stat-label">Wave</span>
+            <span id="gameover-wave" class="gameover-stat-value">1</span>
+          </div>
+        </div>
+        <div class="pause-board-divider"></div>
+        <button id="gameover-btn-restart" class="pause-btn pause-btn-primary">Play Again</button>
+        <button id="gameover-btn-share" class="pause-btn">Share Score</button>
       </div>
     </div>
 
