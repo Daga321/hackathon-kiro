@@ -120,7 +120,7 @@ export abstract class Character {
     bodyRadius: number = 5,
     bodyOffsetX: number = 19,
     bodyOffsetY: number = 33,
-    combatConfig?: CombatConfig
+    combatConfig?: CombatConfig,
   ) {
     this.scene = scene;
     this.speed = speed;
@@ -155,12 +155,14 @@ export abstract class Character {
       left: `${p}_walk_right`,
       up: `${p}_walk_up`,
     };
-    this.attackAnims = animConfig.attack ? {
-      down: `${p}_attack_down`,
-      right: `${p}_attack_right`,
-      left: `${p}_attack_right`,
-      up: `${p}_attack_up`,
-    } : null;
+    this.attackAnims = animConfig.attack
+      ? {
+          down: `${p}_attack_down`,
+          right: `${p}_attack_right`,
+          left: `${p}_attack_right`,
+          up: `${p}_attack_up`,
+        }
+      : null;
 
     // Create sprite
     this.sprite = scene.physics.add.sprite(x, y, animConfig.textureKey, 0);
@@ -235,8 +237,14 @@ export abstract class Character {
    * Destroy the health bar graphics. Call from subclass destroy methods.
    */
   protected destroyHealthBar(): void {
-    if (this.healthBarBg) { this.healthBarBg.destroy(); this.healthBarBg = null; }
-    if (this.healthBarFill) { this.healthBarFill.destroy(); this.healthBarFill = null; }
+    if (this.healthBarBg) {
+      this.healthBarBg.destroy();
+      this.healthBarBg = null;
+    }
+    if (this.healthBarFill) {
+      this.healthBarFill.destroy();
+      this.healthBarFill = null;
+    }
   }
 
   /**
@@ -340,8 +348,7 @@ export abstract class Character {
     const prefix = this.attackAnims
       ? Object.values(this.attackAnims)[0].replace(/_attack_.*$/, '_attack_')
       : '';
-    if (this.sprite.anims.currentAnim &&
-        !this.sprite.anims.currentAnim.key.startsWith(prefix)) {
+    if (this.sprite.anims.currentAnim && !this.sprite.anims.currentAnim.key.startsWith(prefix)) {
       this.isAttacking = false;
       this.attackCooldownRemaining = this.attackCooldownMs;
       this.deactivateHitbox();
@@ -488,10 +495,14 @@ export abstract class Character {
     const offset = this.hitboxOffset;
 
     switch (this.direction) {
-      case 'up': return { x: cx, y: cy - offset };
-      case 'down': return { x: cx, y: cy + offset };
-      case 'left': return { x: cx - offset, y: cy };
-      case 'right': return { x: cx + offset, y: cy };
+      case 'up':
+        return { x: cx, y: cy - offset };
+      case 'down':
+        return { x: cx, y: cy + offset };
+      case 'left':
+        return { x: cx - offset, y: cy };
+      case 'right':
+        return { x: cx + offset, y: cy };
     }
   }
 
@@ -508,8 +519,15 @@ export abstract class Character {
 
     const blocked = body.blocked;
     const touching = body.touching;
-    const isBlocked = blocked.left || blocked.right || blocked.up || blocked.down ||
-                      touching.left || touching.right || touching.up || touching.down;
+    const isBlocked =
+      blocked.left ||
+      blocked.right ||
+      blocked.up ||
+      blocked.down ||
+      touching.left ||
+      touching.right ||
+      touching.up ||
+      touching.down;
 
     if (!isBlocked) return;
 
@@ -552,20 +570,95 @@ export abstract class Character {
     if (scene.anims.exists(`${p}_idle_down`)) return;
 
     // Idle
-    scene.anims.create({ key: `${p}_idle_down`, frames: scene.anims.generateFrameNumbers(key, { start: config.idle.down[0], end: config.idle.down[1] }), frameRate: config.idleFrameRate, repeat: -1 });
-    scene.anims.create({ key: `${p}_idle_right`, frames: scene.anims.generateFrameNumbers(key, { start: config.idle.right[0], end: config.idle.right[1] }), frameRate: config.idleFrameRate, repeat: -1 });
-    scene.anims.create({ key: `${p}_idle_up`, frames: scene.anims.generateFrameNumbers(key, { start: config.idle.up[0], end: config.idle.up[1] }), frameRate: config.idleFrameRate, repeat: -1 });
+    scene.anims.create({
+      key: `${p}_idle_down`,
+      frames: scene.anims.generateFrameNumbers(key, {
+        start: config.idle.down[0],
+        end: config.idle.down[1],
+      }),
+      frameRate: config.idleFrameRate,
+      repeat: -1,
+    });
+    scene.anims.create({
+      key: `${p}_idle_right`,
+      frames: scene.anims.generateFrameNumbers(key, {
+        start: config.idle.right[0],
+        end: config.idle.right[1],
+      }),
+      frameRate: config.idleFrameRate,
+      repeat: -1,
+    });
+    scene.anims.create({
+      key: `${p}_idle_up`,
+      frames: scene.anims.generateFrameNumbers(key, {
+        start: config.idle.up[0],
+        end: config.idle.up[1],
+      }),
+      frameRate: config.idleFrameRate,
+      repeat: -1,
+    });
 
     // Walk
-    scene.anims.create({ key: `${p}_walk_down`, frames: scene.anims.generateFrameNumbers(key, { start: config.walk.down[0], end: config.walk.down[1] }), frameRate: config.walkFrameRate, repeat: -1 });
-    scene.anims.create({ key: `${p}_walk_right`, frames: scene.anims.generateFrameNumbers(key, { start: config.walk.right[0], end: config.walk.right[1] }), frameRate: config.walkFrameRate, repeat: -1 });
-    scene.anims.create({ key: `${p}_walk_up`, frames: scene.anims.generateFrameNumbers(key, { start: config.walk.up[0], end: config.walk.up[1] }), frameRate: config.walkFrameRate, repeat: -1 });
+    scene.anims.create({
+      key: `${p}_walk_down`,
+      frames: scene.anims.generateFrameNumbers(key, {
+        start: config.walk.down[0],
+        end: config.walk.down[1],
+      }),
+      frameRate: config.walkFrameRate,
+      repeat: -1,
+    });
+    scene.anims.create({
+      key: `${p}_walk_right`,
+      frames: scene.anims.generateFrameNumbers(key, {
+        start: config.walk.right[0],
+        end: config.walk.right[1],
+      }),
+      frameRate: config.walkFrameRate,
+      repeat: -1,
+    });
+    scene.anims.create({
+      key: `${p}_walk_up`,
+      frames: scene.anims.generateFrameNumbers(key, {
+        start: config.walk.up[0],
+        end: config.walk.up[1],
+      }),
+      frameRate: config.walkFrameRate,
+      repeat: -1,
+    });
 
     // Attack (optional)
     if (config.attack && config.attackFrameRate) {
-      scene.anims.create({ key: `${p}_attack_down`, frames: scene.anims.generateFrameNumbers(key, { start: config.attack.down[0], end: config.attack.down[1] }), frameRate: config.attackFrameRate, repeat: 0, hideOnComplete: false });
-      scene.anims.create({ key: `${p}_attack_right`, frames: scene.anims.generateFrameNumbers(key, { start: config.attack.right[0], end: config.attack.right[1] }), frameRate: config.attackFrameRate, repeat: 0, hideOnComplete: false });
-      scene.anims.create({ key: `${p}_attack_up`, frames: scene.anims.generateFrameNumbers(key, { start: config.attack.up[0], end: config.attack.up[1] }), frameRate: config.attackFrameRate, repeat: 0, hideOnComplete: false });
+      scene.anims.create({
+        key: `${p}_attack_down`,
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.attack.down[0],
+          end: config.attack.down[1],
+        }),
+        frameRate: config.attackFrameRate,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+      scene.anims.create({
+        key: `${p}_attack_right`,
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.attack.right[0],
+          end: config.attack.right[1],
+        }),
+        frameRate: config.attackFrameRate,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+      scene.anims.create({
+        key: `${p}_attack_up`,
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.attack.up[0],
+          end: config.attack.up[1],
+        }),
+        frameRate: config.attackFrameRate,
+        repeat: 0,
+        hideOnComplete: false,
+      });
     }
   }
 
@@ -576,13 +669,13 @@ export abstract class Character {
     collisionLayer: Phaser.Tilemaps.TilemapLayer | null,
     centerX: number,
     centerY: number,
-    radius: number
+    radius: number,
   ): { x: number; y: number } {
     const { WIDTH, HEIGHT, TILE_SIZE, BORDER_THICKNESS } = MAP_CONFIG;
     const minX = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
-    const maxX = WIDTH - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE;
+    const maxX = WIDTH - BORDER_THICKNESS * TILE_SIZE - TILE_SIZE;
     const minY = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
-    const maxY = HEIGHT - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE;
+    const maxY = HEIGHT - BORDER_THICKNESS * TILE_SIZE - TILE_SIZE;
 
     for (let attempt = 0; attempt < 100; attempt++) {
       const angle = Math.random() * Math.PI * 2;

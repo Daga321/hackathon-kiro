@@ -22,9 +22,7 @@ interface RegisterBody {
   password: string;
 }
 
-export const handler = async (
-  event: APIGatewayProxyEvent,
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     if (!event.body) return badRequest('Request body is required');
 

@@ -2,10 +2,10 @@ import { MAP_CONFIG } from '../config/map-config';
 
 /**
  * Navigation grid and A* pathfinder for the game map.
- * 
+ *
  * Builds a walkability grid from the same collision data used by the physics system.
  * Each cell is either walkable (0) or blocked (1).
- * 
+ *
  * Grid dimensions: 128×128 (same as tile grid).
  */
 
@@ -19,9 +19,9 @@ interface GridPoint {
 interface AStarNode {
   x: number;
   y: number;
-  g: number;   // Cost from start
-  h: number;   // Heuristic to goal
-  f: number;   // g + h
+  g: number; // Cost from start
+  h: number; // Heuristic to goal
+  f: number; // g + h
   parent: AStarNode | null;
 }
 
@@ -84,7 +84,7 @@ export class Pathfinder {
   /**
    * Find a path from start to goal using A*.
    * Returns an array of world positions (waypoints), or null if no path exists.
-   * 
+   *
    * @param startX World X position of start
    * @param startY World Y position of start
    * @param goalX World X position of goal
@@ -93,9 +93,11 @@ export class Pathfinder {
    * @returns Array of world-position waypoints, or null if no path found
    */
   findPath(
-    startX: number, startY: number,
-    goalX: number, goalY: number,
-    maxNodes: number = 500
+    startX: number,
+    startY: number,
+    goalX: number,
+    goalY: number,
+    maxNodes: number = 500,
   ): { x: number; y: number }[] | null {
     const start = this.worldToTile(startX, startY);
     const goal = this.worldToTile(goalX, goalY);
@@ -115,7 +117,8 @@ export class Pathfinder {
     const closedSet = new Set<string>();
 
     const startNode: AStarNode = {
-      x: start.x, y: start.y,
+      x: start.x,
+      y: start.y,
       g: 0,
       h: this.heuristic(start.x, start.y, goal.x, goal.y),
       f: 0,
@@ -170,15 +173,18 @@ export class Pathfinder {
         const f = tentativeG + h;
 
         // Check if already in open set with better g
-        const existingIdx = openSet.findIndex(n => n.x === neighbor.x && n.y === neighbor.y);
+        const existingIdx = openSet.findIndex((n) => n.x === neighbor.x && n.y === neighbor.y);
         if (existingIdx !== -1) {
           if (openSet[existingIdx].g <= tentativeG) continue;
           openSet.splice(existingIdx, 1);
         }
 
         openSet.push({
-          x: neighbor.x, y: neighbor.y,
-          g: tentativeG, h, f,
+          x: neighbor.x,
+          y: neighbor.y,
+          g: tentativeG,
+          h,
+          f,
           parent: current,
         });
       }
@@ -202,10 +208,10 @@ export class Pathfinder {
    */
   private getNeighbors(x: number, y: number): GridPoint[] {
     return [
-      { x: x - 1, y: y },     // left
-      { x: x + 1, y: y },     // right
-      { x: x, y: y - 1 },     // up
-      { x: x, y: y + 1 },     // down
+      { x: x - 1, y: y }, // left
+      { x: x + 1, y: y }, // right
+      { x: x, y: y - 1 }, // up
+      { x: x, y: y + 1 }, // down
       { x: x - 1, y: y - 1 }, // top-left
       { x: x + 1, y: y - 1 }, // top-right
       { x: x - 1, y: y + 1 }, // bottom-left
@@ -237,7 +243,7 @@ export class Pathfinder {
     collisionLayer: Phaser.Tilemaps.TilemapLayer | null,
     elevatedLayer: Phaser.Tilemaps.TilemapLayer | null,
     fenceLayer: Phaser.Tilemaps.TilemapLayer | null,
-    objectsLayer: Phaser.Tilemaps.TilemapLayer | null
+    objectsLayer: Phaser.Tilemaps.TilemapLayer | null,
   ): void {
     // Mark wall tiles
     if (collisionLayer) {
@@ -279,8 +285,8 @@ export class Pathfinder {
         // Solid objects (tables, logs, pots)
         9, 24, 40, 41, 42, 57, 58, 60, 73, 74, 75,
         // Tree trunks
-        112, 113, 114, 115, 116, 117, 128, 129, 130, 131, 132, 133,
-        176, 177, 178, 179, 180, 181, 192, 193, 194, 195, 196, 197,
+        112, 113, 114, 115, 116, 117, 128, 129, 130, 131, 132, 133, 176, 177, 178, 179, 180, 181,
+        192, 193, 194, 195, 196, 197,
         // Stump/cut tree (all rows)
         86, 87, 102, 103, 118, 119, 134, 135,
         // Bush bottoms

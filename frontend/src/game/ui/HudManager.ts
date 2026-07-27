@@ -77,7 +77,9 @@ export class HudManager {
     // Reset aggro timer on new wave
     if (currentWave > this.lastWave) {
       this.lastWave = currentWave;
-      const duration = HudManager.AGGRO_BASE_DURATION_SEC + (currentWave - 1) * HudManager.AGGRO_INCREASE_PER_WAVE_SEC;
+      const duration =
+        HudManager.AGGRO_BASE_DURATION_SEC +
+        (currentWave - 1) * HudManager.AGGRO_INCREASE_PER_WAVE_SEC;
       this.aggroTimeRemaining = duration * 1000;
       this.aggroCountdownAccumulator = 0;
       this.isAggroActive = false;
@@ -112,7 +114,7 @@ export class HudManager {
     if (this.scoreText) this.scoreText.textContent = `${this.score}`;
 
     // Enemies alive
-    const alive = enemies.filter(e => !e.getIsDead()).length;
+    const alive = enemies.filter((e) => !e.getIsDead()).length;
     if (this.enemiesText) this.enemiesText.textContent = `${alive}`;
 
     // ─── Aggro Timer countdown ───
@@ -129,7 +131,9 @@ export class HudManager {
     }
     if (this.aggroText) {
       const totalSec = Math.max(0, Math.floor(this.aggroTimeRemaining / 1000));
-      const min = Math.floor(totalSec / 60).toString().padStart(2, '0');
+      const min = Math.floor(totalSec / 60)
+        .toString()
+        .padStart(2, '0');
       const sec = (totalSec % 60).toString().padStart(2, '0');
       this.aggroText.textContent = `${min}:${sec}`;
     }

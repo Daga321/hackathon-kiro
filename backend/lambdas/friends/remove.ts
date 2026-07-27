@@ -1,19 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  DeleteCommand,
-  GetCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { ok, badRequest, notFound, internalError } from '../shared/response';
 
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const FRIENDS_TABLE = process.env.FRIENDS_TABLE!;
 
-export const handler = async (
-  event: APIGatewayProxyEvent,
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const userId = event.requestContext.authorizer?.claims?.sub;
     const friendId = event.pathParameters?.friendId;

@@ -2,7 +2,7 @@ import { Stack, StackProps, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
 import { aws_dynamodb as dynamodb } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
-export interface DatabaseStackProps extends StackProps {}
+export type DatabaseStackProps = StackProps;
 
 export class DatabaseStack extends Stack {
   /**

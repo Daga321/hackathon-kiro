@@ -9,7 +9,7 @@ import { HudManager } from '../ui/HudManager';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
- * 
+ *
  * Camera controls (for map inspection):
  * - Arrow keys: Pan camera
  * - Q/E: Zoom in/out
@@ -18,7 +18,12 @@ import { HudManager } from '../ui/HudManager';
  */
 export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
+  private wasd!: {
+    W: Phaser.Input.Keyboard.Key;
+    A: Phaser.Input.Keyboard.Key;
+    S: Phaser.Input.Keyboard.Key;
+    D: Phaser.Input.Keyboard.Key;
+  };
   private keyQ!: Phaser.Input.Keyboard.Key;
   private keyE!: Phaser.Input.Keyboard.Key;
   private keyF!: Phaser.Input.Keyboard.Key;
@@ -38,7 +43,15 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     // Generate the tilemap layers
     const mapGen = new MapGenerator(this);
-    const { collisionLayer, elevatedLayer, fenceLayer, graveColliders, treeColliders, obstacleColliders, pathfinder } = mapGen.generate();
+    const {
+      collisionLayer,
+      elevatedLayer,
+      fenceLayer,
+      graveColliders,
+      treeColliders,
+      obstacleColliders,
+      pathfinder,
+    } = mapGen.generate();
 
     // Set up physics world bounds to match the full map
     this.physics.world.setBounds(0, 0, MAP_CONFIG.WIDTH, MAP_CONFIG.HEIGHT);
@@ -72,9 +85,14 @@ export class GameScene extends Phaser.Scene {
 
     // Create enemy spawner and wave manager
     this.spawner = new EnemySpawner(
-      this, pathfinder,
-      collisionLayer, elevatedLayer, fenceLayer,
-      graveColliders, treeColliders, obstacleColliders
+      this,
+      pathfinder,
+      collisionLayer,
+      elevatedLayer,
+      fenceLayer,
+      graveColliders,
+      treeColliders,
+      obstacleColliders,
     );
     this.waveManager = new WaveManager(this, this.spawner);
     this.waveManager.start();
@@ -109,12 +127,15 @@ export class GameScene extends Phaser.Scene {
 
     // HUD text (desktop only)
     if (!isMobile) {
-      this.add.text(10, 10, 'WASD/Arrows: Move | Space: Attack | Q/E: Zoom | F: Full map | R: Reset', {
-        fontSize: '12px',
-        color: '#ffffff',
-        backgroundColor: '#00000088',
-        padding: { x: 4, y: 2 },
-      }).setScrollFactor(0).setDepth(100);
+      this.add
+        .text(10, 10, 'WASD/Arrows: Move | Space: Attack | Q/E: Zoom | F: Full map | R: Reset', {
+          fontSize: '12px',
+          color: '#ffffff',
+          backgroundColor: '#00000088',
+          padding: { x: 4, y: 2 },
+        })
+        .setScrollFactor(0)
+        .setDepth(100);
     }
 
     // Touch controls (visible only on touch devices) — use a separate UI camera
@@ -128,14 +149,14 @@ export class GameScene extends Phaser.Scene {
       const uiObjects = this.touchControls.getObjects();
 
       // Main camera ignores touch UI objects
-      uiObjects.forEach(obj => this.cameras.main.ignore(obj));
+      uiObjects.forEach((obj) => this.cameras.main.ignore(obj));
 
       // UI camera ignores everything EXCEPT touch UI objects
       // By default the added camera sees nothing — we need to set it to visible
       uiCam.visible = true;
 
       // The trick: ignore all existing display list objects on UI cam, then un-ignore UI objects
-      this.children.list.forEach(child => {
+      this.children.list.forEach((child) => {
         if (!uiObjects.includes(child)) {
           uiCam.ignore(child);
         }
@@ -163,7 +184,12 @@ export class GameScene extends Phaser.Scene {
     this.waveManager.update(this.player.getIsDead());
 
     // Update HTML HUD
-    this.hud.update(this.player, this.waveManager, this.waveManager.getAllEnemies(), this.game.loop.delta);
+    this.hud.update(
+      this.player,
+      this.waveManager,
+      this.waveManager.getAllEnemies(),
+      this.game.loop.delta,
+    );
 
     // Update enemies (skip if player is dead — enemies stop targeting)
     const enemies = this.waveManager.getAllEnemies();
@@ -187,7 +213,12 @@ export class GameScene extends Phaser.Scene {
           const hitbox = this.player.getHitbox();
           if (hitbox && !this.player.hasAlreadyHitTarget(enemy)) {
             const enemySprite = enemy.getSprite();
-            const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, enemySprite.x, enemySprite.y);
+            const dist = Phaser.Math.Distance.Between(
+              hitbox.x,
+              hitbox.y,
+              enemySprite.x,
+              enemySprite.y,
+            );
             if (dist < 20) {
               this.player.registerHit(enemy);
               enemy.takeDamage(1, this.player);
@@ -215,7 +246,9 @@ export class GameScene extends Phaser.Scene {
       const sprite = this.player.getSprite();
       const tileX = Math.floor(sprite.x / 16);
       const tileY = Math.floor(sprite.y / 16);
-      console.log(`[POS] Pixel: (${Math.round(sprite.x)}, ${Math.round(sprite.y)}) | Tile: (${tileX}, ${tileY})`);
+      console.log(
+        `[POS] Pixel: (${Math.round(sprite.x)}, ${Math.round(sprite.y)}) | Tile: (${tileX}, ${tileY})`,
+      );
     }
 
     const cam = this.cameras.main;

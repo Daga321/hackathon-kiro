@@ -7,14 +7,9 @@ const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const USERS_TABLE = process.env.USERS_TABLE!;
 
-export const handler = async (
-  event: APIGatewayProxyEvent,
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    const limit = Math.min(
-      Number(event.queryStringParameters?.limit) || 100,
-      100,
-    );
+    const limit = Math.min(Number(event.queryStringParameters?.limit) || 100, 100);
 
     const result = await ddbClient.send(
       new QueryCommand({
