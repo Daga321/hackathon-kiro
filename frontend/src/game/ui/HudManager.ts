@@ -17,8 +17,17 @@ export class HudManager {
   private minimapCtx: CanvasRenderingContext2D | null;
 
   private score: number = 0;
-  private aggroTime: number = 0; // ms
-  private isAggro: boolean = false;
+  private scoreTimeAccumulator: number = 0; // ms accumulated for +1/sec
+  private previousAliveEnemies: Set<Enemy> = new Set();
+  private gameStopped: boolean = false;
+
+  // ─── Aggro Timer (countdown) ───
+  private static readonly AGGRO_BASE_DURATION_SEC = 30;
+  private static readonly AGGRO_INCREASE_PER_WAVE_SEC = 5;
+  private aggroTimeRemaining: number = HudManager.AGGRO_BASE_DURATION_SEC * 1000; // ms
+  private aggroCountdownAccumulator: number = 0;
+  private isAggroActive: boolean = false;
+  private lastWave: number = 0;
 
   constructor() {
     this.healthBarFill = document.getElementById('health-bar-fill');
@@ -39,6 +48,13 @@ export class HudManager {
   }
 
   /**
+   * Whether the aggro countdown has reached zero (enemies should be aggressive).
+   */
+  getIsAggroActive(): boolean {
+    return this.isAggroActive;
+  }
+
+  /**
    * Update HUD each frame.
    */
   update(player: Player, waveManager: WaveManager, enemies: Enemy[], delta: number): void {
@@ -48,7 +64,6 @@ export class HudManager {
     const ratio = maxHp > 0 ? hp / maxHp : 0;
     if (this.healthBarFill) {
       this.healthBarFill.style.width = `${ratio * 100}%`;
-      // Color based on ratio
       if (ratio > 0.5) this.healthBarFill.style.background = '#44cc44';
       else if (ratio > 0.25) this.healthBarFill.style.background = '#cccc44';
       else this.healthBarFill.style.background = '#cc3333';
@@ -56,25 +71,64 @@ export class HudManager {
     if (this.healthText) this.healthText.textContent = `${hp} / ${maxHp}`;
 
     // Wave
-    if (this.waveText) this.waveText.textContent = `${waveManager.getWave()}`;
+    const currentWave = waveManager.getWave();
+    if (this.waveText) this.waveText.textContent = `${currentWave}`;
 
-    // Score
+    // Reset aggro timer on new wave
+    if (currentWave > this.lastWave) {
+      this.lastWave = currentWave;
+      const duration = HudManager.AGGRO_BASE_DURATION_SEC + (currentWave - 1) * HudManager.AGGRO_INCREASE_PER_WAVE_SEC;
+      this.aggroTimeRemaining = duration * 1000;
+      this.aggroCountdownAccumulator = 0;
+      this.isAggroActive = false;
+    }
+
+    // ─── Score system ───
+    if (!this.gameStopped && !player.getIsDead()) {
+      // +1 per second
+      this.scoreTimeAccumulator += delta;
+      while (this.scoreTimeAccumulator >= 1000) {
+        this.score += 1;
+        this.scoreTimeAccumulator -= 1000;
+      }
+
+      // +100 per enemy killed (detect newly dead enemies)
+      for (const enemy of enemies) {
+        if (enemy.getIsDead() && this.previousAliveEnemies.has(enemy)) {
+          this.score += 100;
+          this.previousAliveEnemies.delete(enemy);
+        }
+      }
+      // Track alive enemies for next frame comparison
+      for (const enemy of enemies) {
+        if (!enemy.getIsDead()) {
+          this.previousAliveEnemies.add(enemy);
+        }
+      }
+    } else if (player.getIsDead()) {
+      this.gameStopped = true;
+    }
+
     if (this.scoreText) this.scoreText.textContent = `${this.score}`;
 
     // Enemies alive
     const alive = enemies.filter(e => !e.getIsDead()).length;
     if (this.enemiesText) this.enemiesText.textContent = `${alive}`;
 
-    // Aggro timer — counts up while any enemy is chasing (detected player)
-    const anyChasing = alive > 0 && !player.getIsDead();
-    if (anyChasing) {
-      if (!this.isAggro) this.isAggro = true;
-      this.aggroTime += delta;
-    } else {
-      this.isAggro = false;
+    // ─── Aggro Timer countdown ───
+    if (!this.gameStopped && !this.isAggroActive) {
+      this.aggroCountdownAccumulator += delta;
+      while (this.aggroCountdownAccumulator >= 1000 && this.aggroTimeRemaining > 0) {
+        this.aggroTimeRemaining -= 1000;
+        this.aggroCountdownAccumulator -= 1000;
+      }
+      if (this.aggroTimeRemaining <= 0) {
+        this.aggroTimeRemaining = 0;
+        this.isAggroActive = true;
+      }
     }
     if (this.aggroText) {
-      const totalSec = Math.floor(this.aggroTime / 1000);
+      const totalSec = Math.max(0, Math.floor(this.aggroTimeRemaining / 1000));
       const min = Math.floor(totalSec / 60).toString().padStart(2, '0');
       const sec = (totalSec % 60).toString().padStart(2, '0');
       this.aggroText.textContent = `${min}:${sec}`;

@@ -167,11 +167,12 @@ export class GameScene extends Phaser.Scene {
 
     // Update enemies (skip if player is dead — enemies stop targeting)
     const enemies = this.waveManager.getAllEnemies();
+    const globalAggro = this.hud.getIsAggroActive();
     for (const enemy of enemies) {
       if (!enemy.getIsDead()) {
         enemy.updateDepth();
         if (!this.player.getIsDead()) {
-          enemy.update(this.player.getSprite());
+          enemy.update(this.player.getSprite(), globalAggro);
         }
       }
     }
