@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MapGenerator } from '../map/MapGenerator';
 import { MAP_CONFIG } from '../config/map-config';
+import { DEV_TOOLS_ENABLED } from '../config/dev-tools';
 import { Player } from '../entities/Player';
 import { EnemySpawner } from '../ai/EnemySpawner';
 import { WaveManager } from '../ai/WaveManager';
@@ -32,11 +33,15 @@ export class GameScene extends Phaser.Scene {
   private keyR!: Phaser.Input.Keyboard.Key;
   private keyP!: Phaser.Input.Keyboard.Key;
   private keyL!: Phaser.Input.Keyboard.Key;
+  private keyT!: Phaser.Input.Keyboard.Key;
+  private keyBodies!: Phaser.Input.Keyboard.Key;
   private player!: Player;
   private waveManager!: WaveManager;
   private spawner!: EnemySpawner;
   private touchControls!: TouchControls;
   private hud!: HudManager;
+  private devHudObjects: Phaser.GameObjects.GameObject[] = [];
+  private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
   private playerWasAttacking: boolean = false;
 
@@ -124,26 +129,71 @@ export class GameScene extends Phaser.Scene {
       S: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
       D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
-    this.keyQ = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
-    this.keyE = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-    this.keyF = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-    this.keyR = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.keyP = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-    // Debug key: L = log position to console
-    this.keyL = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.L);
+    // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
+    if (DEV_TOOLS_ENABLED) {
+      this.keyQ = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+      this.keyE = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+      this.keyF = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
+      this.keyR = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+      this.keyL = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.L);
+      this.keyT = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.T);
+      this.keyBodies = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.B);
 
-    // HUD text (desktop only)
-    if (!isMobile) {
-      this.add
-        .text(10, 10, 'WASD/Arrows: Move | Space: Attack | Q/E: Zoom | F: Full map | R: Reset', {
-          fontSize: '12px',
-          color: '#ffffff',
-          backgroundColor: '#00000088',
-          padding: { x: 4, y: 2 },
-        })
-        .setScrollFactor(0)
-        .setDepth(100);
+      // Dev HUD: rendered on a separate camera with fixed zoom=1 so it stays
+      // at a constant size regardless of the main camera zoom (like CSS position:fixed).
+      if (!isMobile) {
+        const shortcutsText = this.add
+          .text(
+            10,
+            10,
+            'WASD/Arrows: Move | Space: Attack | Q/E: Zoom | F: Full map | R: Reset | L: Position | T: Tiles | B: Bodies',
+            {
+              fontSize: '12px',
+              color: '#ffffff',
+              backgroundColor: '#00000088',
+              padding: { x: 4, y: 2 },
+            },
+          )
+          .setScrollFactor(0)
+          .setDepth(1000);
+
+        this.devPosText = this.add
+          .text(10, 30, '', {
+            fontSize: '12px',
+            color: '#00ff88',
+            backgroundColor: '#00000088',
+            padding: { x: 4, y: 2 },
+          })
+          .setScrollFactor(0)
+          .setDepth(1000)
+          .setVisible(false);
+
+        this.devHudObjects.push(shortcutsText, this.devPosText);
+
+        // Create a dedicated dev-tools UI camera: zoom is always 1, no scroll
+        const devCam = this.cameras.add(
+          0,
+          0,
+          this.scale.width,
+          this.scale.height,
+          false,
+          'devtools',
+        );
+        devCam.setZoom(1);
+        devCam.setScroll(0, 0);
+
+        // Dev camera only renders dev HUD objects
+        this.children.list.forEach((child) => {
+          if (!this.devHudObjects.includes(child)) {
+            devCam.ignore(child);
+          }
+        });
+
+        // Main camera ignores dev HUD objects (they live on devCam only)
+        this.devHudObjects.forEach((obj) => this.cameras.main.ignore(obj));
+      }
     }
 
     // Touch controls (visible only on touch devices) — use a separate UI camera
@@ -272,20 +322,36 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // Debug: press L to log player position
-    if (Phaser.Input.Keyboard.JustDown(this.keyL)) {
+    // Debug: press L to toggle position HUD and log to console (dev tools only)
+    if (DEV_TOOLS_ENABLED && Phaser.Input.Keyboard.JustDown(this.keyL)) {
+      if (this.devPosText) {
+        const nowVisible = !this.devPosText.visible;
+        this.devPosText.setVisible(nowVisible);
+        if (nowVisible) {
+          const sprite = this.player.getSprite();
+          const tileX = Math.floor(sprite.x / 16);
+          const tileY = Math.floor(sprite.y / 16);
+          console.log(
+            `[POS] Pixel: (${Math.round(sprite.x)}, ${Math.round(sprite.y)}) | Tile: (${tileX}, ${tileY})`,
+          );
+        }
+      }
+    }
+
+    // Keep position HUD updated in real-time when visible
+    if (DEV_TOOLS_ENABLED && this.devPosText?.visible) {
       const sprite = this.player.getSprite();
       const tileX = Math.floor(sprite.x / 16);
       const tileY = Math.floor(sprite.y / 16);
-      console.log(
-        `[POS] Pixel: (${Math.round(sprite.x)}, ${Math.round(sprite.y)}) | Tile: (${tileX}, ${tileY})`,
+      this.devPosText.setText(
+        `Pixel: (${Math.round(sprite.x)}, ${Math.round(sprite.y)}) | Tile: (${tileX}, ${tileY})`,
       );
     }
 
     const cam = this.cameras.main;
 
     // Camera controls (desktop only — disabled on mobile)
-    if (!this.touchControls.isActive()) {
+    if (DEV_TOOLS_ENABLED && !this.touchControls.isActive()) {
       // Zoom with Q/E
       if (this.keyQ.isDown) cam.zoom = Math.min(4, cam.zoom + 0.02);
       if (this.keyE.isDown) cam.zoom = Math.max(0.15, cam.zoom - 0.02);
@@ -302,6 +368,28 @@ export class GameScene extends Phaser.Scene {
       if (Phaser.Input.Keyboard.JustDown(this.keyR)) {
         cam.zoom = 2;
         this.cameras.main.startFollow(this.player.getSprite(), true, 0.1, 0.1);
+      }
+
+      // T: Toggle TileDebugScene (pauses game, shows tiles on solid background)
+      if (Phaser.Input.Keyboard.JustDown(this.keyT)) {
+        if (this.scene.isActive('TileDebugScene')) {
+          this.scene.stop('TileDebugScene');
+          this.scene.wake('GameScene');
+        } else {
+          this.scene.sleep('GameScene');
+          this.scene.launch('TileDebugScene');
+          this.scene.bringToTop('TileDebugScene');
+        }
+      }
+
+      // B: Toggle physics debug overlay (body outlines + velocity vectors)
+      if (Phaser.Input.Keyboard.JustDown(this.keyBodies)) {
+        const world = this.physics.world;
+        if (!world.debugGraphic) {
+          world.createDebugGraphic();
+        }
+        world.drawDebug = !world.drawDebug;
+        world.debugGraphic.setVisible(world.drawDebug);
       }
     }
   }

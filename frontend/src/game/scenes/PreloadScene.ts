@@ -4,6 +4,7 @@ import { TILESET_KEYS } from '../config/map-config';
 /**
  * Preloads all tileset spritesheets and images needed for map generation.
  * Assets are loaded with correct frame dimensions for tilemap consumption.
+ * Communicates loading progress to the HTML loading screen overlay.
  */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -11,7 +12,7 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.createLoadingBar();
+    this.connectHtmlLoadingScreen();
 
     // ─── Ground ─────────────────────────────────────────────────────────
     // grass.png is a single 16×16 tile — load as image for tilemap use
@@ -104,40 +105,81 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Check which scene to start based on the registered scenes
-    const sceneKeys = this.scene.manager.keys;
-    if (sceneKeys['TileDebugScene']) {
-      this.scene.start('TileDebugScene');
-    } else {
-      this.scene.start('GameScene');
-    }
+    this.showStartPrompt();
   }
 
   /**
-   * Create a simple loading progress bar.
+   * Connect Phaser's load progress to the HTML loading screen overlay.
+   * Updates the progress bar fill width.
    */
-  private createLoadingBar(): void {
-    const { width, height } = this.cameras.main;
-    const barWidth = 320;
-    const barHeight = 30;
-    const barX = (width - barWidth) / 2;
-    const barY = (height - barHeight) / 2;
-
-    const progressBox = this.add.graphics();
-    progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(barX - 10, barY - 10, barWidth + 20, barHeight + 20);
-
-    const progressBar = this.add.graphics();
+  private connectHtmlLoadingScreen(): void {
+    const progressFill = document.getElementById('loading-progress-fill');
 
     this.load.on('progress', (value: number) => {
-      progressBar.clear();
-      progressBar.fillStyle(0x4a6741, 1);
-      progressBar.fillRect(barX, barY, barWidth * value, barHeight);
+      if (progressFill) {
+        progressFill.style.width = `${Math.round(value * 100)}%`;
+      }
     });
+  }
 
-    this.load.on('complete', () => {
-      progressBar.destroy();
-      progressBox.destroy();
-    });
+  /**
+   * Show "Press any key / Tap to start" prompt and wait for user interaction.
+   */
+  private showStartPrompt(): void {
+    const statusText = document.getElementById('loading-status-text');
+    const startPrompt = document.getElementById('loading-start-prompt');
+
+    // Hide "Loading..." text, show prompt
+    if (statusText) {
+      statusText.style.display = 'none';
+    }
+    if (startPrompt) {
+      startPrompt.classList.add('visible');
+    }
+
+    // Wait for any key press or touch/click
+    const handleInteraction = (): void => {
+      // Remove listeners to avoid double-firing
+      document.removeEventListener('keydown', handleInteraction);
+      document.removeEventListener('pointerdown', handleInteraction);
+      this.hideHtmlLoadingScreen();
+    };
+
+    document.addEventListener('keydown', handleInteraction, { once: true });
+    document.addEventListener('pointerdown', handleInteraction, { once: true });
+  }
+
+  /**
+   * Fade out and remove the HTML loading screen overlay, then start the game.
+   */
+  private hideHtmlLoadingScreen(): void {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (!loadingScreen) {
+      this.scene.start('GameScene');
+      return;
+    }
+
+    // Trigger CSS fade-out transition
+    loadingScreen.classList.add('fade-out');
+
+    // After the transition ends, remove from DOM and start the game
+    loadingScreen.addEventListener(
+      'transitionend',
+      () => {
+        loadingScreen.classList.add('hidden');
+        this.scene.start('GameScene');
+      },
+      { once: true },
+    );
+
+    // Fallback in case transitionend doesn't fire (e.g., reduced motion)
+    setTimeout(() => {
+      if (!loadingScreen.classList.contains('hidden')) {
+        loadingScreen.classList.add('hidden');
+        if (!this.scene.isActive('GameScene')) {
+          this.scene.start('GameScene');
+        }
+      }
+    }, 1000);
   }
 }

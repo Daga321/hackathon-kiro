@@ -2,9 +2,7 @@ import Phaser from 'phaser';
 import { PreloadScene } from './game/scenes/PreloadScene';
 import { GameScene } from './game/scenes/GameScene';
 import { TileDebugScene } from './game/scenes/TileDebugScene';
-
-// Toggle: set to true to inspect tile indices visually
-const DEBUG_TILES = false;
+import { DEV_TOOLS_ENABLED } from './game/config/dev-tools';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -29,9 +27,15 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 3, // Support multitouch (joystick + attack + UI)
   },
-  scene: DEBUG_TILES ? [PreloadScene, TileDebugScene] : [PreloadScene, GameScene],
+  scene: [PreloadScene, GameScene],
 };
 
 const game = new Phaser.Game(config);
+
+// Register TileDebugScene without auto-starting it.
+// Press T in-game to toggle it on/off (requires VITE_DEV_TOOLS=true).
+if (DEV_TOOLS_ENABLED) {
+  game.scene.add('TileDebugScene', TileDebugScene, false);
+}
 
 export default game;
