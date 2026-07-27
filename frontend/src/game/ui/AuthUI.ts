@@ -4,8 +4,12 @@
  * Handles UI state transitions between guest/logged-in views,
  * form toggling (login ↔ register), and button interactions.
  *
- * This is UI-only — actual authentication logic will be connected later.
+ * Connected to auth.service.ts for real authentication via API Gateway.
  */
+import { login, register, logout, hasActiveSession } from '../../services/auth.service';
+import { getUsername, clearTokens } from '../../services/token-manager';
+import { retryPendingScores } from '../../services/leaderboard.service';
+
 export class AuthUI {
   // HUD elements
   private guestSection: HTMLElement | null;
@@ -58,6 +62,7 @@ export class AuthUI {
     this.registerError = document.getElementById('auth-register-error');
 
     this.bindEvents();
+    this.restoreSession();
   }
 
   get isLoggedIn(): boolean {
@@ -102,7 +107,7 @@ export class AuthUI {
   }
 
   /**
-   * Simulate a successful login (UI-only, will be replaced with real auth).
+   * Set the UI to logged-in state.
    */
   setLoggedIn(username: string): void {
     this._isLoggedIn = true;
@@ -140,6 +145,23 @@ export class AuthUI {
 
   // ─── Private ───
 
+  /**
+   * Restore session from localStorage on page load.
+   * If a valid token exists, set UI to logged-in without requiring credentials.
+   */
+  private restoreSession(): void {
+    if (hasActiveSession()) {
+      const username = getUsername() || 'Player';
+      this._isLoggedIn = true;
+      if (this.usernameEl) this.usernameEl.textContent = username;
+      if (this.guestSection) this.guestSection.style.display = 'none';
+      if (this.loggedSection) this.loggedSection.style.display = 'flex';
+
+      // Silently retry any pending scores from previous failed submissions
+      retryPendingScores();
+    }
+  }
+
   private hidePopup(): void {
     this.backdrop?.classList.remove('visible');
     this.clearErrors();
@@ -169,17 +191,17 @@ export class AuthUI {
       `;
       // Insert into the auth board
       const board = this.backdrop?.querySelector('.pause-board');
-      const closeBtn = document.getElementById('auth-close-btn');
-      if (board && closeBtn) {
-        board.insertBefore(prompt, closeBtn);
+      const closeBtnEl = document.getElementById('auth-close-btn');
+      if (board && closeBtnEl) {
+        board.insertBefore(prompt, closeBtnEl);
       }
     } else {
       prompt.style.display = 'flex';
     }
 
     // Hide the close button while showing continue prompt
-    const closeBtn = document.getElementById('auth-close-btn');
-    if (closeBtn) closeBtn.style.display = 'none';
+    const closeBtnEl = document.getElementById('auth-close-btn');
+    if (closeBtnEl) closeBtnEl.style.display = 'none';
 
     // Keep backdrop visible
     this.backdrop?.classList.add('visible');
@@ -198,8 +220,8 @@ export class AuthUI {
   private hideContinuePrompt(): void {
     const prompt = document.getElementById('auth-continue-prompt');
     if (prompt) prompt.style.display = 'none';
-    const closeBtn = document.getElementById('auth-close-btn');
-    if (closeBtn) closeBtn.style.display = '';
+    const closeBtnEl = document.getElementById('auth-close-btn');
+    if (closeBtnEl) closeBtnEl.style.display = '';
   }
 
   private showLoginForm(): void {
@@ -219,15 +241,32 @@ export class AuthUI {
     if (this.registerError) this.registerError.textContent = '';
   }
 
+  private setSubmitLoading(btn: HTMLElement | null, loading: boolean): void {
+    if (!btn) return;
+    if (loading) {
+      btn.setAttribute('data-original-text', btn.textContent || '');
+      btn.textContent = 'Loading...';
+      btn.setAttribute('disabled', 'true');
+      (btn as HTMLButtonElement).style.opacity = '0.6';
+    } else {
+      btn.textContent = btn.getAttribute('data-original-text') || 'Submit';
+      btn.removeAttribute('disabled');
+      (btn as HTMLButtonElement).style.opacity = '1';
+    }
+  }
+
   private bindEvents(): void {
     // Open popup from HUD
     if (this.loginBtn) {
       this.loginBtn.onclick = () => this.openFrom('hud');
     }
 
-    // Logout
+    // Logout — calls the API to invalidate tokens server-side
     if (this.logoutBtn) {
-      this.logoutBtn.onclick = () => this.setLoggedOut();
+      this.logoutBtn.onclick = async () => {
+        await logout();
+        this.setLoggedOut();
+      };
     }
 
     // Close popup
@@ -243,37 +282,44 @@ export class AuthUI {
       this.showLoginLink.onclick = () => this.showLoginForm();
     }
 
-    // Login submit (UI-only mock)
+    // Login submit — calls auth.service.login()
     if (this.loginSubmit) {
-      this.loginSubmit.onclick = () => {
+      this.loginSubmit.onclick = async () => {
         const emailInput = document.getElementById('auth-login-email') as HTMLInputElement;
         const passwordInput = document.getElementById('auth-login-password') as HTMLInputElement;
-        const email = emailInput?.value?.trim();
+        const username = emailInput?.value?.trim();
         const password = passwordInput?.value;
 
-        if (!email || !password) {
+        if (!username || !password) {
           if (this.loginError) this.loginError.textContent = 'All fields are required';
           return;
         }
 
-        if (!this.isValidEmail(email)) {
-          if (this.loginError) this.loginError.textContent = 'Invalid email format';
-          return;
-        }
+        this.setSubmitLoading(this.loginSubmit, true);
 
-        // TODO: Replace with real auth call
-        // For now, simulate success with email as username
-        const username = email.split('@')[0];
-        this.setLoggedIn(username);
+        const result = await login(username, password);
+
+        this.setSubmitLoading(this.loginSubmit, false);
+
+        if (result.success) {
+          const displayName = getUsername() || username;
+          this.setLoggedIn(displayName);
+        } else {
+          if (this.loginError) this.loginError.textContent = result.error;
+        }
       };
     }
 
-    // Register submit (UI-only mock)
+    // Register submit — calls auth.service.register() then auto-login
     if (this.registerSubmit) {
-      this.registerSubmit.onclick = () => {
-        const usernameInput = document.getElementById('auth-register-username') as HTMLInputElement;
+      this.registerSubmit.onclick = async () => {
+        const usernameInput = document.getElementById(
+          'auth-register-username',
+        ) as HTMLInputElement;
         const emailInput = document.getElementById('auth-register-email') as HTMLInputElement;
-        const passwordInput = document.getElementById('auth-register-password') as HTMLInputElement;
+        const passwordInput = document.getElementById(
+          'auth-register-password',
+        ) as HTMLInputElement;
         const username = usernameInput?.value?.trim();
         const email = emailInput?.value?.trim();
         const password = passwordInput?.value;
@@ -288,9 +334,32 @@ export class AuthUI {
           return;
         }
 
-        // TODO: Replace with real auth call
-        // For now, simulate success
-        this.setLoggedIn(username);
+        this.setSubmitLoading(this.registerSubmit, true);
+
+        const registerResult = await register(username, email, password);
+
+        if (!registerResult.success) {
+          this.setSubmitLoading(this.registerSubmit, false);
+          if (this.registerError) this.registerError.textContent = registerResult.error;
+          return;
+        }
+
+        // Auto-login after successful registration
+        const loginResult = await login(username, password);
+
+        this.setSubmitLoading(this.registerSubmit, false);
+
+        if (loginResult.success) {
+          this.setLoggedIn(username);
+        } else {
+          // Registration succeeded but login failed — show success message
+          if (this.registerError) {
+            this.registerError.style.color = '#44ff44';
+            this.registerError.textContent =
+              'Account created! Please verify your email and log in.';
+          }
+          this.showLoginForm();
+        }
       };
     }
 
