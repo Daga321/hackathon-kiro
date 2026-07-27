@@ -51,7 +51,7 @@ export class GameScene extends Phaser.Scene {
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
-  private playerWasAttacking: boolean = false;
+  private missPlayed: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -158,6 +158,7 @@ export class GameScene extends Phaser.Scene {
     // Game over screen
     this.gameOverScreen = new GameOverScreen();
     this.gameOverScreen.onRestart(() => {
+      this.audio.stopAll();
       this.scene.restart();
     });
 
@@ -282,13 +283,6 @@ export class GameScene extends Phaser.Scene {
       !this.player.getIsDead();
     this.audio.updateSteps(playerActuallyMoving);
 
-    // Player attack sound (play once when hitbox activates)
-    const playerAttacking = this.player.isHitboxActive();
-    if (playerAttacking && !this.playerWasAttacking) {
-      this.audio.playAttack();
-    }
-    this.playerWasAttacking = playerAttacking;
-
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
 
@@ -323,6 +317,8 @@ export class GameScene extends Phaser.Scene {
 
     // ─── Combat damage detection (skip if player dead) ───
     if (!this.player.getIsDead()) {
+      let playerHitConnected = false;
+
       for (const enemy of enemies) {
         if (enemy.getIsDead()) continue;
 
@@ -347,12 +343,14 @@ export class GameScene extends Phaser.Scene {
                 dmg,
                 DamageType.DEALT,
               );
+              this.audio.playHit();
+              playerHitConnected = true;
             }
           }
         }
 
-        // Enemy attacks player
-        if (enemy.isHitboxActive()) {
+        // Enemy attacks player (disabled while enemy is in knockback from player hit)
+        if (enemy.isHitboxActive() && !enemy.getIsInKnockback()) {
           const hitbox = enemy.getHitbox();
           if (hitbox && !enemy.hasAlreadyHitTarget(this.player)) {
             const plSprite = this.player.getSprite();
@@ -362,9 +360,19 @@ export class GameScene extends Phaser.Scene {
               const dmg = enemy.getAttackDamage();
               this.player.takeDamage(dmg, enemy);
               this.damageIndicators.spawn(plSprite.x, plSprite.y - 8, dmg, DamageType.RECEIVED);
+              this.audio.playPlayerDamage();
             }
           }
         }
+      }
+
+      // Miss attack: player swung but didn't hit anyone this frame
+      if (this.player.isHitboxActive() && !playerHitConnected && !this.missPlayed) {
+        this.audio.playMissAttack();
+        this.missPlayed = true;
+      }
+      if (!this.player.isHitboxActive()) {
+        this.missPlayed = false;
       }
     }
 

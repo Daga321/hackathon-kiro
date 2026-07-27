@@ -17,7 +17,7 @@ export class PreloadScene extends Phaser.Scene {
     this.connectHtmlLoadingScreen();
 
     // Load the load-screen music FIRST so it can play ASAP while other assets load
-    this.load.audio('bgm_load', 'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav');
+    this.load.audio('bgm_load', 'audio/music/bgm_loading_50bpm.wav');
 
     // Try to start music as soon as it's loaded (before all assets finish)
     this.load.once('filecomplete-audio-bgm_load', () => {
@@ -106,13 +106,11 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     // ─── Audio ──────────────────────────────────────────────────────────
-    this.load.audio('bgm_load', 'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav');
-    this.load.audio(
-      'bgm_battle',
-      'audio/music/music_guardia_del_cementerio_ballte_stage_110bpm_.wav',
-    );
-    this.load.audio('sfx_hit', 'audio/sfx/Efecto_golpe.mp3');
-    this.load.audio('sfx_steps', 'audio/sfx/Efecto_pasos.mp3');
+    this.load.audio('bgm_battle', 'audio/music/bgm_battle_110bpm.wav');
+    this.load.audio('sfx_hit', 'audio/sfx/sfx_hit.mp3');
+    this.load.audio('sfx_steps', 'audio/sfx/sfx_steps.mp3');
+    this.load.audio('sfx_player_damage', 'audio/sfx/sfx_player_damage.mp3');
+    this.load.audio('sfx_miss_attack', 'audio/sfx/sfx_miss_attack.mp3');
   }
 
   create(): void {
@@ -123,34 +121,19 @@ export class PreloadScene extends Phaser.Scene {
 
   /**
    * Attempt to play load screen music. If browser blocks autoplay,
-   * registers a one-time interaction listener to resume.
+   * it will start when the user interacts with the "Press to start" prompt.
    */
   private tryStartLoadMusic(): void {
-    if (this.loadMusic) return; // already playing
+    if (this.loadMusic) return;
 
     this.loadMusic = this.sound.add('bgm_load', { loop: true, volume: 0.35 });
 
-    // Try to play immediately
+    // Try to play — may fail silently due to autoplay policy.
+    // The AudioContext will be resumed by the user's "Press to start" interaction.
     try {
       this.loadMusic.play();
     } catch {
-      // Autoplay blocked — will retry on interaction
-    }
-
-    // If the audio context is suspended (autoplay policy), resume on first interaction
-    const ctx = (this.sound as Phaser.Sound.WebAudioSoundManager)?.context;
-    if (ctx && ctx.state === 'suspended') {
-      const resumeAudio = (): void => {
-        ctx.resume().then(() => {
-          if (this.loadMusic && !(this.loadMusic as Phaser.Sound.WebAudioSound).isPlaying) {
-            this.loadMusic.play();
-          }
-        });
-        document.removeEventListener('pointerdown', resumeAudio);
-        document.removeEventListener('keydown', resumeAudio);
-      };
-      document.addEventListener('pointerdown', resumeAudio, { once: true });
-      document.addEventListener('keydown', resumeAudio, { once: true });
+      // Autoplay blocked — music will start when AudioContext is resumed
     }
   }
 
@@ -188,6 +171,13 @@ export class PreloadScene extends Phaser.Scene {
       // Remove listeners to avoid double-firing
       document.removeEventListener('keydown', handleInteraction);
       document.removeEventListener('pointerdown', handleInteraction);
+
+      // Unlock the AudioContext with this user gesture
+      const ctx = (this.sound as Phaser.Sound.WebAudioSoundManager)?.context;
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
       this.hideHtmlLoadingScreen();
     };
 

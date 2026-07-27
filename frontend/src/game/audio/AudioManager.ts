@@ -21,8 +21,46 @@ export class AudioManager {
 
   /**
    * Start background music (looped). Call once at game start.
+   * Handles browser autoplay policy by resuming the AudioContext if suspended.
    */
   startMusic(): void {
+    if (this.bgMusic) return;
+
+    // Ensure the Web Audio context is unlocked
+    const soundManager = this.scene.sound;
+    if (soundManager instanceof Phaser.Sound.WebAudioSoundManager) {
+      const ctx = soundManager.context;
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          this.playBgMusic();
+        });
+        return;
+      }
+    }
+
+    this.playBgMusic();
+  }
+
+  /**
+   * Stop all audio and clean up. Call before scene restart.
+   */
+  stopAll(): void {
+    if (this.bgMusic) {
+      this.bgMusic.stop();
+      this.bgMusic.destroy();
+      this.bgMusic = null;
+    }
+    if (this.stepSound) {
+      this.stepSound.stop();
+      this.stepSound.destroy();
+      this.stepSound = null;
+      this.isStepPlaying = false;
+    }
+    // Remove all sounds managed by this scene to prevent duplicates
+    this.scene.sound.removeAll();
+  }
+
+  private playBgMusic(): void {
     if (this.bgMusic) return;
     this.bgMusic = this.scene.sound.add('bgm_battle', {
       loop: true,
@@ -32,11 +70,27 @@ export class AudioManager {
   }
 
   /**
-   * Play hit/damage SFX once, slightly offset to skip the silent intro.
+   * Play hit/damage SFX once (when player's attack connects with an enemy).
    */
   playHit(): void {
     const sound = this.scene.sound.add('sfx_hit', { volume: AudioManager.SFX_VOLUME });
     (sound as Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound).play({ seek: 0.7 });
+  }
+
+  /**
+   * Play miss/swing SFX once (when player attacks but doesn't connect).
+   */
+  playMissAttack(): void {
+    const sound = this.scene.sound.add('sfx_miss_attack', { volume: AudioManager.ATTACK_VOLUME });
+    sound.play();
+  }
+
+  /**
+   * Play player damage SFX once (when player receives damage).
+   */
+  playPlayerDamage(): void {
+    const sound = this.scene.sound.add('sfx_player_damage', { volume: AudioManager.SFX_VOLUME });
+    sound.play();
   }
 
   /**
