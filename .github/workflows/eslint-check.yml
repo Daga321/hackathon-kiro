@@ -35,3 +35,6 @@ jobs:
 
       - name: Run ESLint
         run: pnpm eslint . --ext .ts --ignore-path .gitignore
+
+      - name: TypeScript check (frontend)
+        run: pnpm --filter @hackathon-kiro/frontend exec tsc --noEmit
