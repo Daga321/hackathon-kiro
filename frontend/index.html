@@ -543,6 +543,78 @@
         max-width: 36px;
       }
 
+      /* ─── Game Guide specifics ───────────────────────── */
+      #guide-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #guide-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #guide-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #guide-backdrop {
+          left: 120px;
+        }
+      }
+      .guide-board {
+        max-height: 85vh;
+        overflow-y: auto;
+        width: 480px;
+        max-width: 95%;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .guide-board::-webkit-scrollbar {
+        width: 8px;
+      }
+      .guide-board::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 4px;
+      }
+      .guide-board::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 4px;
+        border: 1px solid #4a2a0a;
+      }
+      .guide-board::-webkit-scrollbar-thumb:hover {
+        background: #8b5e3c;
+      }
+      .guide-text {
+        font-size: 0.55rem;
+        color: #ccc;
+        line-height: 2.2;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        z-index: 1;
+      }
+      .guide-highlight {
+        color: #f0c040;
+      }
+      .guide-white {
+        color: #ffffff;
+      }
+      .guide-red {
+        color: #ff4444;
+      }
+      .guide-green {
+        color: #44ff44;
+      }
+
       /* ─── Game Over specifics ──────────────────────────── */
       .gameover-title {
         font-size: 1.3rem;
@@ -1034,6 +1106,7 @@
         <div class="pause-board-divider"></div>
         <button id="pause-btn-resume" class="pause-btn pause-btn-primary">Resume</button>
         <button id="pause-btn-controls" class="pause-btn">Controls</button>
+        <button id="pause-btn-guide" class="pause-btn">Game Guide</button>
         <button id="pause-btn-audio" class="pause-btn">Audio Settings</button>
         <button id="pause-btn-leaderboard" class="pause-btn">Leaderboard</button>
         <button id="pause-btn-quit" class="pause-btn">Main Menu</button>
@@ -1139,6 +1212,72 @@
 
         <div class="pause-board-divider"></div>
         <button id="controls-btn-back" class="pause-btn pause-btn-primary">Back</button>
+      </div>
+    </div>
+
+    <!-- ═══ Game Guide Overlay ═══ -->
+    <div id="guide-backdrop">
+      <div class="pause-board guide-board">
+        <p class="pause-board-title">Game Guide</p>
+        <div class="pause-board-divider"></div>
+
+        <div class="controls-list">
+          <!-- Horde System -->
+          <p class="controls-category">Horde System</p>
+          <div class="guide-text">
+            Enemies attack in waves. Each wave brings more and stronger enemies. Survive as long as
+            you can.
+          </div>
+
+          <!-- Enemy Aggro -->
+          <p class="controls-category">Enemy Aggro</p>
+          <div class="guide-text">
+            Each wave has an aggro timer. When it reaches zero, all enemies become aggressive and
+            rush towards you regardless of distance.
+          </div>
+
+          <!-- Enemy Types -->
+          <p class="controls-category">Enemy Types</p>
+          <div class="guide-text">
+            <span class="guide-highlight">Skeletons</span> — Melee fighters, some carry swords for
+            extra damage.<br />
+            <span class="guide-highlight">Slimes</span> — Smaller and faster, harder to hit.
+          </div>
+
+          <!-- Health Pickups -->
+          <p class="controls-category">Health Pickups</p>
+          <div class="guide-text">
+            Defeated enemies may drop hearts. Collect them to restore health. They blink before
+            disappearing. Green dots on the minimap show their location.
+          </div>
+
+          <!-- Damage Indicators -->
+          <p class="controls-category">Damage Indicators</p>
+          <div class="guide-text">
+            <span class="guide-highlight guide-white">White</span> numbers = damage you deal.<br />
+            <span class="guide-highlight guide-red">Red</span> numbers = damage you receive.<br />
+            <span class="guide-highlight guide-green">Green</span> numbers = health restored.
+          </div>
+
+          <!-- Player Abilities -->
+          <p class="controls-category">Abilities</p>
+          <div class="guide-text">
+            <span class="guide-highlight">Attack</span> — Strike nearby enemies. Hitting an enemy
+            knocks it back and prevents it from attacking briefly.
+          </div>
+
+          <!-- Survival Tips -->
+          <p class="controls-category">Survival Tips</p>
+          <div class="guide-text">
+            • Keep moving to avoid getting surrounded.<br />
+            • Attack first — enemies can't hit you during knockback.<br />
+            • Watch the minimap for enemy positions and health pickups.<br />
+            • Pay attention to the aggro timer in the HUD.
+          </div>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="guide-btn-back" class="pause-btn pause-btn-primary">Back</button>
       </div>
     </div>
 

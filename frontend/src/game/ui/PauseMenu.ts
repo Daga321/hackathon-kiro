@@ -24,6 +24,10 @@ export class PauseMenu {
   private controlsMobile: HTMLElement | null;
   private btnControlsBack: HTMLElement | null;
 
+  private btnGuide: HTMLElement | null;
+  private guideBackdrop: HTMLElement | null;
+  private btnGuideBack: HTMLElement | null;
+
   private _isPaused: boolean = false;
   private onResumeCallback: (() => void) | null = null;
   private onPauseCallback: (() => void) | null = null;
@@ -40,6 +44,10 @@ export class PauseMenu {
     this.controlsDesktop = document.getElementById('controls-desktop');
     this.controlsMobile = document.getElementById('controls-mobile');
     this.btnControlsBack = document.getElementById('controls-btn-back');
+
+    this.btnGuide = document.getElementById('pause-btn-guide');
+    this.guideBackdrop = document.getElementById('guide-backdrop');
+    this.btnGuideBack = document.getElementById('guide-btn-back');
 
     this.bindButtons();
     this.bindKeyboard();
@@ -107,10 +115,10 @@ export class PauseMenu {
   private hide(): void {
     this.backdrop?.classList.remove('visible');
     this.controlsBackdrop?.classList.remove('visible');
+    this.guideBackdrop?.classList.remove('visible');
   }
 
   private showControls(): void {
-    // Detect touch device to show appropriate layout
     const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (this.controlsDesktop) this.controlsDesktop.style.display = isMobile ? 'none' : 'flex';
     if (this.controlsMobile) this.controlsMobile.style.display = isMobile ? 'flex' : 'none';
@@ -121,6 +129,16 @@ export class PauseMenu {
 
   private hideControls(): void {
     this.controlsBackdrop?.classList.remove('visible');
+    this.backdrop?.classList.add('visible');
+  }
+
+  private showGuide(): void {
+    this.backdrop?.classList.remove('visible');
+    this.guideBackdrop?.classList.add('visible');
+  }
+
+  private hideGuide(): void {
+    this.guideBackdrop?.classList.remove('visible');
     this.backdrop?.classList.add('visible');
   }
 
@@ -143,6 +161,20 @@ export class PauseMenu {
     if (this.btnControlsBack) {
       this.btnControlsBack.onclick = () => {
         this.hideControls();
+      };
+    }
+
+    // Game Guide
+    if (this.btnGuide) {
+      this.btnGuide.onclick = () => {
+        this.showGuide();
+      };
+    }
+
+    // Guide back button
+    if (this.btnGuideBack) {
+      this.btnGuideBack.onclick = () => {
+        this.hideGuide();
       };
     }
 
