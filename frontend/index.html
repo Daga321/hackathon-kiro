@@ -181,6 +181,29 @@
         image-rendering: pixelated;
       }
 
+      .hud-pause-btn {
+        width: 100%;
+        padding: 10px 12px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.5rem;
+        color: #f0c040;
+        background: linear-gradient(180deg, #5a3a1a 0%, #3a2210 100%);
+        border: 2px solid #f0c040;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+      }
+      .hud-pause-btn:hover {
+        background: linear-gradient(180deg, #7a4a2a 0%, #5a3a1a 100%);
+        transform: scale(1.03);
+      }
+      .hud-pause-btn:active {
+        transform: scale(0.97);
+      }
+
       /* ─── Wave Announcement Overlay ─────────────────── */
       .wave-announcement {
         position: fixed;
@@ -362,6 +385,742 @@
         color: #aaa;
         z-index: 1;
         margin-top: 4px;
+      }
+
+      /* ─── Controls Help Overlay ──────────────────────── */
+      #controls-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #controls-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #controls-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #controls-backdrop {
+          left: 120px;
+        }
+      }
+      .controls-board {
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .controls-list {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 1;
+      }
+      .controls-category {
+        font-size: 0.5rem;
+        color: #f0c040;
+        text-shadow: 1px 1px 0px #000;
+        margin-top: 8px;
+        margin-bottom: 2px;
+        z-index: 1;
+      }
+      .controls-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 10px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+      }
+      .controls-key {
+        font-size: 0.45rem;
+        color: #eee;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4px 8px;
+        border: 1px solid #555;
+        border-radius: 3px;
+        min-width: 70px;
+        text-align: center;
+      }
+      .controls-label {
+        font-size: 0.45rem;
+        color: #aaa;
+        text-align: right;
+      }
+
+      /* ─── Joystick demo for mobile controls ─── */
+      .controls-joystick-demo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 70px;
+      }
+      .joystick-base {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid #555;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .joystick-stick {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #f0c040;
+        position: absolute;
+      }
+      .joystick-up .joystick-stick {
+        transform: translateY(-8px);
+      }
+      .joystick-down .joystick-stick {
+        transform: translateY(8px);
+      }
+      .joystick-left .joystick-stick {
+        transform: translateX(-8px);
+      }
+      .joystick-right .joystick-stick {
+        transform: translateX(8px);
+      }
+
+      /* ─── Attack button demo for mobile ─── */
+      .controls-btn-demo {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(192, 57, 43, 0.4);
+        border: 2px solid #c0392b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #fff;
+        max-width: 38px;
+        flex-shrink: 0;
+      }
+
+      /* ─── Joystick demo for mobile controls ─── */
+      .controls-joystick-demo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 70px;
+      }
+      .joystick-base {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid #555;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .joystick-stick {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #f0c040;
+        position: absolute;
+        transition: transform 0.2s;
+      }
+      .joystick-up {
+        transform: translateY(-7px);
+      }
+      .joystick-down {
+        transform: translateY(7px);
+      }
+      .joystick-left {
+        transform: translateX(-7px);
+      }
+      .joystick-right {
+        transform: translateX(7px);
+      }
+
+      /* ─── Attack button demo for mobile ─── */
+      .controls-btn-demo {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(192, 57, 43, 0.4);
+        border: 2px solid #c0392b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #fff;
+        /* min-width: 70px; */
+        max-width: 36px;
+      }
+
+      /* ─── Game Guide specifics ───────────────────────── */
+      #guide-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #guide-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #guide-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #guide-backdrop {
+          left: 120px;
+        }
+      }
+      .guide-board {
+        max-height: 85vh;
+        overflow-y: auto;
+        width: 480px;
+        max-width: 95%;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .guide-board::-webkit-scrollbar {
+        width: 8px;
+      }
+      .guide-board::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 4px;
+      }
+      .guide-board::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 4px;
+        border: 1px solid #4a2a0a;
+      }
+      .guide-board::-webkit-scrollbar-thumb:hover {
+        background: #8b5e3c;
+      }
+      .guide-text {
+        font-size: 0.55rem;
+        color: #ccc;
+        line-height: 2.2;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+        z-index: 1;
+      }
+      .guide-highlight {
+        color: #f0c040;
+      }
+      .guide-white {
+        color: #ffffff;
+      }
+      .guide-red {
+        color: #ff4444;
+      }
+      .guide-green {
+        color: #44ff44;
+      }
+
+      /* ─── Friends Panel ────────────────────────────────── */
+      #friends-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #friends-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #friends-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #friends-backdrop {
+          left: 120px;
+        }
+      }
+      .friends-board {
+        width: 420px;
+        max-width: 95%;
+        max-height: 85vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .friends-board::-webkit-scrollbar {
+        width: 8px;
+      }
+      .friends-board::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 4px;
+      }
+      .friends-board::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 4px;
+      }
+      .friends-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        z-index: 1;
+      }
+      .friends-info-text {
+        font-size: 0.45rem;
+        color: #aaa;
+        text-align: center;
+        line-height: 2;
+        z-index: 1;
+      }
+      .friends-tabs {
+        display: flex;
+        gap: 4px;
+        width: 100%;
+        z-index: 1;
+        margin-bottom: 10px;
+      }
+      .friends-tab {
+        flex: 1;
+        padding: 8px 4px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.35rem;
+        color: #888;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        text-align: center;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .friends-tab:hover {
+        color: #ccc;
+      }
+      .friends-tab-active {
+        color: #f0c040;
+        border-color: #f0c040;
+        background: rgba(240, 192, 64, 0.1);
+      }
+      .friends-panel {
+        width: 100%;
+        z-index: 1;
+      }
+      .friends-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .friends-list-container::-webkit-scrollbar {
+        width: 6px;
+      }
+      .friends-list-container::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 3px;
+      }
+      .friends-list-container::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 3px;
+      }
+      .friends-empty-text {
+        font-size: 0.4rem;
+        color: #666;
+        text-align: center;
+        padding: 16px 0;
+      }
+      .friends-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+      }
+      .friends-item-name {
+        font-size: 0.4rem;
+        color: #eee;
+      }
+      .friends-item-actions {
+        display: flex;
+        gap: 4px;
+      }
+      .friends-item-btn {
+        padding: 4px 8px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.3rem;
+        border: 1px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        background: transparent;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .friends-item-btn-accept {
+        color: #44ff44;
+        border-color: #44ff44;
+      }
+      .friends-item-btn-accept:hover {
+        background: rgba(68, 255, 68, 0.1);
+      }
+      .friends-item-btn-reject {
+        color: #ff4444;
+        border-color: #ff4444;
+      }
+      .friends-item-btn-reject:hover {
+        background: rgba(255, 68, 68, 0.1);
+      }
+      .friends-item-btn-remove {
+        color: #888;
+        border-color: #555;
+      }
+      .friends-item-btn-remove:hover {
+        color: #ff4444;
+        border-color: #ff4444;
+      }
+      .friends-status-text {
+        font-size: 0.35rem;
+        color: #44ff44;
+        min-height: 12px;
+        text-align: center;
+        z-index: 1;
+      }
+
+      /* ─── Leaderboard Panel ────────────────────────────── */
+      #leaderboard-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #leaderboard-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #leaderboard-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #leaderboard-backdrop {
+          left: 120px;
+        }
+      }
+      .leaderboard-board {
+        width: 460px;
+        max-width: 95%;
+        max-height: 85vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .leaderboard-board::-webkit-scrollbar {
+        width: 8px;
+      }
+      .leaderboard-board::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 4px;
+      }
+      .leaderboard-board::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 4px;
+      }
+      .lb-header {
+        display: flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-bottom: 1px solid #4a2a0a;
+        margin-bottom: 6px;
+        z-index: 1;
+      }
+      .lb-header span {
+        font-size: 0.45rem;
+        color: #888;
+      }
+      .lb-header .lb-col-rank {
+        width: 30px;
+        text-align: center;
+      }
+      .lb-header .lb-col-name {
+        flex: 1;
+        padding-left: 8px;
+      }
+      .lb-header .lb-col-score {
+        width: 80px;
+        text-align: right;
+      }
+      .lb-header .lb-col-wave {
+        width: 50px;
+        text-align: right;
+      }
+      .lb-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 280px;
+        overflow-y: auto;
+        z-index: 1;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .lb-list-container::-webkit-scrollbar {
+        width: 6px;
+      }
+      .lb-list-container::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 3px;
+      }
+      .lb-list-container::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 3px;
+      }
+      .lb-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+      .lb-row span {
+        font-size: 0.45rem;
+        color: #ccc;
+      }
+      .lb-row-gold {
+        background: rgba(240, 192, 64, 0.15);
+        border: 1px solid rgba(240, 192, 64, 0.3);
+      }
+      .lb-row-gold .lb-col-rank {
+        color: #f0c040;
+      }
+      .lb-row-silver {
+        background: rgba(192, 192, 192, 0.1);
+        border: 1px solid rgba(192, 192, 192, 0.2);
+      }
+      .lb-row-silver .lb-col-rank {
+        color: #c0c0c0;
+      }
+      .lb-row-bronze {
+        background: rgba(205, 127, 50, 0.1);
+        border: 1px solid rgba(205, 127, 50, 0.2);
+      }
+      .lb-row-bronze .lb-col-rank {
+        color: #cd7f32;
+      }
+      .lb-col-rank {
+        width: 30px;
+        text-align: center;
+        font-weight: bold;
+      }
+      .lb-col-name {
+        flex: 1;
+        padding-left: 8px;
+      }
+      .lb-col-score {
+        width: 80px;
+        text-align: right;
+        color: #f0c040 !important;
+      }
+      .lb-col-wave {
+        width: 50px;
+        text-align: right;
+      }
+
+      /* ─── HUD Auth Section ────────────────────────────── */
+      .hud-auth-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .hud-auth-label {
+        font-size: 8px;
+        color: #888;
+        text-align: center;
+      }
+      .hud-auth-username {
+        font-size: 9px;
+        color: #f0c040;
+        text-align: center;
+        word-break: break-all;
+      }
+      .hud-auth-btn {
+        width: 100%;
+        padding: 8px 10px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.45rem;
+        color: #f0c040;
+        background: linear-gradient(180deg, #5a3a1a 0%, #3a2210 100%);
+        border: 2px solid #f0c040;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+      }
+      .hud-auth-btn:hover {
+        background: linear-gradient(180deg, #7a4a2a 0%, #5a3a1a 100%);
+        transform: scale(1.03);
+      }
+      .hud-auth-btn:active {
+        transform: scale(0.97);
+      }
+      .hud-auth-btn-small {
+        font-size: 0.35rem;
+        padding: 5px 8px;
+        color: #aaa;
+        border-color: #555;
+      }
+
+      /* ─── Auth Popup ───────────────────────────────────── */
+      #auth-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 700;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.7);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #auth-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #auth-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #auth-backdrop {
+          left: 120px;
+        }
+      }
+      .auth-board {
+        width: 380px;
+        max-width: 95%;
+      }
+      .auth-form {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 1;
+        margin-top: 12px;
+      }
+      .auth-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 1;
+      }
+      .auth-label {
+        font-size: 0.4rem;
+        color: #aaa;
+      }
+      .auth-input {
+        width: 100%;
+        padding: 8px 10px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.45rem;
+        color: #eee;
+        background: #2a2a4a;
+        border: 2px solid #3a3a5e;
+        border-radius: 4px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .auth-input:focus {
+        border-color: #f0c040;
+      }
+      .auth-input::placeholder {
+        color: #666;
+      }
+      .auth-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .auth-input-password {
+        padding-right: 50px;
+      }
+      .auth-toggle-password {
+        position: absolute;
+        right: 6px;
+        padding: 4px 6px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.3rem;
+        color: #888;
+        background: transparent;
+        border: 1px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: color 0.15s;
+      }
+      .auth-toggle-password:hover {
+        color: #f0c040;
+        border-color: #f0c040;
+      }
+      .auth-error {
+        font-size: 0.35rem;
+        color: #ff4444;
+        min-height: 12px;
+        z-index: 1;
+      }
+      .auth-switch-text {
+        font-size: 0.35rem;
+        color: #888;
+        text-align: center;
+        z-index: 1;
+        margin-top: 10px;
+      }
+      .auth-switch-link {
+        color: #f0c040;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .auth-switch-link:hover {
+        color: #ffdd00;
       }
 
       /* ─── Game Over specifics ──────────────────────────── */
@@ -854,10 +1613,333 @@
         <p class="pause-board-title">Paused</p>
         <div class="pause-board-divider"></div>
         <button id="pause-btn-resume" class="pause-btn pause-btn-primary">Resume</button>
-        <button id="pause-btn-audio" class="pause-btn">Audio Settings</button>
+        <button id="pause-btn-controls" class="pause-btn">Controls</button>
+        <button id="pause-btn-guide" class="pause-btn">Game Guide</button>
+        <button id="pause-btn-friends" class="pause-btn">Friends</button>
         <button id="pause-btn-leaderboard" class="pause-btn">Leaderboard</button>
+        <button id="pause-btn-audio" class="pause-btn">Audio Settings</button>
         <button id="pause-btn-quit" class="pause-btn">Main Menu</button>
         <p class="pause-hint">ESC or P to resume</p>
+      </div>
+    </div>
+
+    <!-- ═══ Controls Help Overlay ═══ -->
+    <div id="controls-backdrop">
+      <div class="pause-board controls-board">
+        <p class="pause-board-title">Controls</p>
+        <div class="pause-board-divider"></div>
+
+        <!-- Desktop controls -->
+        <div id="controls-desktop" class="controls-list">
+          <!-- Movement category -->
+          <p class="controls-category">Movement</p>
+          <div class="controls-row">
+            <span class="controls-key">W / ↑</span>
+            <span class="controls-label">Move Up</span>
+          </div>
+          <div class="controls-row">
+            <span class="controls-key">S / ↓</span>
+            <span class="controls-label">Move Down</span>
+          </div>
+          <div class="controls-row">
+            <span class="controls-key">A / ←</span>
+            <span class="controls-label">Move Left</span>
+          </div>
+          <div class="controls-row">
+            <span class="controls-key">D / →</span>
+            <span class="controls-label">Move Right</span>
+          </div>
+
+          <!-- Abilities category -->
+          <p class="controls-category">Abilities</p>
+          <div class="controls-row">
+            <span class="controls-key">Space</span>
+            <span class="controls-label">Attack</span>
+          </div>
+
+          <!-- System category -->
+          <p class="controls-category">System</p>
+          <div class="controls-row">
+            <span class="controls-key">ESC / P</span>
+            <span class="controls-label">Pause</span>
+          </div>
+        </div>
+
+        <!-- Mobile controls -->
+        <div id="controls-mobile" class="controls-list" style="display: none">
+          <!-- Movement category -->
+          <p class="controls-category">Movement</p>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-up">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Up</span>
+          </div>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-down">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Down</span>
+          </div>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-left">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Left</span>
+          </div>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-right">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Right</span>
+          </div>
+
+          <!-- Abilities category -->
+          <p class="controls-category">Abilities</p>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="controls-btn-demo">⚔</div>
+            </div>
+            <span class="controls-label">Attack</span>
+          </div>
+
+          <!-- System category -->
+          <p class="controls-category">System</p>
+          <div class="controls-row">
+            <span class="controls-key">Tab / Back</span>
+            <span class="controls-label">Pause</span>
+          </div>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="controls-btn-back" class="pause-btn pause-btn-primary">Back</button>
+      </div>
+    </div>
+
+    <!-- ═══ Game Guide Overlay ═══ -->
+    <div id="guide-backdrop">
+      <div class="pause-board guide-board">
+        <p class="pause-board-title">Game Guide</p>
+        <div class="pause-board-divider"></div>
+
+        <div class="controls-list">
+          <!-- Horde System -->
+          <p class="controls-category">Horde System</p>
+          <div class="guide-text">
+            Enemies attack in waves. Each wave brings more and stronger enemies. Survive as long as
+            you can.
+          </div>
+
+          <!-- Enemy Aggro -->
+          <p class="controls-category">Enemy Aggro</p>
+          <div class="guide-text">
+            Each wave has an aggro timer. When it reaches zero, all enemies become aggressive and
+            rush towards you regardless of distance.
+          </div>
+
+          <!-- Enemy Types -->
+          <p class="controls-category">Enemy Types</p>
+          <div class="guide-text">
+            <span class="guide-highlight">Skeletons</span> — Melee fighters, some carry swords for
+            extra damage.<br />
+            <span class="guide-highlight">Slimes</span> — Smaller and faster, harder to hit.
+          </div>
+
+          <!-- Health Pickups -->
+          <p class="controls-category">Health Pickups</p>
+          <div class="guide-text">
+            Defeated enemies may drop hearts. Collect them to restore health. They blink before
+            disappearing. Green dots on the minimap show their location.
+          </div>
+
+          <!-- Damage Indicators -->
+          <p class="controls-category">Damage Indicators</p>
+          <div class="guide-text">
+            <span class="guide-highlight guide-white">White</span> numbers = damage you deal.<br />
+            <span class="guide-highlight guide-red">Red</span> numbers = damage you receive.<br />
+            <span class="guide-highlight guide-green">Green</span> numbers = health restored.
+          </div>
+
+          <!-- Player Abilities -->
+          <p class="controls-category">Abilities</p>
+          <div class="guide-text">
+            <span class="guide-highlight">Attack</span> — Strike nearby enemies. Hitting an enemy
+            knocks it back and prevents it from attacking briefly.
+          </div>
+
+          <!-- Survival Tips -->
+          <p class="controls-category">Survival Tips</p>
+          <div class="guide-text">
+            • Keep moving to avoid getting surrounded.<br />
+            • Attack first — enemies can't hit you during knockback.<br />
+            • Watch the minimap for enemy positions and health pickups.<br />
+            • Pay attention to the aggro timer in the HUD.
+          </div>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="guide-btn-back" class="pause-btn pause-btn-primary">Back</button>
+      </div>
+    </div>
+
+    <!-- ═══ Friends Panel Overlay ═══ -->
+    <div id="friends-backdrop">
+      <div class="pause-board friends-board">
+        <p class="pause-board-title">Friends</p>
+        <div class="pause-board-divider"></div>
+
+        <!-- Not logged in message -->
+        <div id="friends-not-logged" class="friends-section">
+          <p class="friends-info-text">You need to sign in to manage friends.</p>
+          <button id="friends-login-btn" class="pause-btn pause-btn-primary">Sign In</button>
+        </div>
+
+        <!-- Logged in content -->
+        <div id="friends-content" style="display: none">
+          <!-- Tabs -->
+          <div class="friends-tabs">
+            <button id="friends-tab-list" class="friends-tab friends-tab-active">My Friends</button>
+            <button id="friends-tab-requests" class="friends-tab">Requests</button>
+            <button id="friends-tab-add" class="friends-tab">Add</button>
+          </div>
+
+          <!-- Tab: Friends List -->
+          <div id="friends-panel-list" class="friends-panel">
+            <div id="friends-list-container" class="friends-list-container">
+              <p class="friends-empty-text">No friends yet. Add some!</p>
+            </div>
+          </div>
+
+          <!-- Tab: Requests -->
+          <div id="friends-panel-requests" class="friends-panel" style="display: none">
+            <div id="friends-requests-container" class="friends-list-container">
+              <p class="friends-empty-text">No pending requests.</p>
+            </div>
+          </div>
+
+          <!-- Tab: Add Friend -->
+          <div id="friends-panel-add" class="friends-panel" style="display: none">
+            <div class="auth-field">
+              <label class="auth-label" for="friends-add-input">Username or Email</label>
+              <input
+                id="friends-add-input"
+                class="auth-input"
+                type="text"
+                placeholder="Enter username or email"
+              />
+            </div>
+            <p id="friends-add-status" class="friends-status-text"></p>
+            <button id="friends-add-submit" class="pause-btn pause-btn-primary">
+              Send Request
+            </button>
+          </div>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="friends-btn-back" class="pause-btn pause-btn-primary">Back</button>
+      </div>
+    </div>
+
+    <!-- ═══ Leaderboard Overlay ═══ -->
+    <div id="leaderboard-backdrop">
+      <div class="pause-board leaderboard-board">
+        <p class="pause-board-title">Leaderboard</p>
+        <div class="pause-board-divider"></div>
+
+        <!-- Tabs -->
+        <div class="friends-tabs">
+          <button id="lb-tab-global" class="friends-tab friends-tab-active">Global</button>
+          <button id="lb-tab-friends" class="friends-tab">Friends</button>
+        </div>
+
+        <!-- Table header -->
+        <div class="lb-header">
+          <span class="lb-col-rank">#</span>
+          <span class="lb-col-name">Player</span>
+          <span class="lb-col-score">Score</span>
+          <span class="lb-col-wave">Wave</span>
+        </div>
+
+        <!-- Leaderboard list -->
+        <div id="lb-list-container" class="lb-list-container">
+          <div class="lb-row lb-row-gold">
+            <span class="lb-col-rank">1</span>
+            <span class="lb-col-name">DarkKnight</span>
+            <span class="lb-col-score">12,450</span>
+            <span class="lb-col-wave">34</span>
+          </div>
+          <div class="lb-row lb-row-silver">
+            <span class="lb-col-rank">2</span>
+            <span class="lb-col-name">SlayerX</span>
+            <span class="lb-col-score">10,280</span>
+            <span class="lb-col-wave">29</span>
+          </div>
+          <div class="lb-row lb-row-bronze">
+            <span class="lb-col-rank">3</span>
+            <span class="lb-col-name">GhostHunter</span>
+            <span class="lb-col-score">8,930</span>
+            <span class="lb-col-wave">25</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">4</span>
+            <span class="lb-col-name">NightOwl</span>
+            <span class="lb-col-score">7,100</span>
+            <span class="lb-col-wave">21</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">5</span>
+            <span class="lb-col-name">BoneBreaker</span>
+            <span class="lb-col-score">6,540</span>
+            <span class="lb-col-wave">19</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">6</span>
+            <span class="lb-col-name">PixelWarrior</span>
+            <span class="lb-col-score">5,200</span>
+            <span class="lb-col-wave">16</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">7</span>
+            <span class="lb-col-name">CryptKeeper</span>
+            <span class="lb-col-score">4,800</span>
+            <span class="lb-col-wave">14</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">8</span>
+            <span class="lb-col-name">ZombieSlayer</span>
+            <span class="lb-col-score">3,650</span>
+            <span class="lb-col-wave">11</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">9</span>
+            <span class="lb-col-name">GraveMaster</span>
+            <span class="lb-col-score">2,900</span>
+            <span class="lb-col-wave">9</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">10</span>
+            <span class="lb-col-name">SkullCrusher</span>
+            <span class="lb-col-score">2,100</span>
+            <span class="lb-col-wave">7</span>
+          </div>
+        </div>
+
+        <!-- Friends tab: login required -->
+        <div id="lb-friends-not-logged" class="friends-section" style="display: none">
+          <p class="friends-info-text">Sign in to see your friends' scores.</p>
+          <button id="lb-friends-login-btn" class="pause-btn pause-btn-primary">Sign In</button>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="lb-btn-back" class="pause-btn pause-btn-primary">Back</button>
       </div>
     </div>
 
@@ -882,6 +1964,113 @@
       </div>
     </div>
 
+    <!-- ═══ Login/Register Popup ═══ -->
+    <div id="auth-backdrop">
+      <div class="pause-board auth-board">
+        <!-- Login form (default view) -->
+        <div id="auth-login-view">
+          <p class="pause-board-title">Sign In</p>
+          <div class="pause-board-divider"></div>
+          <div class="auth-form">
+            <div class="auth-field">
+              <label class="auth-label" for="auth-login-email">Email</label>
+              <input
+                id="auth-login-email"
+                class="auth-input"
+                type="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="auth-login-password">Password</label>
+              <div class="auth-input-wrapper">
+                <input
+                  id="auth-login-password"
+                  class="auth-input auth-input-password"
+                  type="password"
+                  placeholder="********"
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="auth-toggle-password"
+                  data-target="auth-login-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <p id="auth-login-error" class="auth-error"></p>
+            <button id="auth-login-submit" class="pause-btn pause-btn-primary">Sign In</button>
+          </div>
+          <div class="pause-board-divider"></div>
+          <p class="auth-switch-text">
+            Don't have an account?
+            <span id="auth-show-register" class="auth-switch-link">Register</span>
+          </p>
+        </div>
+
+        <!-- Register form -->
+        <div id="auth-register-view" style="display: none">
+          <p class="pause-board-title">Register</p>
+          <div class="pause-board-divider"></div>
+          <div class="auth-form">
+            <div class="auth-field">
+              <label class="auth-label" for="auth-register-username">Username</label>
+              <input
+                id="auth-register-username"
+                class="auth-input"
+                type="text"
+                placeholder="PlayerName"
+                autocomplete="username"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="auth-register-email">Email</label>
+              <input
+                id="auth-register-email"
+                class="auth-input"
+                type="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="auth-register-password">Password</label>
+              <div class="auth-input-wrapper">
+                <input
+                  id="auth-register-password"
+                  class="auth-input auth-input-password"
+                  type="password"
+                  placeholder="********"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="auth-toggle-password"
+                  data-target="auth-register-password"
+                >
+                  Show
+                </button>
+              </div>
+            </div>
+            <p id="auth-register-error" class="auth-error"></p>
+            <button id="auth-register-submit" class="pause-btn pause-btn-primary">
+              Create Account
+            </button>
+          </div>
+          <div class="pause-board-divider"></div>
+          <p class="auth-switch-text">
+            Already have an account?
+            <span id="auth-show-login" class="auth-switch-link">Sign In</span>
+          </p>
+        </div>
+
+        <button id="auth-close-btn" class="pause-btn">Close</button>
+      </div>
+    </div>
+
     <!-- ═══ Game UI ═══ -->
     <div id="app-wrapper">
       <div id="hud-panel">
@@ -890,6 +2079,19 @@
         <p style="font-size: 7px; color: #555; text-align: center; margin-bottom: 2px">
           by D-EXP Team
         </p>
+        <hr class="hud-divider" />
+
+        <!-- Auth section -->
+        <div id="auth-guest" class="hud-auth-section">
+          <span class="hud-auth-label">Playing as Guest</span>
+          <button id="hud-login-btn" class="hud-auth-btn">Sign In</button>
+        </div>
+        <div id="auth-logged" class="hud-auth-section" style="display: none">
+          <span class="hud-auth-label">Player:</span>
+          <span id="auth-username" class="hud-auth-username">---</span>
+          <button id="hud-logout-btn" class="hud-auth-btn hud-auth-btn-small">Log Out</button>
+        </div>
+
         <hr class="hud-divider" />
 
         <div class="hud-section">
@@ -923,6 +2125,9 @@
         <hr class="hud-divider" />
         <p class="hud-minimap-title">MINIMAP</p>
         <canvas id="minimap-canvas" width="270" height="270"></canvas>
+
+        <hr class="hud-divider" />
+        <button id="hud-pause-btn" class="hud-pause-btn">Pause</button>
 
         <div style="margin-top: auto; padding-top: 12px; text-align: center">
           <p style="font-size: 7px; color: #555; line-height: 2.2">Kiro Hackathon 2026</p>

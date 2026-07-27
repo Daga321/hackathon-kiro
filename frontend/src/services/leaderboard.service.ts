@@ -1,11 +1,6 @@
 import { get, post } from './http-client';
 import { isAuthenticated } from './token-manager';
-import type {
-  ServiceResult,
-  LeaderboardEntry,
-  SubmitScoreResponse,
-  PendingScore,
-} from './types';
+import type { ServiceResult, LeaderboardEntry, SubmitScoreResponse, PendingScore } from './types';
 
 const PENDING_SCORES_KEY = 'horde_pending_scores';
 const MAX_RETRIES = 3;
@@ -19,10 +14,7 @@ const IS_DEV = import.meta.env.VITE_DEV_TOOLS === 'true';
 export async function getGlobalLeaderboard(
   limit = 100,
 ): Promise<ServiceResult<{ leaderboard: LeaderboardEntry[] }>> {
-  return get<{ leaderboard: LeaderboardEntry[] }>(
-    `/leaderboard/global?limit=${limit}`,
-    false,
-  );
+  return get<{ leaderboard: LeaderboardEntry[] }>(`/leaderboard/global?limit=${limit}`, false);
 }
 
 /**
@@ -44,7 +36,13 @@ export async function submitScore(
   });
 
   if (!result.success) {
-    savePendingScore({ round, score, enemiesKilled, sessionDuration, timestamp: new Date().toISOString() });
+    savePendingScore({
+      round,
+      score,
+      enemiesKilled,
+      sessionDuration,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   return result;
@@ -112,7 +110,9 @@ export async function retryPendingScores(): Promise<void> {
       // Track retry count via a hidden property
       const retryCount = ((score as { _retries?: number })._retries || 0) + 1;
       if (retryCount < MAX_RETRIES) {
-        stillPending.push({ ...score, _retries: retryCount } as PendingScore & { _retries: number });
+        stillPending.push({ ...score, _retries: retryCount } as PendingScore & {
+          _retries: number;
+        });
       } else if (IS_DEV) {
         console.error('[Leaderboard] Discarding score after max retries:', score);
       }

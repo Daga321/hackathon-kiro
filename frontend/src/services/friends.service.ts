@@ -43,8 +43,6 @@ export async function rejectFriendRequest(
  * Remove an existing friendship.
  * Protected endpoint — requires valid token.
  */
-export async function removeFriend(
-  friendId: string,
-): Promise<ServiceResult<{ message: string }>> {
+export async function removeFriend(friendId: string): Promise<ServiceResult<{ message: string }>> {
   return del<{ message: string }>(`/friends/${friendId}`);
 }
