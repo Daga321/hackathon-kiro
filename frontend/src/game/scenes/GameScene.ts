@@ -85,9 +85,14 @@ export class GameScene extends Phaser.Scene {
 
     // Create enemy spawner and wave manager
     this.spawner = new EnemySpawner(
-      this, pathfinder,
-      collisionLayer, elevatedLayer, fenceLayer,
-      graveColliders, treeColliders, obstacleColliders
+      this,
+      pathfinder,
+      collisionLayer,
+      elevatedLayer,
+      fenceLayer,
+      graveColliders,
+      treeColliders,
+      obstacleColliders,
     );
     this.waveManager = new WaveManager(this, this.spawner);
     this.waveManager.start();
@@ -179,7 +184,12 @@ export class GameScene extends Phaser.Scene {
     this.waveManager.update(this.player.getIsDead());
 
     // Update HTML HUD
-    this.hud.update(this.player, this.waveManager, this.waveManager.getAllEnemies(), this.game.loop.delta);
+    this.hud.update(
+      this.player,
+      this.waveManager,
+      this.waveManager.getAllEnemies(),
+      this.game.loop.delta,
+    );
 
     // Update enemies (skip if player is dead — enemies stop targeting)
     const enemies = this.waveManager.getAllEnemies();

@@ -45,7 +45,7 @@ export class EnemySpawner {
     fenceLayer: Phaser.Tilemaps.TilemapLayer | null,
     graveColliders: Phaser.Physics.Arcade.StaticGroup | null,
     treeColliders: Phaser.Physics.Arcade.StaticGroup | null,
-    obstacleColliders: Phaser.Physics.Arcade.StaticGroup | null
+    obstacleColliders: Phaser.Physics.Arcade.StaticGroup | null,
   ) {
     this.scene = scene;
     this.pathfinder = pathfinder;
@@ -120,7 +120,7 @@ export class EnemySpawner {
    * Get count of currently alive enemies.
    */
   getAliveCount(): number {
-    return this.allEnemies.filter(e => !e.getIsDead()).length;
+    return this.allEnemies.filter((e) => !e.getIsDead()).length;
   }
 
   /**
@@ -142,9 +142,9 @@ export class EnemySpawner {
     const centerX = WIDTH / 2;
     const centerY = HEIGHT / 2;
     const minX = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE * 2;
-    const maxX = WIDTH - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE * 2;
+    const maxX = WIDTH - BORDER_THICKNESS * TILE_SIZE - TILE_SIZE * 2;
     const minY = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE * 2;
-    const maxY = HEIGHT - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE * 2;
+    const maxY = HEIGHT - BORDER_THICKNESS * TILE_SIZE - TILE_SIZE * 2;
 
     for (let attempt = 0; attempt < EnemySpawner.MAX_SPAWN_ATTEMPTS; attempt++) {
       const x = minX + Math.random() * (maxX - minX);

@@ -1,110 +1,222 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Horde Battle: Graveyard Guard</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; font-family: 'Courier New', monospace; }
-    #app-wrapper { display: flex; width: 100%; height: 100%; }
-    #hud-panel {
-      width: 420px; min-width: 200px; height: 100%;
-      background: #12122a; color: #fff; padding: 24px;
-      display: flex; flex-direction: column; gap: 12px;
-      border-right: 2px solid #3a3a5e;
-      overflow-y: auto;
-    }
-
-    /* Responsive: smaller screens get a narrower panel */
-    @media (max-width: 900px) {
-      #hud-panel {
-        width: 180px; min-width: 140px; padding: 10px; gap: 6px;
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Horde Battle: Graveyard Guard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-      .hud-title { font-size: 16px; }
-      .hud-subtitle { font-size: 11px; }
-      .hud-section { font-size: 13px; }
-      .health-bar-container { height: 14px; }
-      .hud-minimap-title { font-size: 11px; }
-      #minimap-canvas { width: 140px; height: 140px; }
-    }
-    @media (max-width: 600px) {
-      #hud-panel {
-        width: 120px; min-width: 100px; padding: 6px; gap: 4px;
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #1a1a2e;
+        font-family: 'Courier New', monospace;
       }
-      .hud-title { font-size: 12px; letter-spacing: 0; }
-      .hud-subtitle { font-size: 9px; }
-      .hud-section { font-size: 10px; gap: 2px; }
-      .health-bar-container { height: 10px; }
-      .hud-minimap-title { font-size: 9px; }
-      #minimap-canvas { width: 100px; height: 100px; }
-    }
-    #game-container { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-    canvas { touch-action: none; }
+      #app-wrapper {
+        display: flex;
+        width: 100%;
+        height: 100%;
+      }
+      #hud-panel {
+        width: 420px;
+        min-width: 200px;
+        height: 100%;
+        background: #12122a;
+        color: #fff;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        border-right: 2px solid #3a3a5e;
+        overflow-y: auto;
+      }
 
-    .hud-title { font-size: 28px; font-weight: bold; color: #f0c040; text-align: center; letter-spacing: 2px; }
-    .hud-subtitle { font-size: 18px; color: #aaa; text-align: center; margin-bottom: 8px; }
-    .hud-divider { border: none; border-top: 1px solid #3a3a5e; margin: 10px 0; }
-    .hud-section { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 20px; }
-    .hud-label { color: #aaa; }
-    .hud-value { color: #fff; font-weight: bold; }
+      /* Responsive: smaller screens get a narrower panel */
+      @media (max-width: 900px) {
+        #hud-panel {
+          width: 180px;
+          min-width: 140px;
+          padding: 10px;
+          gap: 6px;
+        }
+        .hud-title {
+          font-size: 16px;
+        }
+        .hud-subtitle {
+          font-size: 11px;
+        }
+        .hud-section {
+          font-size: 13px;
+        }
+        .health-bar-container {
+          height: 14px;
+        }
+        .hud-minimap-title {
+          font-size: 11px;
+        }
+        #minimap-canvas {
+          width: 140px;
+          height: 140px;
+        }
+      }
+      @media (max-width: 600px) {
+        #hud-panel {
+          width: 120px;
+          min-width: 100px;
+          padding: 6px;
+          gap: 4px;
+        }
+        .hud-title {
+          font-size: 12px;
+          letter-spacing: 0;
+        }
+        .hud-subtitle {
+          font-size: 9px;
+        }
+        .hud-section {
+          font-size: 10px;
+          gap: 2px;
+        }
+        .health-bar-container {
+          height: 10px;
+        }
+        .hud-minimap-title {
+          font-size: 9px;
+        }
+        #minimap-canvas {
+          width: 100px;
+          height: 100px;
+        }
+      }
+      #game-container {
+        flex: 1;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: none;
+      }
+      canvas {
+        touch-action: none;
+      }
 
-    .health-bar-container {
-      width: 100%; height: 22px; background: #333; border: 1px solid #555;
-      border-radius: 3px; overflow: hidden; margin-top: 4px;
-    }
-    .health-bar-fill { height: 100%; width: 100%; background: #44cc44; transition: width 0.3s; }
+      .hud-title {
+        font-size: 28px;
+        font-weight: bold;
+        color: #f0c040;
+        text-align: center;
+        letter-spacing: 2px;
+      }
+      .hud-subtitle {
+        font-size: 18px;
+        color: #aaa;
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .hud-divider {
+        border: none;
+        border-top: 1px solid #3a3a5e;
+        margin: 10px 0;
+      }
+      .hud-section {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        font-size: 20px;
+      }
+      .hud-label {
+        color: #aaa;
+      }
+      .hud-value {
+        color: #fff;
+        font-weight: bold;
+      }
 
-    .hud-minimap-title { font-size: 16px; color: #aaa; text-align: center; margin-bottom: 8px; }
-    #minimap-canvas {
-      width: 360px; height: 360px;
-      background: #1a2a1a; border: 1px solid #3a5a3a;
-      border-radius: 3px; display: block; margin: 0 auto;
-      image-rendering: pixelated;
-    }
-  </style>
-</head>
-<body>
-  <div id="app-wrapper">
-    <div id="hud-panel">
-      <h1 class="hud-title">HACKATHON KIRO</h1>
-      <p class="hud-subtitle">D-EXP</p>
-      <hr class="hud-divider" />
+      .health-bar-container {
+        width: 100%;
+        height: 22px;
+        background: #333;
+        border: 1px solid #555;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      .health-bar-fill {
+        height: 100%;
+        width: 100%;
+        background: #44cc44;
+        transition: width 0.3s;
+      }
 
-      <div class="hud-section">
-        <span class="hud-label">Health:</span>
-        <div class="health-bar-container">
-          <div id="health-bar-fill" class="health-bar-fill"></div>
+      .hud-minimap-title {
+        font-size: 16px;
+        color: #aaa;
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      #minimap-canvas {
+        width: 360px;
+        height: 360px;
+        background: #1a2a1a;
+        border: 1px solid #3a5a3a;
+        border-radius: 3px;
+        display: block;
+        margin: 0 auto;
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-wrapper">
+      <div id="hud-panel">
+        <h1 class="hud-title">HACKATHON KIRO</h1>
+        <p class="hud-subtitle">D-EXP</p>
+        <hr class="hud-divider" />
+
+        <div class="hud-section">
+          <span class="hud-label">Health:</span>
+          <div class="health-bar-container">
+            <div id="health-bar-fill" class="health-bar-fill"></div>
+          </div>
+          <span id="health-text" class="hud-value">100 / 100</span>
         </div>
-        <span id="health-text" class="hud-value">100 / 100</span>
-      </div>
 
-      <div class="hud-section">
-        <span class="hud-label">Wave:</span>
-        <span id="wave-text" class="hud-value">1</span>
-      </div>
+        <div class="hud-section">
+          <span class="hud-label">Wave:</span>
+          <span id="wave-text" class="hud-value">1</span>
+        </div>
 
-      <div class="hud-section">
-        <span class="hud-label">Score:</span>
-        <span id="score-text" class="hud-value">0</span>
-      </div>
+        <div class="hud-section">
+          <span class="hud-label">Score:</span>
+          <span id="score-text" class="hud-value">0</span>
+        </div>
 
-      <div class="hud-section">
-        <span class="hud-label">Enemies:</span>
-        <span id="enemies-text" class="hud-value">0</span>
-      </div>
+        <div class="hud-section">
+          <span class="hud-label">Enemies:</span>
+          <span id="enemies-text" class="hud-value">0</span>
+        </div>
 
-      <div class="hud-section">
-        <span class="hud-label">Aggro:</span>
-        <span id="aggro-text" class="hud-value">00:00</span>
-      </div>
+        <div class="hud-section">
+          <span class="hud-label">Aggro:</span>
+          <span id="aggro-text" class="hud-value">00:00</span>
+        </div>
 
-      <hr class="hud-divider" />
-      <p class="hud-minimap-title">MINIMAP</p>
-      <canvas id="minimap-canvas" width="360" height="360"></canvas>
+        <hr class="hud-divider" />
+        <p class="hud-minimap-title">MINIMAP</p>
+        <canvas id="minimap-canvas" width="360" height="360"></canvas>
+      </div>
+      <div id="game-container"></div>
     </div>
-    <div id="game-container"></div>
-  </div>
-  <script type="module" src="/src/main.ts"></script>
-</body>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>
