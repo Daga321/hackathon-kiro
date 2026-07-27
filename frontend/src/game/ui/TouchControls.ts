@@ -14,9 +14,9 @@ export class TouchControls {
   private joystickPointer: Phaser.Input.Pointer | null = null;
   private joystickBaseX: number = 0;
   private joystickBaseY: number = 0;
-  private readonly joystickRadius = 50;
-  private readonly thumbRadius = 22;
-  private readonly deadzone = 10;
+  private readonly joystickRadius = 70;
+  private readonly thumbRadius = 30;
+  private readonly deadzone = 12;
 
   // Attack button
   private attackBtn!: Phaser.GameObjects.Arc;
@@ -103,8 +103,8 @@ export class TouchControls {
   private createJoystick(): void {
     const height = this.scene.scale.height;
 
-    this.joystickBaseX = 90;
-    this.joystickBaseY = height - 90;
+    this.joystickBaseX = 110;
+    this.joystickBaseY = height - 110;
 
     this.joystickBase = this.scene.add.circle(
       this.joystickBaseX,
@@ -115,7 +115,7 @@ export class TouchControls {
     );
     this.joystickBase.setScrollFactor(0);
     this.joystickBase.setDepth(200);
-    this.joystickBase.setStrokeStyle(2, 0xffffff, 0.5);
+    this.joystickBase.setStrokeStyle(3, 0xffffff, 0.5);
 
     this.joystickThumb = this.scene.add.circle(
       this.joystickBaseX,
@@ -132,9 +132,9 @@ export class TouchControls {
     const width = this.scene.scale.width;
     const height = this.scene.scale.height;
 
-    const btnX = width - 70;
-    const btnY = height - 90;
-    const btnRadius = 35;
+    const btnX = width - 90;
+    const btnY = height - 110;
+    const btnRadius = 50;
 
     // Visual only — interaction handled via pointer position in setupInputHandlers
     this.attackBtn = this.scene.add.circle(btnX, btnY, btnRadius, 0xcc3333, 0.5);
@@ -143,7 +143,7 @@ export class TouchControls {
     this.attackBtn.setStrokeStyle(3, 0xff5555, 0.7);
 
     this.attackLabel = this.scene.add.text(btnX, btnY, '⚔', {
-      fontSize: '28px',
+      fontSize: '36px',
       color: '#ffffff',
     });
     this.attackLabel.setOrigin(0.5);
@@ -154,9 +154,9 @@ export class TouchControls {
   private setupInputHandlers(): void {
     const width = this.scene.scale.width;
     const height = this.scene.scale.height;
-    const attackBtnX = width - 70;
-    const attackBtnY = height - 90;
-    const attackRadius = 50; // Generous touch area
+    const attackBtnX = width - 90;
+    const attackBtnY = height - 110;
+    const attackRadius = 65; // Generous touch area matching larger button
 
     this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       // Check attack button area first (right side, bottom)

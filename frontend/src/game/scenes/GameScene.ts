@@ -7,6 +7,9 @@ import { EnemySpawner } from '../ai/EnemySpawner';
 import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
+import { WaveAnnouncement } from '../ui/WaveAnnouncement';
+import { PauseMenu } from '../ui/PauseMenu';
+import { GameOverScreen } from '../ui/GameOverScreen';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 
@@ -40,6 +43,9 @@ export class GameScene extends Phaser.Scene {
   private spawner!: EnemySpawner;
   private touchControls!: TouchControls;
   private hud!: HudManager;
+  private waveAnnouncement!: WaveAnnouncement;
+  private pauseMenu!: PauseMenu;
+  private gameOverScreen!: GameOverScreen;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
@@ -104,10 +110,17 @@ export class GameScene extends Phaser.Scene {
       obstacleColliders,
     );
     this.waveManager = new WaveManager(this, this.spawner);
-    this.waveManager.start();
 
     // Create HTML HUD manager
     this.hud = new HudManager();
+
+    // Wave announcement overlay (register BEFORE waveManager.start so Wave 1 is captured)
+    this.waveAnnouncement = new WaveAnnouncement();
+    this.events.on('wave-start', (wave: number, enemyCount: number) => {
+      this.waveAnnouncement.show(wave, enemyCount);
+    });
+
+    this.waveManager.start();
 
     // Audio system
     this.audio = new AudioManager(this);
@@ -130,6 +143,21 @@ export class GameScene extends Phaser.Scene {
       D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
     this.keyP = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Pause menu (keyboard handled at document level inside PauseMenu)
+    this.pauseMenu = new PauseMenu();
+    this.pauseMenu.onPause(() => {
+      this.scene.pause();
+    });
+    this.pauseMenu.onResume(() => {
+      this.scene.resume();
+    });
+
+    // Game over screen
+    this.gameOverScreen = new GameOverScreen();
+    this.gameOverScreen.onRestart(() => {
+      this.scene.restart();
+    });
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
@@ -209,14 +237,20 @@ export class GameScene extends Phaser.Scene {
       // Main camera ignores touch UI objects
       uiObjects.forEach((obj) => this.cameras.main.ignore(obj));
 
-      // UI camera ignores everything EXCEPT touch UI objects
-      // By default the added camera sees nothing — we need to set it to visible
+      // UI camera ignores everything by default — only shows touch UI objects
       uiCam.visible = true;
 
-      // The trick: ignore all existing display list objects on UI cam, then un-ignore UI objects
+      // Ignore all current children on UI cam except touch controls
       this.children.list.forEach((child) => {
         if (!uiObjects.includes(child)) {
           uiCam.ignore(child);
+        }
+      });
+
+      // CRITICAL: Also ignore any future objects added to the scene (Wave 2+ enemies, health bars, etc.) by listening for the 'addedtoscene' event
+      this.events.on('addedtoscene', (gameObject: Phaser.GameObjects.GameObject) => {
+        if (!uiObjects.includes(gameObject)) {
+          uiCam.ignore(gameObject);
         }
       });
     }
@@ -264,6 +298,11 @@ export class GameScene extends Phaser.Scene {
       this.game.loop.delta,
       this.waveManager.getScoreReward(),
     );
+
+    // ─── Game Over detection ───
+    if (this.player.getIsDead() && !this.gameOverScreen.isShowing) {
+      this.gameOverScreen.show(this.hud.getScore(), this.waveManager.getWave());
+    }
 
     // Update enemies (skip if player is dead — enemies stop targeting)
     const enemies = this.waveManager.getAllEnemies();
