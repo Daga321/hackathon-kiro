@@ -2,9 +2,7 @@
  * Standard result type for all service calls.
  * Services never throw — they always return a ServiceResult.
  */
-export type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ServiceResult<T> = { success: true; data: T } | { success: false; error: string };
 
 /** Tokens returned by the login endpoint */
 export interface AuthTokens {
