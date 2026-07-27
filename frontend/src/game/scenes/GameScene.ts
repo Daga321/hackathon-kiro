@@ -8,6 +8,7 @@ import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
 import { WaveAnnouncement } from '../ui/WaveAnnouncement';
+import { PauseMenu } from '../ui/PauseMenu';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 
@@ -42,6 +43,7 @@ export class GameScene extends Phaser.Scene {
   private touchControls!: TouchControls;
   private hud!: HudManager;
   private waveAnnouncement!: WaveAnnouncement;
+  private pauseMenu!: PauseMenu;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
@@ -140,6 +142,15 @@ export class GameScene extends Phaser.Scene {
     };
     this.keyP = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
+    // Pause menu (keyboard handled at document level inside PauseMenu)
+    this.pauseMenu = new PauseMenu();
+    this.pauseMenu.onPause(() => {
+      this.scene.pause();
+    });
+    this.pauseMenu.onResume(() => {
+      this.scene.resume();
+    });
+
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
       this.keyQ = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
@@ -218,18 +229,17 @@ export class GameScene extends Phaser.Scene {
       // Main camera ignores touch UI objects
       uiObjects.forEach((obj) => this.cameras.main.ignore(obj));
 
-      // UI camera ignores everything EXCEPT touch UI objects
-      // By default the added camera sees nothing — we need to set it to visible
+      // UI camera ignores everything by default — only shows touch UI objects
       uiCam.visible = true;
 
-      // The trick: ignore all existing display list objects on UI cam, then un-ignore UI objects
+      // Ignore all current children on UI cam except touch controls
       this.children.list.forEach((child) => {
         if (!uiObjects.includes(child)) {
           uiCam.ignore(child);
         }
       });
 
-      // CRITICAL: Also ignore any future objects added to the scene (Wave 2+ enemies, health bars, etc.)
+// CRITICAL: Also ignore any future objects added to the scene (Wave 2+ enemies, health bars, etc.) by listening for the 'addedtoscene' event
       this.events.on('addedtoscene', (gameObject: Phaser.GameObjects.GameObject) => {
         if (!uiObjects.includes(gameObject)) {
           uiCam.ignore(gameObject);

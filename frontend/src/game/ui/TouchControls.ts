@@ -115,7 +115,7 @@ export class TouchControls {
     );
     this.joystickBase.setScrollFactor(0);
     this.joystickBase.setDepth(200);
-    this.joystickBase.setStrokeStyle(2, 0xffffff, 0.5);
+    this.joystickBase.setStrokeStyle(3, 0xffffff, 0.5);
 
     this.joystickThumb = this.scene.add.circle(
       this.joystickBaseX,
@@ -156,7 +156,7 @@ export class TouchControls {
     const height = this.scene.scale.height;
     const attackBtnX = width - 90;
     const attackBtnY = height - 110;
-    const attackRadius = 65; // Generous touch area matching larger button
+const attackRadius = 65; // Generous touch area matching larger button
 
     this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       // Check attack button area first (right side, bottom)
