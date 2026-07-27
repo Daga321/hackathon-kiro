@@ -154,17 +154,9 @@ export class EnemySpawner {
       const distToCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
       if (distToCenter < SPAWN_SAFE_RADIUS + 100) continue;
 
-      // Must not be on wall tiles
-      if (this.collisionLayer) {
-        const tile = this.collisionLayer.getTileAtWorldXY(x, y);
-        if (tile && tile.index !== -1) continue;
-      }
-
-      // Must not be on elevated terrain
-      if (this.elevatedLayer) {
-        const tile = this.elevatedLayer.getTileAtWorldXY(x, y);
-        if (tile && tile.index !== -1) continue;
-      }
+      // Use pathfinder nav grid — single source of truth for walkability
+      const tile = this.pathfinder.worldToTile(x, y);
+      if (!this.pathfinder.isWalkable(tile.x, tile.y)) continue;
 
       // Must not be too close to other already-spawned enemies
       let tooClose = false;

@@ -58,8 +58,8 @@ export class GameScene extends Phaser.Scene {
     }
     // Objects layer: NO tilemap collision — graves and trees use circular physics bodies instead
 
-    // Create player at a random valid position
-    this.player = new Player(this, collisionLayer);
+    // Create player at a random valid position (uses pathfinder for full collision check)
+    this.player = new Player(this, collisionLayer, pathfinder);
 
     // Add physics colliders between player and all collidable layers
     const playerSprite = this.player.getSprite();
