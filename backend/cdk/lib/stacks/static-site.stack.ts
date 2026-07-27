@@ -53,8 +53,7 @@ export class StaticSiteStack extends Stack {
     const distribution = new cloudfront.Distribution(this, 'Distribution', {
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(bucket),
-        viewerProtocolPolicy:
-          cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
       },
@@ -84,9 +83,7 @@ export class StaticSiteStack extends Stack {
       new route53.ARecord(this, 'AliasRecord', {
         zone: customDomain.hostedZone,
         recordName: props!.domainName,
-        target: route53.RecordTarget.fromAlias(
-          new targets.CloudFrontTarget(distribution),
-        ),
+        target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
       });
     }
 
@@ -101,8 +98,7 @@ export class StaticSiteStack extends Stack {
 
     new CfnOutput(this, 'DistributionId', {
       value: distribution.distributionId,
-      description:
-        'CloudFront distribution ID for cache invalidation',
+      description: 'CloudFront distribution ID for cache invalidation',
     });
 
     new CfnOutput(this, 'DistributionUrl', {

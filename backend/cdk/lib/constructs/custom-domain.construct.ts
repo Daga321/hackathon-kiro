@@ -1,8 +1,5 @@
 import { Construct } from 'constructs';
-import {
-  aws_certificatemanager as acm,
-  aws_route53 as route53,
-} from 'aws-cdk-lib';
+import { aws_certificatemanager as acm, aws_route53 as route53 } from 'aws-cdk-lib';
 
 export interface CustomDomainProps {
   /**
@@ -48,28 +45,20 @@ export class CustomDomain extends Construct {
 
     // Resolve hosted zone if provided
     if (hostedZoneId && zoneName) {
-      this.hostedZone = route53.HostedZone.fromHostedZoneAttributes(
-        this,
-        'HostedZone',
-        {
-          hostedZoneId,
-          zoneName,
-        },
-      );
+      this.hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+        hostedZoneId,
+        zoneName,
+      });
     }
 
     // Create or lookup ACM certificate
     if (crossRegion) {
       // CloudFront requires certificates in us-east-1
-      this.certificate = new acm.DnsValidatedCertificate(
-        this,
-        'Certificate',
-        {
-          domainName,
-          hostedZone: this.hostedZone!,
-          region: 'us-east-1',
-        },
-      );
+      this.certificate = new acm.DnsValidatedCertificate(this, 'Certificate', {
+        domainName,
+        hostedZone: this.hostedZone!,
+        region: 'us-east-1',
+      });
     } else {
       // API Gateway uses regional certificates
       this.certificate = new acm.Certificate(this, 'Certificate', {

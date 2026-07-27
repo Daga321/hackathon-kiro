@@ -4,14 +4,25 @@ import { TILESET_KEYS } from '../config/map-config';
 /**
  * Preloads all tileset spritesheets and images needed for map generation.
  * Assets are loaded with correct frame dimensions for tilemap consumption.
+ * Communicates loading progress to the HTML loading screen overlay.
  */
 export class PreloadScene extends Phaser.Scene {
+  private loadMusic: Phaser.Sound.BaseSound | null = null;
+
   constructor() {
     super({ key: 'PreloadScene' });
   }
 
   preload(): void {
-    this.createLoadingBar();
+    this.connectHtmlLoadingScreen();
+
+    // Load the load-screen music FIRST so it can play ASAP while other assets load
+    this.load.audio('bgm_load', 'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav');
+
+    // Try to start music as soon as it's loaded (before all assets finish)
+    this.load.once('filecomplete-audio-bgm_load', () => {
+      this.tryStartLoadMusic();
+    });
 
     // ─── Ground ─────────────────────────────────────────────────────────
     // grass.png is a single 16×16 tile — load as image for tilemap use
@@ -65,43 +76,164 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+
+    // ─── Player character ───────────────────────────────────────────────
+    // player.png: 288×480, 6 cols × 10 rows, 48×48 frames
+    this.load.spritesheet('player', 'characters/player.png', {
+      frameWidth: 48,
+      frameHeight: 48,
+    });
+
+    // ─── Skeleton enemy (swordless) ─────────────────────────────────────
+    // skeleton_swordless.png: 288×624, 6 cols × 13 rows, 48×48 frames
+    this.load.spritesheet('skeleton_swordless', 'characters/skeleton_swordless.png', {
+      frameWidth: 48,
+      frameHeight: 48,
+    });
+
+    // ─── Skeleton enemy (with sword) ────────────────────────────────────
+    // skeleton.png: 288×624, 6 cols × 13 rows, 48×48 frames
+    this.load.spritesheet('skeleton', 'characters/skeleton.png', {
+      frameWidth: 48,
+      frameHeight: 48,
+    });
+
+    // ─── Slime enemy ────────────────────────────────────────────────────
+    // slime.png: 224×416, 7 cols × 13 rows, 32×32 frames
+    this.load.spritesheet('slime', 'characters/slime.png', {
+      frameWidth: 32,
+      frameHeight: 32,
+    });
+
+    // ─── Audio ──────────────────────────────────────────────────────────
+    this.load.audio('bgm_load', 'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav');
+    this.load.audio(
+      'bgm_battle',
+      'audio/music/music_guardia_del_cementerio_ballte_stage_110bpm_.wav',
+    );
+    this.load.audio('sfx_hit', 'audio/sfx/Efecto_golpe.mp3');
+    this.load.audio('sfx_steps', 'audio/sfx/Efecto_pasos.mp3');
   }
 
   create(): void {
-    // Check which scene to start based on the registered scenes
-    const sceneKeys = this.scene.manager.keys;
-    if (sceneKeys['TileDebugScene']) {
-      this.scene.start('TileDebugScene');
-    } else {
-      this.scene.start('GameScene');
+    // If music didn't start during preload (e.g., audio context was locked),
+    // it will start on the first user interaction via tryStartLoadMusic
+    this.showStartPrompt();
+  }
+
+  /**
+   * Attempt to play load screen music. If browser blocks autoplay,
+   * registers a one-time interaction listener to resume.
+   */
+  private tryStartLoadMusic(): void {
+    if (this.loadMusic) return; // already playing
+
+    this.loadMusic = this.sound.add('bgm_load', { loop: true, volume: 0.35 });
+
+    // Try to play immediately
+    try {
+      this.loadMusic.play();
+    } catch {
+      // Autoplay blocked — will retry on interaction
+    }
+
+    // If the audio context is suspended (autoplay policy), resume on first interaction
+    const ctx = (this.sound as Phaser.Sound.WebAudioSoundManager)?.context;
+    if (ctx && ctx.state === 'suspended') {
+      const resumeAudio = (): void => {
+        ctx.resume().then(() => {
+          if (this.loadMusic && !(this.loadMusic as Phaser.Sound.WebAudioSound).isPlaying) {
+            this.loadMusic.play();
+          }
+        });
+        document.removeEventListener('pointerdown', resumeAudio);
+        document.removeEventListener('keydown', resumeAudio);
+      };
+      document.addEventListener('pointerdown', resumeAudio, { once: true });
+      document.addEventListener('keydown', resumeAudio, { once: true });
     }
   }
 
   /**
-   * Create a simple loading progress bar.
+   * Connect Phaser's load progress to the HTML loading screen overlay.
+   * Updates the progress bar fill width.
    */
-  private createLoadingBar(): void {
-    const { width, height } = this.cameras.main;
-    const barWidth = 320;
-    const barHeight = 30;
-    const barX = (width - barWidth) / 2;
-    const barY = (height - barHeight) / 2;
-
-    const progressBox = this.add.graphics();
-    progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(barX - 10, barY - 10, barWidth + 20, barHeight + 20);
-
-    const progressBar = this.add.graphics();
+  private connectHtmlLoadingScreen(): void {
+    const progressFill = document.getElementById('loading-progress-fill');
 
     this.load.on('progress', (value: number) => {
-      progressBar.clear();
-      progressBar.fillStyle(0x4a6741, 1);
-      progressBar.fillRect(barX, barY, barWidth * value, barHeight);
+      if (progressFill) {
+        progressFill.style.width = `${Math.round(value * 100)}%`;
+      }
     });
+  }
 
-    this.load.on('complete', () => {
-      progressBar.destroy();
-      progressBox.destroy();
-    });
+  /**
+   * Show "Press any key / Tap to start" prompt and wait for user interaction.
+   */
+  private showStartPrompt(): void {
+    const statusText = document.getElementById('loading-status-text');
+    const startPrompt = document.getElementById('loading-start-prompt');
+
+    // Hide "Loading..." text, show prompt
+    if (statusText) {
+      statusText.style.display = 'none';
+    }
+    if (startPrompt) {
+      startPrompt.classList.add('visible');
+    }
+
+    // Wait for any key press or touch/click
+    const handleInteraction = (): void => {
+      // Remove listeners to avoid double-firing
+      document.removeEventListener('keydown', handleInteraction);
+      document.removeEventListener('pointerdown', handleInteraction);
+      this.hideHtmlLoadingScreen();
+    };
+
+    document.addEventListener('keydown', handleInteraction, { once: true });
+    document.addEventListener('pointerdown', handleInteraction, { once: true });
+  }
+
+  /**
+   * Fade out and remove the HTML loading screen overlay, then start the game.
+   */
+  private hideHtmlLoadingScreen(): void {
+    const loadingScreen = document.getElementById('loading-screen');
+
+    // Stop load screen music before transitioning
+    if (this.loadMusic) {
+      this.loadMusic.stop();
+      this.loadMusic.destroy();
+      this.loadMusic = null;
+    }
+
+    if (!loadingScreen) {
+      this.scene.start('GameScene');
+      return;
+    }
+
+    // Trigger CSS fade-out transition
+    loadingScreen.classList.add('fade-out');
+
+    // After the transition ends, remove from DOM and start the game
+    loadingScreen.addEventListener(
+      'transitionend',
+      () => {
+        loadingScreen.classList.add('hidden');
+        this.scene.start('GameScene');
+      },
+      { once: true },
+    );
+
+    // Fallback in case transitionend doesn't fire (e.g., reduced motion)
+    setTimeout(() => {
+      if (!loadingScreen.classList.contains('hidden')) {
+        loadingScreen.classList.add('hidden');
+        if (!this.scene.isActive('GameScene')) {
+          this.scene.start('GameScene');
+        }
+      }
+    }, 1000);
   }
 }

@@ -2,7 +2,7 @@ import { Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
 import { aws_cognito as cognito } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
-export interface AuthStackProps extends StackProps {}
+export type AuthStackProps = StackProps;
 
 export class AuthStack extends Stack {
   /** The Cognito User Pool — consumed by ApiStack for authorization */
