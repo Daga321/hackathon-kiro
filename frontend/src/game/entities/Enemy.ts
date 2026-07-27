@@ -54,6 +54,7 @@ export interface EnemyConfig {
  */
 export class Enemy extends Character {
   readonly enemyType: string;
+  private attackDamage: number;
 
   // ─── Death animation ───
   private deathAnims: Record<CharacterDirection, string> | null = null;
@@ -114,6 +115,7 @@ export class Enemy extends Character {
     y: number,
     config: EnemyConfig,
     pathfinder?: Pathfinder,
+    waveOverrides?: { hp?: number; damage?: number; speedMultiplier?: number },
   ) {
     const animConfig: CharacterAnimConfig = {
       textureKey: config.textureKey,
@@ -142,14 +144,19 @@ export class Enemy extends Character {
         hitWindowDuration: 200,
         hitboxOffset: 18,
         hitboxRadius: 12,
-        maxHealth: 3,
-        knockbackForce: 70,
+        maxHealth: waveOverrides?.hp ?? 3,
+        knockbackForce: 100,
         invulnerabilityDuration: 300,
         showHealthBar: true,
       },
     );
 
     this.enemyType = config.prefix;
+    this.attackDamage = waveOverrides?.damage ?? 10;
+
+    if (waveOverrides?.speedMultiplier) {
+      this.speed *= waveOverrides.speedMultiplier;
+    }
     this.specialIdleMinMs = (config.specialIdleMinInterval ?? 4) * 1000;
     this.specialIdleMaxMs = (config.specialIdleMaxInterval ?? 10) * 1000;
     this.detectionRadius = config.detectionRadius ?? 150;
@@ -166,6 +173,13 @@ export class Enemy extends Character {
     if (config.deathAnim) {
       this.createDeathAnimations(scene, config);
     }
+  }
+
+  /**
+   * Get the attack damage this enemy deals.
+   */
+  getAttackDamage(): number {
+    return this.attackDamage;
   }
 
   /**

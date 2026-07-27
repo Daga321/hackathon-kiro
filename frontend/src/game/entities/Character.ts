@@ -384,6 +384,10 @@ export abstract class Character {
 
     this.currentHealth = Math.max(0, this.currentHealth - amount);
 
+    // Play hit SFX (seek past silent intro)
+    const hitSnd = this.scene.sound.add('sfx_hit', { volume: 0.5 });
+    (hitSnd as Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound).play({ seek: 0.7 });
+
     // Show health bar on first damage
     if (this.showHealthBar && !this.healthBarVisible) {
       this.healthBarVisible = true;
@@ -664,12 +668,17 @@ export abstract class Character {
 
   /**
    * Find a valid spawn position avoiding collision tiles.
+   * Uses pathfinder nav grid if available for comprehensive validation.
    */
   protected static findValidSpawnPosition(
     collisionLayer: Phaser.Tilemaps.TilemapLayer | null,
     centerX: number,
     centerY: number,
     radius: number,
+    pathfinder?: {
+      worldToTile: (x: number, y: number) => { x: number; y: number };
+      isWalkable: (x: number, y: number) => boolean;
+    },
   ): { x: number; y: number } {
     const { WIDTH, HEIGHT, TILE_SIZE, BORDER_THICKNESS } = MAP_CONFIG;
     const minX = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
@@ -677,14 +686,19 @@ export abstract class Character {
     const minY = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE;
     const maxY = HEIGHT - BORDER_THICKNESS * TILE_SIZE - TILE_SIZE;
 
-    for (let attempt = 0; attempt < 100; attempt++) {
+    for (let attempt = 0; attempt < 200; attempt++) {
       const angle = Math.random() * Math.PI * 2;
       const r = Math.random() * radius;
       const x = centerX + Math.cos(angle) * r;
       const y = centerY + Math.sin(angle) * r;
 
       if (x < minX || x > maxX || y < minY || y > maxY) continue;
-      if (collisionLayer) {
+
+      // Use pathfinder grid if available (covers ALL collision sources)
+      if (pathfinder) {
+        const tile = pathfinder.worldToTile(x, y);
+        if (!pathfinder.isWalkable(tile.x, tile.y)) continue;
+      } else if (collisionLayer) {
         const tile = collisionLayer.getTileAtWorldXY(x, y);
         if (tile && tile.index !== -1) continue;
       }

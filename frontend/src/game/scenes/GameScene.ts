@@ -6,6 +6,8 @@ import { EnemySpawner } from '../ai/EnemySpawner';
 import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
+import { getPlayerDamage } from '../config/difficulty-config';
+import { AudioManager } from '../audio/AudioManager';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -35,6 +37,8 @@ export class GameScene extends Phaser.Scene {
   private spawner!: EnemySpawner;
   private touchControls!: TouchControls;
   private hud!: HudManager;
+  private audio!: AudioManager;
+  private playerWasAttacking: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -71,8 +75,8 @@ export class GameScene extends Phaser.Scene {
     }
     // Objects layer: NO tilemap collision — graves and trees use circular physics bodies instead
 
-    // Create player at a random valid position
-    this.player = new Player(this, collisionLayer);
+    // Create player at a random valid position (uses pathfinder for full collision check)
+    this.player = new Player(this, collisionLayer, pathfinder);
 
     // Add physics colliders between player and all collidable layers
     const playerSprite = this.player.getSprite();
@@ -99,6 +103,10 @@ export class GameScene extends Phaser.Scene {
 
     // Create HTML HUD manager
     this.hud = new HudManager();
+
+    // Audio system
+    this.audio = new AudioManager(this);
+    this.audio.startMusic();
 
     // Camera follows the player
     const sprite = this.player.getSprite();
@@ -177,6 +185,21 @@ export class GameScene extends Phaser.Scene {
     // Player movement + attack (keyboard + touch)
     this.player.handleInput(this.cursors, this.wasd, this.keyP, touchMove, touchAttack);
 
+    // Player step sounds (only when actually moving, not just pressing keys)
+    const playerBody = this.player.getSprite().body as Phaser.Physics.Arcade.Body;
+    const playerActuallyMoving =
+      playerBody &&
+      (Math.abs(playerBody.velocity.x) > 5 || Math.abs(playerBody.velocity.y) > 5) &&
+      !this.player.getIsDead();
+    this.audio.updateSteps(playerActuallyMoving);
+
+    // Player attack sound (play once when hitbox activates)
+    const playerAttacking = this.player.isHitboxActive();
+    if (playerAttacking && !this.playerWasAttacking) {
+      this.audio.playAttack();
+    }
+    this.playerWasAttacking = playerAttacking;
+
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
 
@@ -189,6 +212,7 @@ export class GameScene extends Phaser.Scene {
       this.waveManager,
       this.waveManager.getAllEnemies(),
       this.game.loop.delta,
+      this.waveManager.getScoreReward(),
     );
 
     // Update enemies (skip if player is dead — enemies stop targeting)
@@ -221,7 +245,7 @@ export class GameScene extends Phaser.Scene {
             );
             if (dist < 20) {
               this.player.registerHit(enemy);
-              enemy.takeDamage(1, this.player);
+              enemy.takeDamage(getPlayerDamage(this.waveManager.getWave()), this.player);
             }
           }
         }
@@ -234,7 +258,7 @@ export class GameScene extends Phaser.Scene {
             const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, plSprite.x, plSprite.y);
             if (dist < 20) {
               enemy.registerHit(this.player);
-              this.player.takeDamage(1, enemy);
+              this.player.takeDamage(enemy.getAttackDamage(), enemy);
             }
           }
         }

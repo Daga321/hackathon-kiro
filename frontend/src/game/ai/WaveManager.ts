@@ -1,6 +1,13 @@
 import Phaser from 'phaser';
 import { EnemySpawner, SpawnRequest } from './EnemySpawner';
 import { Enemy, ENEMY_TYPES } from '../entities/Enemy';
+import {
+  getEnemyCount,
+  getEnemyHP,
+  getEnemyDamage,
+  getEnemySpeedMultiplier,
+  getEnemyScoreReward,
+} from '../config/difficulty-config';
 
 /** Wave state */
 type WaveState = 'spawning' | 'active' | 'waiting_next' | 'stopped';
@@ -17,11 +24,10 @@ export class WaveManager {
   private state: WaveState = 'stopped';
   private currentWave: number = 0;
   private waveEnemies: Enemy[] = [];
+  private currentWaveScoreReward: number = 10;
 
   /** Time between waves (ms) */
   private static readonly WAVE_DELAY_MS = 3000;
-  /** Base enemy count for wave 1 */
-  private static readonly BASE_ENEMY_COUNT = 3;
 
   constructor(scene: Phaser.Scene, spawner: EnemySpawner) {
     this.scene = scene;
@@ -75,14 +81,27 @@ export class WaveManager {
     return this.spawner.getAllEnemies();
   }
 
+  /**
+   * Get the score reward per enemy kill for the current wave.
+   */
+  getScoreReward(): number {
+    return this.currentWaveScoreReward;
+  }
+
   // ─── Private ───
 
   private startWave(wave: number): void {
     this.currentWave = wave;
     this.state = 'spawning';
+    this.currentWaveScoreReward = getEnemyScoreReward(wave);
 
     const requests = this.buildWaveRequests(wave);
-    this.waveEnemies = this.spawner.spawnBatch(requests);
+    const waveOverrides = {
+      hp: getEnemyHP(wave),
+      damage: getEnemyDamage(wave),
+      speedMultiplier: getEnemySpeedMultiplier(wave),
+    };
+    this.waveEnemies = this.spawner.spawnBatch(requests, waveOverrides);
 
     this.state = 'active';
   }
@@ -93,7 +112,7 @@ export class WaveManager {
    * Distributes types round-robin.
    */
   private buildWaveRequests(wave: number): SpawnRequest[] {
-    const totalEnemies = WaveManager.BASE_ENEMY_COUNT + (wave - 1);
+    const totalEnemies = getEnemyCount(wave);
 
     // Available enemy types
     const types = [ENEMY_TYPES.SKELETON, ENEMY_TYPES.SKELETON_SWORD, ENEMY_TYPES.SLIME];

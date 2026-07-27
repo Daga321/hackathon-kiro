@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { MAP_CONFIG } from '../config/map-config';
 import { Character, CharacterAnimConfig, CombatConfig } from './Character';
+import { Pathfinder } from '../ai/Pathfinder';
+import { DIFFICULTY_CONFIG } from '../config/difficulty-config';
 
 export type { CharacterDirection as PlayerDirection } from './Character';
 
@@ -39,7 +41,7 @@ const PLAYER_COMBAT_CONFIG: CombatConfig = {
   hitWindowDuration: 150,
   hitboxOffset: 18,
   hitboxRadius: 12,
-  maxHealth: 100,
+  maxHealth: DIFFICULTY_CONFIG.PLAYER_HP_BASE,
   knockbackForce: 70,
   invulnerabilityDuration: 1000,
 };
@@ -48,12 +50,17 @@ export class Player extends Character {
   /** Death animation keys */
   private deathAnims: Record<string, string> | null = null;
 
-  constructor(scene: Phaser.Scene, collisionLayer: Phaser.Tilemaps.TilemapLayer | null) {
+  constructor(
+    scene: Phaser.Scene,
+    collisionLayer: Phaser.Tilemaps.TilemapLayer | null,
+    pathfinder?: Pathfinder,
+  ) {
     const spawnPos = Character.findValidSpawnPosition(
       collisionLayer,
       MAP_CONFIG.WIDTH / 2,
       MAP_CONFIG.HEIGHT / 2,
       MAP_CONFIG.SPAWN_SAFE_RADIUS,
+      pathfinder,
     );
 
     super(scene, spawnPos.x, spawnPos.y, PLAYER_ANIM_CONFIG, 120, 5, 19, 33, PLAYER_COMBAT_CONFIG);
