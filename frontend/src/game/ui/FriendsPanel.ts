@@ -1,7 +1,10 @@
 import { AuthUI } from './AuthUI';
 import {
   listFriends,
+  listPendingRequests,
   sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
   removeFriend,
 } from '../../services/friends.service';
 
@@ -173,10 +176,76 @@ export class FriendsPanel {
     const container = document.getElementById('friends-requests-container');
     if (!container) return;
 
-    // The current backend GET /friends filters by status=confirmed only.
-    // Pending requests support requires a backend update to expose
-    // entries with status=pending. For now, show empty state.
-    container.innerHTML = '<p class="friends-empty-text">No pending requests.</p>';
+    container.innerHTML = '<p class="friends-empty-text">Loading...</p>';
+
+    const result = await listPendingRequests();
+
+    if (!result.success) {
+      container.innerHTML = `<p class="friends-empty-text" style="color: #cc3333;">${result.error}</p>`;
+      return;
+    }
+
+    const pending = result.data.friends;
+
+    if (pending.length === 0) {
+      container.innerHTML = '<p class="friends-empty-text">No pending requests.</p>';
+      return;
+    }
+
+    container.innerHTML = pending
+      .map(
+        (entry) => `
+        <div class="friends-row" data-friend-id="${entry.friendId}">
+          <span class="friends-row-name">${entry.friendId}</span>
+          <div style="display: flex; gap: 4px;">
+            <button class="friends-row-action friends-accept-btn" data-id="${entry.friendId}" style="background: #2d6b2d;">Accept</button>
+            <button class="friends-row-action friends-reject-btn" data-id="${entry.friendId}" style="background: #6b2d2d;">Reject</button>
+          </div>
+        </div>`,
+      )
+      .join('');
+
+    // Bind accept buttons
+    container.querySelectorAll('.friends-accept-btn').forEach((btn) => {
+      (btn as HTMLElement).onclick = async () => {
+        const friendId = btn.getAttribute('data-id');
+        if (!friendId) return;
+
+        (btn as HTMLElement).textContent = '...';
+        const acceptResult = await acceptFriendRequest(friendId);
+
+        if (acceptResult.success) {
+          const row = btn.closest('.friends-row');
+          row?.remove();
+          if (container.querySelectorAll('.friends-row').length === 0) {
+            container.innerHTML = '<p class="friends-empty-text">No pending requests.</p>';
+          }
+        } else {
+          (btn as HTMLElement).textContent = 'Accept';
+        }
+      };
+    });
+
+    // Bind reject buttons
+    container.querySelectorAll('.friends-reject-btn').forEach((btn) => {
+      (btn as HTMLElement).onclick = async () => {
+        const friendId = btn.getAttribute('data-id');
+        if (!friendId) return;
+
+        (btn as HTMLElement).textContent = '...';
+        const rejectResult = await rejectFriendRequest(friendId);
+
+        if (rejectResult.success) {
+          const row = btn.closest('.friends-row');
+          row?.remove();
+          if (container.querySelectorAll('.friends-row').length === 0) {
+            container.innerHTML = '<p class="friends-empty-text">No pending requests.</p>';
+          }
+        } else {
+          (btn as HTMLElement).textContent = 'Reject';
+        }
+      };
+    });
   }
 
   private bindEvents(): void {
