@@ -31,6 +31,8 @@ export class AuthUI {
   private _isLoggedIn: boolean = false;
   private onOpenCallback: (() => void) | null = null;
   private onCloseCallback: (() => void) | null = null;
+  private loginSuccessListeners: ((source: 'hud' | 'friends' | 'leaderboard' | null) => void)[] = [];
+  private returnTo: 'hud' | 'friends' | 'leaderboard' | null = null;
 
   constructor() {
     // HUD
@@ -76,6 +78,29 @@ export class AuthUI {
   }
 
   /**
+   * Register callback for when login succeeds.
+   * Callback receives the source that triggered the login.
+   * Multiple listeners supported.
+   */
+  onLoginSuccess(callback: (source: 'hud' | 'friends' | 'leaderboard' | null) => void): void {
+    this.loginSuccessListeners.push(callback);
+  }
+
+  /**
+   * Open the auth popup indicating where the user came from.
+   * After login, the system will return to the appropriate panel.
+   */
+  openFrom(source: 'hud' | 'friends' | 'leaderboard'): void {
+    this.returnTo = source;
+    this.backdrop?.classList.add('visible');
+    this.showLoginForm();
+    // Don't call onOpenCallback for friends/leaderboard — game is already paused
+    if (source === 'hud') {
+      this.onOpenCallback?.();
+    }
+  }
+
+  /**
    * Simulate a successful login (UI-only, will be replaced with real auth).
    */
   setLoggedIn(username: string): void {
@@ -83,7 +108,23 @@ export class AuthUI {
     if (this.usernameEl) this.usernameEl.textContent = username;
     if (this.guestSection) this.guestSection.style.display = 'none';
     if (this.loggedSection) this.loggedSection.style.display = 'flex';
-    this.hidePopup();
+
+    // Hide the auth popup
+    this.backdrop?.classList.remove('visible');
+    this.clearErrors();
+
+    const source = this.returnTo;
+    this.returnTo = null;
+
+    // Notify listeners about login success (pass source for routing)
+    for (const cb of this.loginSuccessListeners) {
+      cb(source);
+    }
+
+    // If opened from HUD, show a "continue" confirmation instead of auto-resuming
+    if (source === 'hud') {
+      this.showContinuePrompt();
+    }
   }
 
   /**
@@ -98,16 +139,66 @@ export class AuthUI {
 
   // ─── Private ───
 
-  private showPopup(): void {
-    this.backdrop?.classList.add('visible');
-    this.showLoginForm();
-    this.onOpenCallback?.();
-  }
-
   private hidePopup(): void {
     this.backdrop?.classList.remove('visible');
     this.clearErrors();
+    this.hideContinuePrompt();
     this.onCloseCallback?.();
+  }
+
+  /**
+   * Show a "login successful, press continue" screen so the player
+   * consciously resumes gameplay.
+   */
+  private showContinuePrompt(): void {
+    // Hide forms, show a success + continue message
+    if (this.loginView) this.loginView.style.display = 'none';
+    if (this.registerView) this.registerView.style.display = 'none';
+
+    let prompt = document.getElementById('auth-continue-prompt');
+    if (!prompt) {
+      prompt = document.createElement('div');
+      prompt.id = 'auth-continue-prompt';
+      prompt.style.cssText =
+        'display:flex;flex-direction:column;align-items:center;gap:16px;z-index:1;';
+      prompt.innerHTML = `
+        <p style="font-size:0.55rem;color:#44ff44;text-align:center;line-height:2;">Login successful!</p>
+        <p style="font-size:0.4rem;color:#aaa;text-align:center;line-height:2;">The game is paused.<br>Press continue when ready.</p>
+        <button id="auth-continue-btn" class="pause-btn pause-btn-primary">Continue</button>
+      `;
+      // Insert into the auth board
+      const board = this.backdrop?.querySelector('.pause-board');
+      const closeBtn = document.getElementById('auth-close-btn');
+      if (board && closeBtn) {
+        board.insertBefore(prompt, closeBtn);
+      }
+    } else {
+      prompt.style.display = 'flex';
+    }
+
+    // Hide the close button while showing continue prompt
+    const closeBtn = document.getElementById('auth-close-btn');
+    if (closeBtn) closeBtn.style.display = 'none';
+
+    // Keep backdrop visible
+    this.backdrop?.classList.add('visible');
+
+    // Bind continue button
+    const continueBtn = document.getElementById('auth-continue-btn');
+    if (continueBtn) {
+      continueBtn.onclick = () => {
+        this.hideContinuePrompt();
+        this.backdrop?.classList.remove('visible');
+        this.onCloseCallback?.();
+      };
+    }
+  }
+
+  private hideContinuePrompt(): void {
+    const prompt = document.getElementById('auth-continue-prompt');
+    if (prompt) prompt.style.display = 'none';
+    const closeBtn = document.getElementById('auth-close-btn');
+    if (closeBtn) closeBtn.style.display = '';
   }
 
   private showLoginForm(): void {
@@ -130,7 +221,7 @@ export class AuthUI {
   private bindEvents(): void {
     // Open popup from HUD
     if (this.loginBtn) {
-      this.loginBtn.onclick = () => this.showPopup();
+      this.loginBtn.onclick = () => this.openFrom('hud');
     }
 
     // Logout

@@ -638,6 +638,326 @@
         color: #44ff44;
       }
 
+      /* ─── Friends Panel ────────────────────────────────── */
+      #friends-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #friends-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #friends-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #friends-backdrop {
+          left: 120px;
+        }
+      }
+      .friends-board {
+        width: 420px;
+        max-width: 95%;
+        max-height: 85vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .friends-board::-webkit-scrollbar {
+        width: 8px;
+      }
+      .friends-board::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 4px;
+      }
+      .friends-board::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 4px;
+      }
+      .friends-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        z-index: 1;
+      }
+      .friends-info-text {
+        font-size: 0.45rem;
+        color: #aaa;
+        text-align: center;
+        line-height: 2;
+        z-index: 1;
+      }
+      .friends-tabs {
+        display: flex;
+        gap: 4px;
+        width: 100%;
+        z-index: 1;
+        margin-bottom: 10px;
+      }
+      .friends-tab {
+        flex: 1;
+        padding: 8px 4px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.35rem;
+        color: #888;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        text-align: center;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .friends-tab:hover {
+        color: #ccc;
+      }
+      .friends-tab-active {
+        color: #f0c040;
+        border-color: #f0c040;
+        background: rgba(240, 192, 64, 0.1);
+      }
+      .friends-panel {
+        width: 100%;
+        z-index: 1;
+      }
+      .friends-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .friends-list-container::-webkit-scrollbar {
+        width: 6px;
+      }
+      .friends-list-container::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 3px;
+      }
+      .friends-list-container::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 3px;
+      }
+      .friends-empty-text {
+        font-size: 0.4rem;
+        color: #666;
+        text-align: center;
+        padding: 16px 0;
+      }
+      .friends-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+      }
+      .friends-item-name {
+        font-size: 0.4rem;
+        color: #eee;
+      }
+      .friends-item-actions {
+        display: flex;
+        gap: 4px;
+      }
+      .friends-item-btn {
+        padding: 4px 8px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.3rem;
+        border: 1px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        background: transparent;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .friends-item-btn-accept {
+        color: #44ff44;
+        border-color: #44ff44;
+      }
+      .friends-item-btn-accept:hover {
+        background: rgba(68, 255, 68, 0.1);
+      }
+      .friends-item-btn-reject {
+        color: #ff4444;
+        border-color: #ff4444;
+      }
+      .friends-item-btn-reject:hover {
+        background: rgba(255, 68, 68, 0.1);
+      }
+      .friends-item-btn-remove {
+        color: #888;
+        border-color: #555;
+      }
+      .friends-item-btn-remove:hover {
+        color: #ff4444;
+        border-color: #ff4444;
+      }
+      .friends-status-text {
+        font-size: 0.35rem;
+        color: #44ff44;
+        min-height: 12px;
+        text-align: center;
+        z-index: 1;
+      }
+
+      /* ─── Leaderboard Panel ────────────────────────────── */
+      #leaderboard-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #leaderboard-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #leaderboard-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #leaderboard-backdrop {
+          left: 120px;
+        }
+      }
+      .leaderboard-board {
+        width: 460px;
+        max-width: 95%;
+        max-height: 85vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .leaderboard-board::-webkit-scrollbar {
+        width: 8px;
+      }
+      .leaderboard-board::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 4px;
+      }
+      .leaderboard-board::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 4px;
+      }
+      .lb-header {
+        display: flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-bottom: 1px solid #4a2a0a;
+        margin-bottom: 6px;
+        z-index: 1;
+      }
+      .lb-header span {
+        font-size: 0.45rem;
+        color: #888;
+      }
+      .lb-header .lb-col-rank {
+        width: 30px;
+        text-align: center;
+      }
+      .lb-header .lb-col-name {
+        flex: 1;
+        padding-left: 8px;
+      }
+      .lb-header .lb-col-score {
+        width: 80px;
+        text-align: right;
+      }
+      .lb-header .lb-col-wave {
+        width: 50px;
+        text-align: right;
+      }
+      .lb-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 280px;
+        overflow-y: auto;
+        z-index: 1;
+        scrollbar-width: thin;
+        scrollbar-color: #6b3f1f #3a2210;
+      }
+      .lb-list-container::-webkit-scrollbar {
+        width: 6px;
+      }
+      .lb-list-container::-webkit-scrollbar-track {
+        background: #3a2210;
+        border-radius: 3px;
+      }
+      .lb-list-container::-webkit-scrollbar-thumb {
+        background: #6b3f1f;
+        border-radius: 3px;
+      }
+      .lb-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 10px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+      .lb-row span {
+        font-size: 0.45rem;
+        color: #ccc;
+      }
+      .lb-row-gold {
+        background: rgba(240, 192, 64, 0.15);
+        border: 1px solid rgba(240, 192, 64, 0.3);
+      }
+      .lb-row-gold .lb-col-rank {
+        color: #f0c040;
+      }
+      .lb-row-silver {
+        background: rgba(192, 192, 192, 0.1);
+        border: 1px solid rgba(192, 192, 192, 0.2);
+      }
+      .lb-row-silver .lb-col-rank {
+        color: #c0c0c0;
+      }
+      .lb-row-bronze {
+        background: rgba(205, 127, 50, 0.1);
+        border: 1px solid rgba(205, 127, 50, 0.2);
+      }
+      .lb-row-bronze .lb-col-rank {
+        color: #cd7f32;
+      }
+      .lb-col-rank {
+        width: 30px;
+        text-align: center;
+        font-weight: bold;
+      }
+      .lb-col-name {
+        flex: 1;
+        padding-left: 8px;
+      }
+      .lb-col-score {
+        width: 80px;
+        text-align: right;
+        color: #f0c040 !important;
+      }
+      .lb-col-wave {
+        width: 50px;
+        text-align: right;
+      }
+
       /* ─── HUD Auth Section ────────────────────────────── */
       .hud-auth-section {
         display: flex;
@@ -1289,8 +1609,9 @@
         <button id="pause-btn-resume" class="pause-btn pause-btn-primary">Resume</button>
         <button id="pause-btn-controls" class="pause-btn">Controls</button>
         <button id="pause-btn-guide" class="pause-btn">Game Guide</button>
-        <button id="pause-btn-audio" class="pause-btn">Audio Settings</button>
+        <button id="pause-btn-friends" class="pause-btn">Friends</button>
         <button id="pause-btn-leaderboard" class="pause-btn">Leaderboard</button>
+        <button id="pause-btn-audio" class="pause-btn">Audio Settings</button>
         <button id="pause-btn-quit" class="pause-btn">Main Menu</button>
         <p class="pause-hint">ESC or P to resume</p>
       </div>
@@ -1460,6 +1781,157 @@
 
         <div class="pause-board-divider"></div>
         <button id="guide-btn-back" class="pause-btn pause-btn-primary">Back</button>
+      </div>
+    </div>
+
+    <!-- ═══ Friends Panel Overlay ═══ -->
+    <div id="friends-backdrop">
+      <div class="pause-board friends-board">
+        <p class="pause-board-title">Friends</p>
+        <div class="pause-board-divider"></div>
+
+        <!-- Not logged in message -->
+        <div id="friends-not-logged" class="friends-section">
+          <p class="friends-info-text">You need to sign in to manage friends.</p>
+          <button id="friends-login-btn" class="pause-btn pause-btn-primary">Sign In</button>
+        </div>
+
+        <!-- Logged in content -->
+        <div id="friends-content" style="display: none">
+          <!-- Tabs -->
+          <div class="friends-tabs">
+            <button id="friends-tab-list" class="friends-tab friends-tab-active">My Friends</button>
+            <button id="friends-tab-requests" class="friends-tab">Requests</button>
+            <button id="friends-tab-add" class="friends-tab">Add</button>
+          </div>
+
+          <!-- Tab: Friends List -->
+          <div id="friends-panel-list" class="friends-panel">
+            <div id="friends-list-container" class="friends-list-container">
+              <p class="friends-empty-text">No friends yet. Add some!</p>
+            </div>
+          </div>
+
+          <!-- Tab: Requests -->
+          <div id="friends-panel-requests" class="friends-panel" style="display: none">
+            <div id="friends-requests-container" class="friends-list-container">
+              <p class="friends-empty-text">No pending requests.</p>
+            </div>
+          </div>
+
+          <!-- Tab: Add Friend -->
+          <div id="friends-panel-add" class="friends-panel" style="display: none">
+            <div class="auth-field">
+              <label class="auth-label" for="friends-add-input">Username or Email</label>
+              <input
+                id="friends-add-input"
+                class="auth-input"
+                type="text"
+                placeholder="Enter username or email"
+              />
+            </div>
+            <p id="friends-add-status" class="friends-status-text"></p>
+            <button id="friends-add-submit" class="pause-btn pause-btn-primary">Send Request</button>
+          </div>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="friends-btn-back" class="pause-btn pause-btn-primary">Back</button>
+      </div>
+    </div>
+
+    <!-- ═══ Leaderboard Overlay ═══ -->
+    <div id="leaderboard-backdrop">
+      <div class="pause-board leaderboard-board">
+        <p class="pause-board-title">Leaderboard</p>
+        <div class="pause-board-divider"></div>
+
+        <!-- Tabs -->
+        <div class="friends-tabs">
+          <button id="lb-tab-global" class="friends-tab friends-tab-active">Global</button>
+          <button id="lb-tab-friends" class="friends-tab">Friends</button>
+        </div>
+
+        <!-- Table header -->
+        <div class="lb-header">
+          <span class="lb-col-rank">#</span>
+          <span class="lb-col-name">Player</span>
+          <span class="lb-col-score">Score</span>
+          <span class="lb-col-wave">Wave</span>
+        </div>
+
+        <!-- Leaderboard list -->
+        <div id="lb-list-container" class="lb-list-container">
+          <div class="lb-row lb-row-gold">
+            <span class="lb-col-rank">1</span>
+            <span class="lb-col-name">DarkKnight</span>
+            <span class="lb-col-score">12,450</span>
+            <span class="lb-col-wave">34</span>
+          </div>
+          <div class="lb-row lb-row-silver">
+            <span class="lb-col-rank">2</span>
+            <span class="lb-col-name">SlayerX</span>
+            <span class="lb-col-score">10,280</span>
+            <span class="lb-col-wave">29</span>
+          </div>
+          <div class="lb-row lb-row-bronze">
+            <span class="lb-col-rank">3</span>
+            <span class="lb-col-name">GhostHunter</span>
+            <span class="lb-col-score">8,930</span>
+            <span class="lb-col-wave">25</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">4</span>
+            <span class="lb-col-name">NightOwl</span>
+            <span class="lb-col-score">7,100</span>
+            <span class="lb-col-wave">21</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">5</span>
+            <span class="lb-col-name">BoneBreaker</span>
+            <span class="lb-col-score">6,540</span>
+            <span class="lb-col-wave">19</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">6</span>
+            <span class="lb-col-name">PixelWarrior</span>
+            <span class="lb-col-score">5,200</span>
+            <span class="lb-col-wave">16</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">7</span>
+            <span class="lb-col-name">CryptKeeper</span>
+            <span class="lb-col-score">4,800</span>
+            <span class="lb-col-wave">14</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">8</span>
+            <span class="lb-col-name">ZombieSlayer</span>
+            <span class="lb-col-score">3,650</span>
+            <span class="lb-col-wave">11</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">9</span>
+            <span class="lb-col-name">GraveMaster</span>
+            <span class="lb-col-score">2,900</span>
+            <span class="lb-col-wave">9</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-col-rank">10</span>
+            <span class="lb-col-name">SkullCrusher</span>
+            <span class="lb-col-score">2,100</span>
+            <span class="lb-col-wave">7</span>
+          </div>
+        </div>
+
+        <!-- Friends tab: login required -->
+        <div id="lb-friends-not-logged" class="friends-section" style="display: none">
+          <p class="friends-info-text">Sign in to see your friends' scores.</p>
+          <button id="lb-friends-login-btn" class="pause-btn pause-btn-primary">Sign In</button>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="lb-btn-back" class="pause-btn pause-btn-primary">Back</button>
       </div>
     </div>
 

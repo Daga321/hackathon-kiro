@@ -1,3 +1,6 @@
+import { FriendsPanel } from './FriendsPanel';
+import { AuthUI } from './AuthUI';
+
 /**
  * PauseMenu — controls the HTML pause menu overlay.
  *
@@ -16,7 +19,6 @@ export class PauseMenu {
   private btnResume: HTMLElement | null;
   private btnControls: HTMLElement | null;
   private btnAudio: HTMLElement | null;
-  private btnLeaderboard: HTMLElement | null;
   private btnQuit: HTMLElement | null;
 
   private controlsBackdrop: HTMLElement | null;
@@ -29,6 +31,14 @@ export class PauseMenu {
   private btnGuideBack: HTMLElement | null;
 
   private hudPauseBtn: HTMLElement | null;
+  private btnFriends: HTMLElement | null;
+  private friendsPanel: FriendsPanel | null = null;
+  private authRef: AuthUI | null = null;
+  private btnLeaderboard: HTMLElement | null;
+  private leaderboardBackdrop: HTMLElement | null;
+  private lbBtnBack: HTMLElement | null;
+  private lbTabGlobal: HTMLElement | null;
+  private lbTabFriends: HTMLElement | null;
 
   private _isPaused: boolean = false;
   private onResumeCallback: (() => void) | null = null;
@@ -39,7 +49,6 @@ export class PauseMenu {
     this.btnResume = document.getElementById('pause-btn-resume');
     this.btnControls = document.getElementById('pause-btn-controls');
     this.btnAudio = document.getElementById('pause-btn-audio');
-    this.btnLeaderboard = document.getElementById('pause-btn-leaderboard');
     this.btnQuit = document.getElementById('pause-btn-quit');
 
     this.controlsBackdrop = document.getElementById('controls-backdrop');
@@ -52,6 +61,12 @@ export class PauseMenu {
     this.btnGuideBack = document.getElementById('guide-btn-back');
 
     this.hudPauseBtn = document.getElementById('hud-pause-btn');
+    this.btnFriends = document.getElementById('pause-btn-friends');
+    this.btnLeaderboard = document.getElementById('pause-btn-leaderboard');
+    this.leaderboardBackdrop = document.getElementById('leaderboard-backdrop');
+    this.lbBtnBack = document.getElementById('lb-btn-back');
+    this.lbTabGlobal = document.getElementById('lb-tab-global');
+    this.lbTabFriends = document.getElementById('lb-tab-friends');
 
     this.bindButtons();
     this.bindKeyboard();
@@ -70,6 +85,29 @@ export class PauseMenu {
    */
   onResume(callback: () => void): void {
     this.onResumeCallback = callback;
+  }
+
+  /**
+   * Set the AuthUI reference for the friends panel.
+   */
+  setAuthUI(authUI: AuthUI): void {
+    this.authRef = authUI;
+    this.friendsPanel = new FriendsPanel(authUI);
+    this.friendsPanel.onBack(() => {
+      this.backdrop?.classList.add('visible');
+    });
+
+    // When login succeeds from leaderboard, re-show it with content
+    authUI.onLoginSuccess((source) => {
+      if (source === 'leaderboard') {
+        this.showLeaderboard();
+        setTimeout(() => this.lbTabFriends?.click(), 50);
+      }
+    });
+  }
+
+  private getAuthLoggedIn(): boolean {
+    return this.authRef?.isLoggedIn ?? false;
   }
 
   /**
@@ -120,6 +158,8 @@ export class PauseMenu {
     this.backdrop?.classList.remove('visible');
     this.controlsBackdrop?.classList.remove('visible');
     this.guideBackdrop?.classList.remove('visible');
+    this.friendsPanel?.hide();
+    this.leaderboardBackdrop?.classList.remove('visible');
   }
 
   private showControls(): void {
@@ -143,6 +183,21 @@ export class PauseMenu {
 
   private hideGuide(): void {
     this.guideBackdrop?.classList.remove('visible');
+    this.backdrop?.classList.add('visible');
+  }
+
+  private showFriends(): void {
+    this.backdrop?.classList.remove('visible');
+    this.friendsPanel?.show();
+  }
+
+  private showLeaderboard(): void {
+    this.backdrop?.classList.remove('visible');
+    this.leaderboardBackdrop?.classList.add('visible');
+  }
+
+  private hideLeaderboard(): void {
+    this.leaderboardBackdrop?.classList.remove('visible');
     this.backdrop?.classList.add('visible');
   }
 
@@ -182,6 +237,13 @@ export class PauseMenu {
       };
     }
 
+    // Friends panel
+    if (this.btnFriends) {
+      this.btnFriends.onclick = () => {
+        this.showFriends();
+      };
+    }
+
     // Audio settings (placeholder — future implementation)
     if (this.btnAudio) {
       this.btnAudio.onclick = () => {
@@ -189,10 +251,55 @@ export class PauseMenu {
       };
     }
 
-    // Leaderboard (placeholder — future implementation)
+    // Leaderboard
     if (this.btnLeaderboard) {
       this.btnLeaderboard.onclick = () => {
-        // TODO: Open leaderboard panel
+        this.showLeaderboard();
+      };
+    }
+
+    // Leaderboard back button
+    if (this.lbBtnBack) {
+      this.lbBtnBack.onclick = () => {
+        this.hideLeaderboard();
+      };
+    }
+
+    // Leaderboard tabs (UI-only, same data for now)
+    const lbTabs = [this.lbTabGlobal, this.lbTabFriends];
+    const lbListContainer = document.getElementById('lb-list-container');
+    const lbHeader = document.querySelector('.lb-header') as HTMLElement | null;
+    const lbFriendsNotLogged = document.getElementById('lb-friends-not-logged');
+    const lbFriendsLoginBtn = document.getElementById('lb-friends-login-btn');
+
+    lbTabs.forEach((tab) => {
+      if (tab) {
+        tab.onclick = () => {
+          lbTabs.forEach((t) => t?.classList.remove('friends-tab-active'));
+          tab.classList.add('friends-tab-active');
+
+          const isFriendsTab = tab === this.lbTabFriends;
+
+          if (isFriendsTab && this.friendsPanel && !this.getAuthLoggedIn()) {
+            // Not logged in — show login prompt, hide list
+            if (lbListContainer) lbListContainer.style.display = 'none';
+            if (lbHeader) lbHeader.style.display = 'none';
+            if (lbFriendsNotLogged) lbFriendsNotLogged.style.display = 'flex';
+          } else {
+            // Show list
+            if (lbListContainer) lbListContainer.style.display = 'flex';
+            if (lbHeader) lbHeader.style.display = 'flex';
+            if (lbFriendsNotLogged) lbFriendsNotLogged.style.display = 'none';
+          }
+        };
+      }
+    });
+
+    // Leaderboard friends tab login button
+    if (lbFriendsLoginBtn) {
+      lbFriendsLoginBtn.onclick = () => {
+        this.leaderboardBackdrop?.classList.remove('visible');
+        this.authRef?.openFrom('leaderboard');
       };
     }
 

@@ -183,6 +183,9 @@ export class GameScene extends Phaser.Scene {
       this.scene.resume();
     });
 
+    // Connect auth to pause menu for friends panel
+    this.pauseMenu.setAuthUI(authUI);
+
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
       this.keyQ = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
