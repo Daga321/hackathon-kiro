@@ -27,10 +27,9 @@ console.log(`Checking CDK bootstrap for account ${account} in ${region}...`);
 
 try {
   // Try to read the SSM parameter that bootstrap creates
-  execSync(
-    `aws ssm get-parameter --name "/cdk-bootstrap/hnb659fds/version" --region ${region}`,
-    { stdio: 'pipe' }
-  );
+  execSync(`aws ssm get-parameter --name "/cdk-bootstrap/hnb659fds/version" --region ${region}`, {
+    stdio: 'pipe',
+  });
   console.log('Bootstrap already exists. Proceeding with deploy.');
 } catch {
   console.log('Bootstrap not found. Running cdk bootstrap...');

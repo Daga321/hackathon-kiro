@@ -31,9 +31,7 @@ function generateRankKey(highestRound: number, totalScore: number): string {
   return `${roundPadded}#${scorePadded}`;
 }
 
-export const handler = async (
-  event: APIGatewayProxyEvent,
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     if (!event.body) return badRequest('Request body is required');
 
@@ -77,8 +75,7 @@ export const handler = async (
       new UpdateCommand({
         TableName: USERS_TABLE,
         Key: { userId },
-        UpdateExpression:
-          'SET highestRound = :hr, totalScore = :ts, rankKey = :rk',
+        UpdateExpression: 'SET highestRound = :hr, totalScore = :ts, rankKey = :rk',
         ExpressionAttributeValues: {
           ':hr': newHighestRound,
           ':ts': newTotalScore,

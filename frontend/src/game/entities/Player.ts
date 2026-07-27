@@ -53,7 +53,7 @@ export class Player extends Character {
       collisionLayer,
       MAP_CONFIG.WIDTH / 2,
       MAP_CONFIG.HEIGHT / 2,
-      MAP_CONFIG.SPAWN_SAFE_RADIUS
+      MAP_CONFIG.SPAWN_SAFE_RADIUS,
     );
 
     super(scene, spawnPos.x, spawnPos.y, PLAYER_ANIM_CONFIG, 120, 5, 19, 33, PLAYER_COMBAT_CONFIG);
@@ -65,9 +65,27 @@ export class Player extends Character {
   private createDeathAnimations(scene: Phaser.Scene): void {
     if (scene.anims.exists('player_death_down')) return;
 
-    scene.anims.create({ key: 'player_death_down', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
-    scene.anims.create({ key: 'player_death_right', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
-    scene.anims.create({ key: 'player_death_up', frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }), frameRate: 8, repeat: 0, hideOnComplete: false });
+    scene.anims.create({
+      key: 'player_death_down',
+      frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }),
+      frameRate: 8,
+      repeat: 0,
+      hideOnComplete: false,
+    });
+    scene.anims.create({
+      key: 'player_death_right',
+      frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }),
+      frameRate: 8,
+      repeat: 0,
+      hideOnComplete: false,
+    });
+    scene.anims.create({
+      key: 'player_death_up',
+      frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }),
+      frameRate: 8,
+      repeat: 0,
+      hideOnComplete: false,
+    });
 
     this.deathAnims = {
       down: 'player_death_down',
@@ -108,10 +126,15 @@ export class Player extends Character {
    */
   handleInput(
     cursors: Phaser.Types.Input.Keyboard.CursorKeys,
-    wasd: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key },
+    wasd: {
+      W: Phaser.Input.Keyboard.Key;
+      A: Phaser.Input.Keyboard.Key;
+      S: Phaser.Input.Keyboard.Key;
+      D: Phaser.Input.Keyboard.Key;
+    },
     attackKey: Phaser.Input.Keyboard.Key,
     touchMove?: { x: number; y: number },
-    touchAttack?: boolean
+    touchAttack?: boolean,
   ): void {
     // Skip input if in knockback or dead
     if (this.isInKnockback || this.isDead) return;

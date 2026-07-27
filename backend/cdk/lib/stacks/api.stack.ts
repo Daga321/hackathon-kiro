@@ -64,12 +64,7 @@ export class ApiStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigw.Cors.ALL_ORIGINS,
         allowMethods: apigw.Cors.ALL_METHODS,
-        allowHeaders: [
-          'Content-Type',
-          'Authorization',
-          'X-Amz-Date',
-          'X-Api-Key',
-        ],
+        allowHeaders: ['Content-Type', 'Authorization', 'X-Amz-Date', 'X-Api-Key'],
       },
     });
 
@@ -85,9 +80,7 @@ export class ApiStack extends Stack {
         new route53.ARecord(this, 'ApiAliasRecord', {
           zone: customDomain.hostedZone,
           recordName: props.domainName,
-          target: route53.RecordTarget.fromAlias(
-            new targets.ApiGatewayDomain(apiDomainName),
-          ),
+          target: route53.RecordTarget.fromAlias(new targets.ApiGatewayDomain(apiDomainName)),
         });
       }
     }
@@ -96,15 +89,11 @@ export class ApiStack extends Stack {
     // Not yet used on any route — will be referenced by future protected endpoints.
     // We attach it to the health endpoint's OPTIONS as a workaround to satisfy CDK validation,
     // but it has no effect on the actual health GET method (which remains public).
-    const authorizer = new apigw.CognitoUserPoolsAuthorizer(
-      this,
-      'CognitoAuthorizer',
-      {
-        cognitoUserPools: [userPool],
-        identitySource: 'method.request.header.Authorization',
-        authorizerName: 'CognitoAuthorizer',
-      },
-    );
+    const authorizer = new apigw.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
+      cognitoUserPools: [userPool],
+      identitySource: 'method.request.header.Authorization',
+      authorizerName: 'CognitoAuthorizer',
+    });
     authorizer._attachToApi(api);
 
     // ─── Lambda: Health Check ────────────────────────────────────────────────
@@ -121,10 +110,7 @@ export class ApiStack extends Stack {
 
     // Public endpoint — no auth required
     const healthResource = api.root.addResource('health');
-    healthResource.addMethod(
-      'GET',
-      new apigw.LambdaIntegration(healthLambda),
-    );
+    healthResource.addMethod('GET', new apigw.LambdaIntegration(healthLambda));
 
     // ─── Lambda: Auth Register ─────────────────────────────────────────────
     const registerLambda = new nodejs.NodejsFunction(this, 'RegisterFunction', {
@@ -166,28 +152,18 @@ export class ApiStack extends Stack {
 
     // POST /auth/register — public
     const registerResource = authResource.addResource('register');
-    registerResource.addMethod(
-      'POST',
-      new apigw.LambdaIntegration(registerLambda),
-    );
+    registerResource.addMethod('POST', new apigw.LambdaIntegration(registerLambda));
 
     // POST /auth/login — public
     const loginResource = authResource.addResource('login');
-    loginResource.addMethod(
-      'POST',
-      new apigw.LambdaIntegration(loginLambda),
-    );
+    loginResource.addMethod('POST', new apigw.LambdaIntegration(loginLambda));
 
     // POST /auth/logout — protected (requires valid JWT)
     const logoutResource = authResource.addResource('logout');
-    logoutResource.addMethod(
-      'POST',
-      new apigw.LambdaIntegration(logoutLambda),
-      {
-        authorizer,
-        authorizationType: apigw.AuthorizationType.COGNITO,
-      },
-    );
+    logoutResource.addMethod('POST', new apigw.LambdaIntegration(logoutLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // ─── Lambda: Friends List ────────────────────────────────────────────────
     const listFriendsLambda = new nodejs.NodejsFunction(this, 'ListFriendsFunction', {
@@ -260,55 +236,54 @@ export class ApiStack extends Stack {
     const friendsResource = api.root.addResource('friends');
 
     // GET /friends — list confirmed friends
-    friendsResource.addMethod(
-      'GET',
-      new apigw.LambdaIntegration(listFriendsLambda),
-      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
-    );
+    friendsResource.addMethod('GET', new apigw.LambdaIntegration(listFriendsLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // POST /friends/request — send friend request
     const friendsRequestResource = friendsResource.addResource('request');
-    friendsRequestResource.addMethod(
-      'POST',
-      new apigw.LambdaIntegration(requestFriendLambda),
-      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
-    );
+    friendsRequestResource.addMethod('POST', new apigw.LambdaIntegration(requestFriendLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // POST /friends/accept — accept friend request
     const friendsAcceptResource = friendsResource.addResource('accept');
-    friendsAcceptResource.addMethod(
-      'POST',
-      new apigw.LambdaIntegration(acceptFriendLambda),
-      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
-    );
+    friendsAcceptResource.addMethod('POST', new apigw.LambdaIntegration(acceptFriendLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // POST /friends/reject — reject friend request
     const friendsRejectResource = friendsResource.addResource('reject');
-    friendsRejectResource.addMethod(
-      'POST',
-      new apigw.LambdaIntegration(rejectFriendLambda),
-      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
-    );
+    friendsRejectResource.addMethod('POST', new apigw.LambdaIntegration(rejectFriendLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // DELETE /friends/{friendId} — remove friendship
     const friendIdResource = friendsResource.addResource('{friendId}');
-    friendIdResource.addMethod(
-      'DELETE',
-      new apigw.LambdaIntegration(removeFriendLambda),
-      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
-    );
+    friendIdResource.addMethod('DELETE', new apigw.LambdaIntegration(removeFriendLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // ─── Lambda: Leaderboard Get Global ──────────────────────────────────────
-    const getGlobalLeaderboardLambda = new nodejs.NodejsFunction(this, 'GetGlobalLeaderboardFunction', {
-      entry: '../lambdas/leaderboard/get-global.ts',
-      handler: 'handler',
-      runtime: lambda.Runtime.NODEJS_22_X,
-      timeout: Duration.seconds(10),
-      memorySize: 128,
-      environment: {
-        USERS_TABLE: tables['users'].tableName,
+    const getGlobalLeaderboardLambda = new nodejs.NodejsFunction(
+      this,
+      'GetGlobalLeaderboardFunction',
+      {
+        entry: '../lambdas/leaderboard/get-global.ts',
+        handler: 'handler',
+        runtime: lambda.Runtime.NODEJS_22_X,
+        timeout: Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          USERS_TABLE: tables['users'].tableName,
+        },
       },
-    });
+    );
     tables['users'].grantReadData(getGlobalLeaderboardLambda);
 
     // ─── Lambda: Leaderboard Submit Score ────────────────────────────────────
@@ -327,17 +302,21 @@ export class ApiStack extends Stack {
     tables['scores'].grantWriteData(submitScoreLambda);
 
     // ─── Lambda: Leaderboard Get Friends ─────────────────────────────────────
-    const getFriendsLeaderboardLambda = new nodejs.NodejsFunction(this, 'GetFriendsLeaderboardFunction', {
-      entry: '../lambdas/leaderboard/get-friends.ts',
-      handler: 'handler',
-      runtime: lambda.Runtime.NODEJS_22_X,
-      timeout: Duration.seconds(10),
-      memorySize: 128,
-      environment: {
-        USERS_TABLE: tables['users'].tableName,
-        FRIENDS_TABLE: tables['friends'].tableName,
+    const getFriendsLeaderboardLambda = new nodejs.NodejsFunction(
+      this,
+      'GetFriendsLeaderboardFunction',
+      {
+        entry: '../lambdas/leaderboard/get-friends.ts',
+        handler: 'handler',
+        runtime: lambda.Runtime.NODEJS_22_X,
+        timeout: Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          USERS_TABLE: tables['users'].tableName,
+          FRIENDS_TABLE: tables['friends'].tableName,
+        },
       },
-    });
+    );
     tables['users'].grantReadData(getFriendsLeaderboardLambda);
     tables['friends'].grantReadData(getFriendsLeaderboardLambda);
 
@@ -346,18 +325,14 @@ export class ApiStack extends Stack {
 
     // GET /leaderboard/global — public (top 100)
     const globalResource = leaderboardResource.addResource('global');
-    globalResource.addMethod(
-      'GET',
-      new apigw.LambdaIntegration(getGlobalLeaderboardLambda),
-    );
+    globalResource.addMethod('GET', new apigw.LambdaIntegration(getGlobalLeaderboardLambda));
 
     // POST /leaderboard/scores — protected (submit score after game)
     const scoresResource = leaderboardResource.addResource('scores');
-    scoresResource.addMethod(
-      'POST',
-      new apigw.LambdaIntegration(submitScoreLambda),
-      { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
-    );
+    scoresResource.addMethod('POST', new apigw.LambdaIntegration(submitScoreLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // GET /leaderboard/friends — protected (friends leaderboard)
     const friendsLeaderboardResource = leaderboardResource.addResource('friends');

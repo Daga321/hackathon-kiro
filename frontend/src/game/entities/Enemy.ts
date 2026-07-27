@@ -108,7 +108,13 @@ export class Enemy extends Character {
   /** Distance player must move before recalculating path */
   private static readonly PATH_RECALC_PLAYER_DIST = 48;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, config: EnemyConfig, pathfinder?: Pathfinder) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    config: EnemyConfig,
+    pathfinder?: Pathfinder,
+  ) {
     const animConfig: CharacterAnimConfig = {
       textureKey: config.textureKey,
       prefix: config.prefix,
@@ -129,7 +135,8 @@ export class Enemy extends Character {
       config.bodyRadius ?? 5,
       config.bodyOffsetX ?? 19,
       config.bodyOffsetY ?? 33,
-      { // Combat config for enemies
+      {
+        // Combat config for enemies
         attackCooldown: 1000,
         hitWindowStart: 200,
         hitWindowDuration: 200,
@@ -139,7 +146,7 @@ export class Enemy extends Character {
         knockbackForce: 70,
         invulnerabilityDuration: 300,
         showHealthBar: true,
-      }
+      },
     );
 
     this.enemyType = config.prefix;
@@ -247,22 +254,30 @@ export class Enemy extends Character {
         }
 
         // Recalculate path if player moved significantly
-        if (this.pathRecalcTimer >= Enemy.PATH_RECALC_INTERVAL && this.currentPath && this.currentPath.length > 0) {
+        if (
+          this.pathRecalcTimer >= Enemy.PATH_RECALC_INTERVAL &&
+          this.currentPath &&
+          this.currentPath.length > 0
+        ) {
           const lastWp = this.currentPath[this.currentPath.length - 1];
-          const pDist = Math.sqrt((playerSprite.x - lastWp.x) ** 2 + (playerSprite.y - lastWp.y) ** 2);
+          const pDist = Math.sqrt(
+            (playerSprite.x - lastWp.x) ** 2 + (playerSprite.y - lastWp.y) ** 2,
+          );
           if (pDist > Enemy.PATH_RECALC_PLAYER_DIST) {
             this.calculatePath(playerSprite.x, playerSprite.y);
           }
           this.pathRecalcTimer = 0;
         }
-
       } else if (this.isNavigating && this.navDuration > 0) {
         // ─── Basic navigation fallback (Phase 7/8) ───
         this.navDuration -= delta;
         moveX = this.navDirX * 0.8 + directX * 0.3;
         moveY = this.navDirY * 0.8 + directY * 0.3;
         const len = Math.sqrt(moveX * moveX + moveY * moveY);
-        if (len > 0) { moveX /= len; moveY /= len; }
+        if (len > 0) {
+          moveX /= len;
+          moveY /= len;
+        }
 
         if (this.navDuration <= 0 && this.directPursuitCooldown <= 0) {
           const navDistX = this.sprite.x - this.navStartX;
@@ -283,7 +298,6 @@ export class Enemy extends Character {
       }
 
       this.applyMovement(moveX, moveY);
-
     } else {
       // ─── Player out of range: idle ───
       if (this.playerDetected) {
@@ -376,12 +390,12 @@ export class Enemy extends Character {
         { x: 0, y: -1, blocked: blockedUp },
         { x: 0, y: 1, blocked: blockedDown },
         { x: -1, y: 0, blocked: blockedLeft },
-        { x: 1, y: 0, blocked: blockedRight }
+        { x: 1, y: 0, blocked: blockedRight },
       );
     }
 
     // Filter out blocked directions and directions that are the same as our last failed nav
-    const viable = candidates.filter(c => {
+    const viable = candidates.filter((c) => {
       if (c.blocked) return false;
       // Avoid choosing the exact same direction we previously navigated (if it failed)
       if (this.isNavigating && c.x === this.navDirX && c.y === this.navDirY) return false;
@@ -473,21 +487,30 @@ export class Enemy extends Character {
     if (!scene.anims.exists(`${p}_special_idle_down`)) {
       scene.anims.create({
         key: `${p}_special_idle_down`,
-        frames: scene.anims.generateFrameNumbers(key, { start: config.specialIdle.down[0], end: config.specialIdle.down[1] }),
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.specialIdle.down[0],
+          end: config.specialIdle.down[1],
+        }),
         frameRate: rate,
         repeat: 0,
         hideOnComplete: false,
       });
       scene.anims.create({
         key: `${p}_special_idle_right`,
-        frames: scene.anims.generateFrameNumbers(key, { start: config.specialIdle.right[0], end: config.specialIdle.right[1] }),
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.specialIdle.right[0],
+          end: config.specialIdle.right[1],
+        }),
         frameRate: rate,
         repeat: 0,
         hideOnComplete: false,
       });
       scene.anims.create({
         key: `${p}_special_idle_up`,
-        frames: scene.anims.generateFrameNumbers(key, { start: config.specialIdle.up[0], end: config.specialIdle.up[1] }),
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.specialIdle.up[0],
+          end: config.specialIdle.up[1],
+        }),
         frameRate: rate,
         repeat: 0,
         hideOnComplete: false,
@@ -557,21 +580,30 @@ export class Enemy extends Character {
     if (!scene.anims.exists(`${p}_death_down`)) {
       scene.anims.create({
         key: `${p}_death_down`,
-        frames: scene.anims.generateFrameNumbers(key, { start: config.deathAnim.down[0], end: config.deathAnim.down[1] }),
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.deathAnim.down[0],
+          end: config.deathAnim.down[1],
+        }),
         frameRate: rate,
         repeat: 0,
         hideOnComplete: false,
       });
       scene.anims.create({
         key: `${p}_death_right`,
-        frames: scene.anims.generateFrameNumbers(key, { start: config.deathAnim.right[0], end: config.deathAnim.right[1] }),
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.deathAnim.right[0],
+          end: config.deathAnim.right[1],
+        }),
         frameRate: rate,
         repeat: 0,
         hideOnComplete: false,
       });
       scene.anims.create({
         key: `${p}_death_up`,
-        frames: scene.anims.generateFrameNumbers(key, { start: config.deathAnim.up[0], end: config.deathAnim.up[1] }),
+        frames: scene.anims.generateFrameNumbers(key, {
+          start: config.deathAnim.up[0],
+          end: config.deathAnim.up[1],
+        }),
         frameRate: rate,
         repeat: 0,
         hideOnComplete: false,
@@ -630,15 +662,15 @@ export class Enemy extends Character {
 
   static findSpawnPosition(
     collisionLayer: Phaser.Tilemaps.TilemapLayer | null,
-    elevatedLayer?: Phaser.Tilemaps.TilemapLayer | null
+    elevatedLayer?: Phaser.Tilemaps.TilemapLayer | null,
   ): { x: number; y: number } {
     const { WIDTH, HEIGHT, TILE_SIZE, BORDER_THICKNESS, SPAWN_SAFE_RADIUS } = MAP_CONFIG;
     const centerX = WIDTH / 2;
     const centerY = HEIGHT / 2;
     const minX = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE * 2;
-    const maxX = WIDTH - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE * 2;
+    const maxX = WIDTH - BORDER_THICKNESS * TILE_SIZE - TILE_SIZE * 2;
     const minY = BORDER_THICKNESS * TILE_SIZE + TILE_SIZE * 2;
-    const maxY = HEIGHT - (BORDER_THICKNESS * TILE_SIZE) - TILE_SIZE * 2;
+    const maxY = HEIGHT - BORDER_THICKNESS * TILE_SIZE - TILE_SIZE * 2;
 
     for (let attempt = 0; attempt < 200; attempt++) {
       const x = minX + Math.random() * (maxX - minX);
@@ -670,7 +702,7 @@ export const ENEMY_TYPES = {
   SKELETON: {
     textureKey: 'skeleton_swordless',
     prefix: 'skeleton',
-    speed: 108,  // ~90% of player speed (120)
+    speed: 108, // ~90% of player speed (120)
     detectionRadius: 150,
     attackRange: 22,
     specialIdle: {

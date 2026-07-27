@@ -4,8 +4,7 @@ import { GameScene } from './game/scenes/GameScene';
 import { TileDebugScene } from './game/scenes/TileDebugScene';
 
 // Toggle: set to true to inspect tile indices visually
-const DEBUG_TILES = false
-;
+const DEBUG_TILES = false;
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -30,9 +29,7 @@ const config: Phaser.Types.Core.GameConfig = {
   input: {
     activePointers: 3, // Support multitouch (joystick + attack + UI)
   },
-  scene: DEBUG_TILES
-    ? [PreloadScene, TileDebugScene]
-    : [PreloadScene, GameScene],
+  scene: DEBUG_TILES ? [PreloadScene, TileDebugScene] : [PreloadScene, GameScene],
 };
 
 const game = new Phaser.Game(config);
