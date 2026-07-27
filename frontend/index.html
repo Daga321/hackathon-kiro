@@ -364,6 +364,185 @@
         margin-top: 4px;
       }
 
+      /* ─── Controls Help Overlay ──────────────────────── */
+      #controls-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #controls-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #controls-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #controls-backdrop {
+          left: 120px;
+        }
+      }
+      .controls-board {
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .controls-list {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 1;
+      }
+      .controls-category {
+        font-size: 0.5rem;
+        color: #f0c040;
+        text-shadow: 1px 1px 0px #000;
+        margin-top: 8px;
+        margin-bottom: 2px;
+        z-index: 1;
+      }
+      .controls-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 10px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+      }
+      .controls-key {
+        font-size: 0.45rem;
+        color: #eee;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 4px 8px;
+        border: 1px solid #555;
+        border-radius: 3px;
+        min-width: 70px;
+        text-align: center;
+      }
+      .controls-label {
+        font-size: 0.45rem;
+        color: #aaa;
+        text-align: right;
+      }
+
+      /* ─── Joystick demo for mobile controls ─── */
+      .controls-joystick-demo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 70px;
+      }
+      .joystick-base {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid #555;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .joystick-stick {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #f0c040;
+        position: absolute;
+      }
+      .joystick-up .joystick-stick {
+        transform: translateY(-8px);
+      }
+      .joystick-down .joystick-stick {
+        transform: translateY(8px);
+      }
+      .joystick-left .joystick-stick {
+        transform: translateX(-8px);
+      }
+      .joystick-right .joystick-stick {
+        transform: translateX(8px);
+      }
+
+      /* ─── Attack button demo for mobile ─── */
+      .controls-btn-demo {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(192, 57, 43, 0.4);
+        border: 2px solid #c0392b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #fff;
+        max-width: 38px;
+        flex-shrink: 0;
+      }
+
+      /* ─── Joystick demo for mobile controls ─── */
+      .controls-joystick-demo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 70px;
+      }
+      .joystick-base {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid #555;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .joystick-stick {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #f0c040;
+        position: absolute;
+        transition: transform 0.2s;
+      }
+      .joystick-up {
+        transform: translateY(-7px);
+      }
+      .joystick-down {
+        transform: translateY(7px);
+      }
+      .joystick-left {
+        transform: translateX(-7px);
+      }
+      .joystick-right {
+        transform: translateX(7px);
+      }
+
+      /* ─── Attack button demo for mobile ─── */
+      .controls-btn-demo {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(192, 57, 43, 0.4);
+        border: 2px solid #c0392b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: #fff;
+        /* min-width: 70px; */
+        max-width: 36px;
+      }
+
       /* ─── Game Over specifics ──────────────────────────── */
       .gameover-title {
         font-size: 1.3rem;
@@ -854,10 +1033,112 @@
         <p class="pause-board-title">Paused</p>
         <div class="pause-board-divider"></div>
         <button id="pause-btn-resume" class="pause-btn pause-btn-primary">Resume</button>
+        <button id="pause-btn-controls" class="pause-btn">Controls</button>
         <button id="pause-btn-audio" class="pause-btn">Audio Settings</button>
         <button id="pause-btn-leaderboard" class="pause-btn">Leaderboard</button>
         <button id="pause-btn-quit" class="pause-btn">Main Menu</button>
         <p class="pause-hint">ESC or P to resume</p>
+      </div>
+    </div>
+
+    <!-- ═══ Controls Help Overlay ═══ -->
+    <div id="controls-backdrop">
+      <div class="pause-board controls-board">
+        <p class="pause-board-title">Controls</p>
+        <div class="pause-board-divider"></div>
+
+        <!-- Desktop controls -->
+        <div id="controls-desktop" class="controls-list">
+          <!-- Movement category -->
+          <p class="controls-category">Movement</p>
+          <div class="controls-row">
+            <span class="controls-key">W / ↑</span>
+            <span class="controls-label">Move Up</span>
+          </div>
+          <div class="controls-row">
+            <span class="controls-key">S / ↓</span>
+            <span class="controls-label">Move Down</span>
+          </div>
+          <div class="controls-row">
+            <span class="controls-key">A / ←</span>
+            <span class="controls-label">Move Left</span>
+          </div>
+          <div class="controls-row">
+            <span class="controls-key">D / →</span>
+            <span class="controls-label">Move Right</span>
+          </div>
+
+          <!-- Abilities category -->
+          <p class="controls-category">Abilities</p>
+          <div class="controls-row">
+            <span class="controls-key">Space</span>
+            <span class="controls-label">Attack</span>
+          </div>
+
+          <!-- System category -->
+          <p class="controls-category">System</p>
+          <div class="controls-row">
+            <span class="controls-key">ESC / P</span>
+            <span class="controls-label">Pause</span>
+          </div>
+        </div>
+
+        <!-- Mobile controls -->
+        <div id="controls-mobile" class="controls-list" style="display: none">
+          <!-- Movement category -->
+          <p class="controls-category">Movement</p>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-up">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Up</span>
+          </div>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-down">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Down</span>
+          </div>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-left">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Left</span>
+          </div>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="joystick-base joystick-right">
+                <div class="joystick-stick"></div>
+              </div>
+            </div>
+            <span class="controls-label">Move Right</span>
+          </div>
+
+          <!-- Abilities category -->
+          <p class="controls-category">Abilities</p>
+          <div class="controls-row">
+            <div class="controls-joystick-demo">
+              <div class="controls-btn-demo">⚔</div>
+            </div>
+            <span class="controls-label">Attack</span>
+          </div>
+
+          <!-- System category -->
+          <p class="controls-category">System</p>
+          <div class="controls-row">
+            <span class="controls-key">Tab / Back</span>
+            <span class="controls-label">Pause</span>
+          </div>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="controls-btn-back" class="pause-btn pause-btn-primary">Back</button>
       </div>
     </div>
 

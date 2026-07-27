@@ -14,9 +14,15 @@
 export class PauseMenu {
   private backdrop: HTMLElement | null;
   private btnResume: HTMLElement | null;
+  private btnControls: HTMLElement | null;
   private btnAudio: HTMLElement | null;
   private btnLeaderboard: HTMLElement | null;
   private btnQuit: HTMLElement | null;
+
+  private controlsBackdrop: HTMLElement | null;
+  private controlsDesktop: HTMLElement | null;
+  private controlsMobile: HTMLElement | null;
+  private btnControlsBack: HTMLElement | null;
 
   private _isPaused: boolean = false;
   private onResumeCallback: (() => void) | null = null;
@@ -25,9 +31,15 @@ export class PauseMenu {
   constructor() {
     this.backdrop = document.getElementById('pause-menu-backdrop');
     this.btnResume = document.getElementById('pause-btn-resume');
+    this.btnControls = document.getElementById('pause-btn-controls');
     this.btnAudio = document.getElementById('pause-btn-audio');
     this.btnLeaderboard = document.getElementById('pause-btn-leaderboard');
     this.btnQuit = document.getElementById('pause-btn-quit');
+
+    this.controlsBackdrop = document.getElementById('controls-backdrop');
+    this.controlsDesktop = document.getElementById('controls-desktop');
+    this.controlsMobile = document.getElementById('controls-mobile');
+    this.btnControlsBack = document.getElementById('controls-btn-back');
 
     this.bindButtons();
     this.bindKeyboard();
@@ -94,6 +106,22 @@ export class PauseMenu {
 
   private hide(): void {
     this.backdrop?.classList.remove('visible');
+    this.controlsBackdrop?.classList.remove('visible');
+  }
+
+  private showControls(): void {
+    // Detect touch device to show appropriate layout
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (this.controlsDesktop) this.controlsDesktop.style.display = isMobile ? 'none' : 'flex';
+    if (this.controlsMobile) this.controlsMobile.style.display = isMobile ? 'flex' : 'none';
+
+    this.backdrop?.classList.remove('visible');
+    this.controlsBackdrop?.classList.add('visible');
+  }
+
+  private hideControls(): void {
+    this.controlsBackdrop?.classList.remove('visible');
+    this.backdrop?.classList.add('visible');
   }
 
   private bindButtons(): void {
@@ -101,6 +129,20 @@ export class PauseMenu {
     if (this.btnResume) {
       this.btnResume.onclick = () => {
         this.resume();
+      };
+    }
+
+    // Controls help
+    if (this.btnControls) {
+      this.btnControls.onclick = () => {
+        this.showControls();
+      };
+    }
+
+    // Controls back button
+    if (this.btnControlsBack) {
+      this.btnControlsBack.onclick = () => {
+        this.hideControls();
       };
     }
 
