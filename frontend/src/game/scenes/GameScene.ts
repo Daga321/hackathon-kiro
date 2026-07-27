@@ -228,6 +228,13 @@ export class GameScene extends Phaser.Scene {
           uiCam.ignore(child);
         }
       });
+
+      // CRITICAL: Also ignore any future objects added to the scene (Wave 2+ enemies, health bars, etc.)
+      this.events.on('addedtoscene', (gameObject: Phaser.GameObjects.GameObject) => {
+        if (!uiObjects.includes(gameObject)) {
+          uiCam.ignore(gameObject);
+        }
+      });
     }
   }
 
