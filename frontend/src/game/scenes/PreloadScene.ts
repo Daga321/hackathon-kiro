@@ -96,13 +96,9 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Check which scene to start based on the registered scenes
-    const sceneKeys = this.scene.manager.keys;
-    if (sceneKeys['TileDebugScene']) {
-      this.scene.start('TileDebugScene');
-    } else {
-      this.scene.start('GameScene');
-    }
+    // Always start the main game scene.
+    // TileDebugScene can be toggled with the T key from GameScene (dev tools only).
+    this.scene.start('GameScene');
   }
 
   /**
