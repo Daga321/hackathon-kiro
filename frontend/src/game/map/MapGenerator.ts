@@ -435,7 +435,7 @@ export class MapGenerator {
   /**
    * Add irregular indentations to the zone mask for a natural look.
    */
-  // @ts-ignore — unused method kept for potential future use
+  // @ts-expect-error — unused method kept for potential future use
   private addIndentations(
     mask: boolean[][],
     width: number,
@@ -1131,7 +1131,7 @@ export class MapGenerator {
     return group;
   }
 
-  // @ts-ignore — unused method kept for potential future use
+  // @ts-expect-error — unused method kept for potential future use
   private addGraveBody(group: Phaser.Physics.Arcade.StaticGroup, tileX: number, tileY: number, tileSize: number): void {
     const worldX = tileX * tileSize + tileSize / 2;
     const worldY = tileY * tileSize + tileSize / 2;
@@ -1897,7 +1897,7 @@ export class MapGenerator {
   }
 
   /** Place random items in an area with optional priority frame. */
-  // @ts-ignore — unused method kept for potential future use
+  // @ts-expect-error — unused method kept for potential future use
   private placeRandomInArea(
     data: number[][], x1: number, y1: number, x2: number, y2: number,
     count: number, frames: readonly number[] | number[], priorityFrame?: number
