@@ -10,8 +10,10 @@ import { HudManager } from '../ui/HudManager';
 import { WaveAnnouncement } from '../ui/WaveAnnouncement';
 import { PauseMenu } from '../ui/PauseMenu';
 import { GameOverScreen } from '../ui/GameOverScreen';
+import { DamageIndicatorSystem, DamageType } from '../ui/DamageIndicator';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
+import { HealthPickupManager } from '../entities/HealthPickupManager';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -46,10 +48,13 @@ export class GameScene extends Phaser.Scene {
   private waveAnnouncement!: WaveAnnouncement;
   private pauseMenu!: PauseMenu;
   private gameOverScreen!: GameOverScreen;
+  private damageIndicators!: DamageIndicatorSystem;
+  private healthPickups!: HealthPickupManager;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
-  private playerWasAttacking: boolean = false;
+  private missPlayed: boolean = false;
+  private swingHitConnected: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -156,8 +161,16 @@ export class GameScene extends Phaser.Scene {
     // Game over screen
     this.gameOverScreen = new GameOverScreen();
     this.gameOverScreen.onRestart(() => {
+      this.audio.stopAll();
+      this.healthPickups.destroyAll();
       this.scene.restart();
     });
+
+    // Damage indicators
+    this.damageIndicators = new DamageIndicatorSystem(this);
+
+    // Health pickup system
+    this.healthPickups = new HealthPickupManager(this);
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
@@ -277,13 +290,6 @@ export class GameScene extends Phaser.Scene {
       !this.player.getIsDead();
     this.audio.updateSteps(playerActuallyMoving);
 
-    // Player attack sound (play once when hitbox activates)
-    const playerAttacking = this.player.isHitboxActive();
-    if (playerAttacking && !this.playerWasAttacking) {
-      this.audio.playAttack();
-    }
-    this.playerWasAttacking = playerAttacking;
-
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
 
@@ -318,6 +324,8 @@ export class GameScene extends Phaser.Scene {
 
     // ─── Combat damage detection (skip if player dead) ───
     if (!this.player.getIsDead()) {
+      let playerHitConnected = false;
+
       for (const enemy of enemies) {
         if (enemy.getIsDead()) continue;
 
@@ -334,25 +342,76 @@ export class GameScene extends Phaser.Scene {
             );
             if (dist < 20) {
               this.player.registerHit(enemy);
-              enemy.takeDamage(getPlayerDamage(this.waveManager.getWave()), this.player);
+              const dmg = getPlayerDamage(this.waveManager.getWave());
+              enemy.takeDamage(dmg, this.player);
+              this.damageIndicators.spawn(
+                enemySprite.x,
+                enemySprite.y - 8,
+                dmg,
+                DamageType.DEALT,
+              );
+              this.audio.playHit();
+              playerHitConnected = true;
+
+              // Spawn health pickup on enemy death
+              if (enemy.getIsDead()) {
+                this.healthPickups.trySpawn(enemySprite.x, enemySprite.y);
+              }
             }
           }
         }
 
-        // Enemy attacks player
-        if (enemy.isHitboxActive()) {
+        // Enemy attacks player (disabled while enemy is in knockback from player hit)
+        if (enemy.isHitboxActive() && !enemy.getIsInKnockback()) {
           const hitbox = enemy.getHitbox();
           if (hitbox && !enemy.hasAlreadyHitTarget(this.player)) {
             const plSprite = this.player.getSprite();
             const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, plSprite.x, plSprite.y);
             if (dist < 20) {
               enemy.registerHit(this.player);
-              this.player.takeDamage(enemy.getAttackDamage(), enemy);
+              const dmg = enemy.getAttackDamage();
+              this.player.takeDamage(dmg, enemy);
+              this.damageIndicators.spawn(plSprite.x, plSprite.y - 8, dmg, DamageType.RECEIVED);
+              this.audio.playPlayerDamage();
             }
           }
         }
       }
+
+      // Track if this swing connected with any enemy
+      if (playerHitConnected) {
+        this.swingHitConnected = true;
+      }
     }
+
+    // Miss attack detection: when hitbox deactivates, check if swing connected
+    if (this.player.isHitboxActive()) {
+      // Hitbox is active — mark that we're in a swing
+      this.missPlayed = true; // reuse as "was swinging" flag
+    } else if (this.missPlayed) {
+      // Hitbox just deactivated this frame — end of swing
+      if (!this.swingHitConnected) {
+        this.audio.playMissAttack();
+      }
+      this.missPlayed = false;
+      this.swingHitConnected = false;
+    }
+
+    // Update damage indicators
+    this.damageIndicators.update(this.game.loop.delta);
+
+    // Update health pickups and check collection
+    this.healthPickups.update(this.game.loop.delta);
+    if (!this.player.getIsDead()) {
+      const playerSprite = this.player.getSprite();
+      const heals = this.healthPickups.checkCollection(playerSprite.x, playerSprite.y);
+      for (const amount of heals) {
+        this.player.heal(amount);
+        this.damageIndicators.spawn(playerSprite.x, playerSprite.y - 8, amount, DamageType.HEAL);
+        this.audio.playHealthPickup();
+      }
+    }
+    this.hud.setPickupPositions(this.healthPickups.getActivePositions());
 
     // Debug: press L to toggle position HUD and log to console (dev tools only)
     if (DEV_TOOLS_ENABLED && Phaser.Input.Keyboard.JustDown(this.keyL)) {
