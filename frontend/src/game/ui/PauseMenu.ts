@@ -28,6 +28,8 @@ export class PauseMenu {
   private guideBackdrop: HTMLElement | null;
   private btnGuideBack: HTMLElement | null;
 
+  private hudPauseBtn: HTMLElement | null;
+
   private _isPaused: boolean = false;
   private onResumeCallback: (() => void) | null = null;
   private onPauseCallback: (() => void) | null = null;
@@ -48,6 +50,8 @@ export class PauseMenu {
     this.btnGuide = document.getElementById('pause-btn-guide');
     this.guideBackdrop = document.getElementById('guide-backdrop');
     this.btnGuideBack = document.getElementById('guide-btn-back');
+
+    this.hudPauseBtn = document.getElementById('hud-pause-btn');
 
     this.bindButtons();
     this.bindKeyboard();
@@ -192,10 +196,17 @@ export class PauseMenu {
       };
     }
 
-    // Quit to main menu (placeholder — future implementation)
+    // Quit to main menu — reload to return to loading/login screen
     if (this.btnQuit) {
       this.btnQuit.onclick = () => {
-        // TODO: Return to main menu
+        window.location.reload();
+      };
+    }
+
+    // HUD pause button (in the lateral panel)
+    if (this.hudPauseBtn) {
+      this.hudPauseBtn.onclick = () => {
+        this.pause();
       };
     }
   }

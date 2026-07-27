@@ -181,6 +181,27 @@
         image-rendering: pixelated;
       }
 
+      .hud-pause-btn {
+        width: 100%;
+        padding: 10px 12px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.5rem;
+        color: #f0c040;
+        background: linear-gradient(180deg, #5a3a1a 0%, #3a2210 100%);
+        border: 2px solid #f0c040;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .hud-pause-btn:hover {
+        background: linear-gradient(180deg, #7a4a2a 0%, #5a3a1a 100%);
+        transform: scale(1.03);
+      }
+      .hud-pause-btn:active {
+        transform: scale(0.97);
+      }
+
       /* ─── Wave Announcement Overlay ─────────────────── */
       .wave-announcement {
         position: fixed;
@@ -1343,6 +1364,9 @@
         <hr class="hud-divider" />
         <p class="hud-minimap-title">MINIMAP</p>
         <canvas id="minimap-canvas" width="270" height="270"></canvas>
+
+        <hr class="hud-divider" />
+        <button id="hud-pause-btn" class="hud-pause-btn">Pause</button>
 
         <div style="margin-top: auto; padding-top: 12px; text-align: center">
           <p style="font-size: 7px; color: #555; line-height: 2.2">Kiro Hackathon 2026</p>
