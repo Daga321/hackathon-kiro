@@ -3,7 +3,7 @@ import { aws_s3 as s3, aws_s3_deployment as s3deploy } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { resolve } from 'path';
 
-export interface S3HostingStackProps extends StackProps {}
+export type S3HostingStackProps = StackProps;
 
 /**
  * Hosts the frontend as a static website directly from S3.

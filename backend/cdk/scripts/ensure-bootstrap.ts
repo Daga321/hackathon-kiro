@@ -39,7 +39,7 @@ try {
       cwd: __dirname + '/..',
     });
     console.log('Bootstrap completed successfully.');
-  } catch (err) {
+  } catch {
     console.error('Bootstrap failed. Check your AWS credentials and permissions.');
     process.exit(1);
   }
