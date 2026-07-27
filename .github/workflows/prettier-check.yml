@@ -3,10 +3,15 @@ name: Prettier Check
 # ─────────────────────────────────────────────────────────────────────────────
 # Verifies that all code is properly formatted according to the project's
 # Prettier configuration (.prettierrc). Does NOT auto-fix — the developer
-# must run `prettier --write .` locally before pushing.
+# must run the fix command locally before pushing.
 #
 # This is a required check: PRs cannot be merged if formatting is incorrect.
 # Skipped on draft PRs to avoid unnecessary CI consumption during development.
+#
+# NOTE: Prettier evaluates code from both branches (target and source).
+# If this check fails, it may be because the target branch contains code
+# that doesn't exist in the source branch and that code is not properly
+# formatted.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -32,4 +37,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Prettier check
-        run: pnpm prettier --check frontend/ backend/ --ignore-path .gitignore
+        run: |
+          if ! pnpm prettier --check frontend/ backend/ --ignore-path .gitignore; then
+            echo ""
+            echo "❌ Prettier check failed. Run the following command to fix formatting:"
+            echo ""
+            echo "  pnpm prettier --write frontend/ backend/ --ignore-path .gitignore"
+            echo ""
+            exit 1
+          fi
