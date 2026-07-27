@@ -11,12 +11,18 @@
  * The menu does NOT block the game loop directly — it emits callbacks
  * that the GameScene uses to pause/resume Phaser scenes.
  */
+import { getGlobalLeaderboard } from '../../services/leaderboard.service';
+import { isAuthenticated } from '../../services/token-manager';
+import type { LeaderboardEntry } from '../../services/types';
+
 export class PauseMenu {
   private backdrop: HTMLElement | null;
   private btnResume: HTMLElement | null;
   private btnAudio: HTMLElement | null;
   private btnLeaderboard: HTMLElement | null;
   private btnQuit: HTMLElement | null;
+  private leaderboardPanel: HTMLElement | null = null;
+  private leaderboardLoading: boolean = false;
 
   private _isPaused: boolean = false;
   private onResumeCallback: (() => void) | null = null;
@@ -29,6 +35,7 @@ export class PauseMenu {
     this.btnLeaderboard = document.getElementById('pause-btn-leaderboard');
     this.btnQuit = document.getElementById('pause-btn-quit');
 
+    this.createLeaderboardPanel();
     this.bindButtons();
     this.bindKeyboard();
     this.bindVisibilityChange();
@@ -72,6 +79,7 @@ export class PauseMenu {
   pause(): void {
     if (this._isPaused) return;
     this._isPaused = true;
+    this.hideLeaderboardPanel();
     this.show();
     this.onPauseCallback?.();
   }
@@ -82,6 +90,7 @@ export class PauseMenu {
   resume(): void {
     if (!this._isPaused) return;
     this._isPaused = false;
+    this.hideLeaderboardPanel();
     this.hide();
     this.onResumeCallback?.();
   }
@@ -94,6 +103,105 @@ export class PauseMenu {
 
   private hide(): void {
     this.backdrop?.classList.remove('visible');
+  }
+
+  private createLeaderboardPanel(): void {
+    this.leaderboardPanel = document.createElement('div');
+    this.leaderboardPanel.id = 'leaderboard-panel';
+    this.leaderboardPanel.style.cssText = `
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px;
+      max-height: 400px;
+      background: #2c1810;
+      border: 3px solid #8b5e3c;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Press Start 2P', cursive;
+      overflow-y: auto;
+      z-index: 700;
+    `;
+    this.backdrop?.appendChild(this.leaderboardPanel);
+  }
+
+  private showLeaderboardPanel(): void {
+    if (this.leaderboardPanel) {
+      this.leaderboardPanel.style.display = 'block';
+    }
+  }
+
+  private hideLeaderboardPanel(): void {
+    if (this.leaderboardPanel) {
+      this.leaderboardPanel.style.display = 'none';
+    }
+  }
+
+  private renderLeaderboard(entries: LeaderboardEntry[]): void {
+    if (!this.leaderboardPanel) return;
+
+    if (entries.length === 0) {
+      this.leaderboardPanel.innerHTML = `
+        <p style="color: #f0c040; font-size: 0.6rem; text-align: center; margin-bottom: 12px;">Leaderboard</p>
+        <p style="color: #aaa; font-size: 0.4rem; text-align: center;">No scores yet.</p>
+        <button id="lb-close-btn" style="display: block; margin: 12px auto 0; padding: 6px 12px; font-family: inherit; font-size: 0.4rem; background: #8b5e3c; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+      `;
+    } else {
+      const rows = entries
+        .slice(0, 20)
+        .map(
+          (entry) => `
+        <div style="display: flex; justify-content: space-between; padding: 4px 6px; background: rgba(0,0,0,0.25); border-radius: 3px; margin-bottom: 4px;">
+          <span style="color: #ccc; font-size: 0.35rem;">#${entry.rank} ${entry.username}</span>
+          <span style="color: #f0c040; font-size: 0.35rem;">R${entry.highestRound} | ${entry.totalScore}pts</span>
+        </div>`,
+        )
+        .join('');
+
+      this.leaderboardPanel.innerHTML = `
+        <p style="color: #f0c040; font-size: 0.6rem; text-align: center; margin-bottom: 12px;">Leaderboard</p>
+        ${rows}
+        <button id="lb-close-btn" style="display: block; margin: 12px auto 0; padding: 6px 12px; font-family: inherit; font-size: 0.4rem; background: #8b5e3c; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+      `;
+    }
+
+    // Bind close button
+    const closeBtn = document.getElementById('lb-close-btn');
+    if (closeBtn) {
+      closeBtn.onclick = () => this.hideLeaderboardPanel();
+    }
+  }
+
+  private async loadLeaderboard(): Promise<void> {
+    if (this.leaderboardLoading) return;
+    this.leaderboardLoading = true;
+
+    if (!this.leaderboardPanel) return;
+    this.leaderboardPanel.innerHTML = `
+      <p style="color: #f0c040; font-size: 0.6rem; text-align: center; margin-bottom: 12px;">Leaderboard</p>
+      <p style="color: #aaa; font-size: 0.4rem; text-align: center;">Loading...</p>
+    `;
+    this.showLeaderboardPanel();
+
+    const result = await getGlobalLeaderboard(20);
+
+    if (result.success) {
+      this.renderLeaderboard(result.data.leaderboard);
+    } else {
+      this.leaderboardPanel.innerHTML = `
+        <p style="color: #f0c040; font-size: 0.6rem; text-align: center; margin-bottom: 12px;">Leaderboard</p>
+        <p style="color: #cc3333; font-size: 0.4rem; text-align: center;">${result.error}</p>
+        <button id="lb-close-btn" style="display: block; margin: 12px auto 0; padding: 6px 12px; font-family: inherit; font-size: 0.4rem; background: #8b5e3c; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+      `;
+      const closeBtn = document.getElementById('lb-close-btn');
+      if (closeBtn) {
+        closeBtn.onclick = () => this.hideLeaderboardPanel();
+      }
+    }
+
+    this.leaderboardLoading = false;
   }
 
   private bindButtons(): void {
@@ -111,10 +219,10 @@ export class PauseMenu {
       };
     }
 
-    // Leaderboard (placeholder — future implementation)
+    // Leaderboard — loads and shows global leaderboard
     if (this.btnLeaderboard) {
       this.btnLeaderboard.onclick = () => {
-        // TODO: Open leaderboard panel
+        this.loadLeaderboard();
       };
     }
 
