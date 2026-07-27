@@ -6,6 +6,7 @@ import { EnemySpawner } from '../ai/EnemySpawner';
 import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
+import { getPlayerDamage } from '../config/difficulty-config';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -163,7 +164,7 @@ export class GameScene extends Phaser.Scene {
     this.waveManager.update(this.player.getIsDead());
 
     // Update HTML HUD
-    this.hud.update(this.player, this.waveManager, this.waveManager.getAllEnemies(), this.game.loop.delta);
+    this.hud.update(this.player, this.waveManager, this.waveManager.getAllEnemies(), this.game.loop.delta, this.waveManager.getScoreReward());
 
     // Update enemies (skip if player is dead — enemies stop targeting)
     const enemies = this.waveManager.getAllEnemies();
@@ -190,7 +191,7 @@ export class GameScene extends Phaser.Scene {
             const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, enemySprite.x, enemySprite.y);
             if (dist < 20) {
               this.player.registerHit(enemy);
-              enemy.takeDamage(1, this.player);
+              enemy.takeDamage(getPlayerDamage(this.waveManager.getWave()), this.player);
             }
           }
         }
@@ -203,7 +204,7 @@ export class GameScene extends Phaser.Scene {
             const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, plSprite.x, plSprite.y);
             if (dist < 20) {
               enemy.registerHit(this.player);
-              this.player.takeDamage(1, enemy);
+              this.player.takeDamage(enemy.getAttackDamage(), enemy);
             }
           }
         }

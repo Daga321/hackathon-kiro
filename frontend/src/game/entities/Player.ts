@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { MAP_CONFIG } from '../config/map-config';
 import { Character, CharacterAnimConfig, CombatConfig } from './Character';
 import { Pathfinder } from '../ai/Pathfinder';
+import { DIFFICULTY_CONFIG } from '../config/difficulty-config';
 
 export type { CharacterDirection as PlayerDirection } from './Character';
 
@@ -40,7 +41,7 @@ const PLAYER_COMBAT_CONFIG: CombatConfig = {
   hitWindowDuration: 150,
   hitboxOffset: 18,
   hitboxRadius: 12,
-  maxHealth: 100,
+  maxHealth: DIFFICULTY_CONFIG.PLAYER_HP_BASE,
   knockbackForce: 70,
   invulnerabilityDuration: 1000,
 };
