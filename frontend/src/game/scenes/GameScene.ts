@@ -14,6 +14,8 @@ import { DamageIndicatorSystem, DamageType } from '../ui/DamageIndicator';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 import { HealthPickupManager } from '../entities/HealthPickupManager';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { AuthUI } from '../ui/AuthUI';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -171,6 +173,15 @@ export class GameScene extends Phaser.Scene {
 
     // Health pickup system
     this.healthPickups = new HealthPickupManager(this);
+
+    // Auth UI (login/register) — pauses game while popup is open
+    const authUI = new AuthUI();
+    authUI.onOpen(() => {
+      this.scene.pause();
+    });
+    authUI.onClose(() => {
+      this.scene.resume();
+    });
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {

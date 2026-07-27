@@ -638,6 +638,165 @@
         color: #44ff44;
       }
 
+      /* ─── HUD Auth Section ────────────────────────────── */
+      .hud-auth-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .hud-auth-label {
+        font-size: 8px;
+        color: #888;
+        text-align: center;
+      }
+      .hud-auth-username {
+        font-size: 9px;
+        color: #f0c040;
+        text-align: center;
+        word-break: break-all;
+      }
+      .hud-auth-btn {
+        width: 100%;
+        padding: 8px 10px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.45rem;
+        color: #f0c040;
+        background: linear-gradient(180deg, #5a3a1a 0%, #3a2210 100%);
+        border: 2px solid #f0c040;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        transition: background 0.15s, transform 0.1s;
+      }
+      .hud-auth-btn:hover {
+        background: linear-gradient(180deg, #7a4a2a 0%, #5a3a1a 100%);
+        transform: scale(1.03);
+      }
+      .hud-auth-btn:active {
+        transform: scale(0.97);
+      }
+      .hud-auth-btn-small {
+        font-size: 0.35rem;
+        padding: 5px 8px;
+        color: #aaa;
+        border-color: #555;
+      }
+
+      /* ─── Auth Popup ───────────────────────────────────── */
+      #auth-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 700;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.7);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #auth-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #auth-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #auth-backdrop {
+          left: 120px;
+        }
+      }
+      .auth-board {
+        width: 380px;
+        max-width: 95%;
+      }
+      .auth-form {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 1;
+        margin-top: 12px;
+      }
+      .auth-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 1;
+      }
+      .auth-label {
+        font-size: 0.4rem;
+        color: #aaa;
+      }
+      .auth-input {
+        width: 100%;
+        padding: 8px 10px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.45rem;
+        color: #eee;
+        background: #2a2a4a;
+        border: 2px solid #3a3a5e;
+        border-radius: 4px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .auth-input:focus {
+        border-color: #f0c040;
+      }
+      .auth-input::placeholder {
+        color: #666;
+      }
+      .auth-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .auth-input-password {
+        padding-right: 50px;
+      }
+      .auth-toggle-password {
+        position: absolute;
+        right: 6px;
+        padding: 4px 6px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.3rem;
+        color: #888;
+        background: transparent;
+        border: 1px solid #555;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: color 0.15s;
+      }
+      .auth-toggle-password:hover {
+        color: #f0c040;
+        border-color: #f0c040;
+      }
+      .auth-error {
+        font-size: 0.35rem;
+        color: #ff4444;
+        min-height: 12px;
+        z-index: 1;
+      }
+      .auth-switch-text {
+        font-size: 0.35rem;
+        color: #888;
+        text-align: center;
+        z-index: 1;
+        margin-top: 10px;
+      }
+      .auth-switch-link {
+        color: #f0c040;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      .auth-switch-link:hover {
+        color: #ffdd00;
+      }
+
       /* ─── Game Over specifics ──────────────────────────── */
       .gameover-title {
         font-size: 1.3rem;
@@ -1325,6 +1484,101 @@
       </div>
     </div>
 
+    <!-- ═══ Login/Register Popup ═══ -->
+    <div id="auth-backdrop">
+      <div class="pause-board auth-board">
+        <!-- Login form (default view) -->
+        <div id="auth-login-view">
+          <p class="pause-board-title">Sign In</p>
+          <div class="pause-board-divider"></div>
+          <div class="auth-form">
+            <div class="auth-field">
+              <label class="auth-label" for="auth-login-email">Email</label>
+              <input
+                id="auth-login-email"
+                class="auth-input"
+                type="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="auth-login-password">Password</label>
+              <div class="auth-input-wrapper">
+                <input
+                  id="auth-login-password"
+                  class="auth-input auth-input-password"
+                  type="password"
+                  placeholder="********"
+                  autocomplete="current-password"
+                />
+                <button type="button" class="auth-toggle-password" data-target="auth-login-password">Show</button>
+              </div>
+            </div>
+            <p id="auth-login-error" class="auth-error"></p>
+            <button id="auth-login-submit" class="pause-btn pause-btn-primary">Sign In</button>
+          </div>
+          <div class="pause-board-divider"></div>
+          <p class="auth-switch-text">
+            Don't have an account?
+            <span id="auth-show-register" class="auth-switch-link">Register</span>
+          </p>
+        </div>
+
+        <!-- Register form -->
+        <div id="auth-register-view" style="display: none">
+          <p class="pause-board-title">Register</p>
+          <div class="pause-board-divider"></div>
+          <div class="auth-form">
+            <div class="auth-field">
+              <label class="auth-label" for="auth-register-username">Username</label>
+              <input
+                id="auth-register-username"
+                class="auth-input"
+                type="text"
+                placeholder="PlayerName"
+                autocomplete="username"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="auth-register-email">Email</label>
+              <input
+                id="auth-register-email"
+                class="auth-input"
+                type="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+              />
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="auth-register-password">Password</label>
+              <div class="auth-input-wrapper">
+                <input
+                  id="auth-register-password"
+                  class="auth-input auth-input-password"
+                  type="password"
+                  placeholder="********"
+                  autocomplete="new-password"
+                />
+                <button type="button" class="auth-toggle-password" data-target="auth-register-password">Show</button>
+              </div>
+            </div>
+            <p id="auth-register-error" class="auth-error"></p>
+            <button id="auth-register-submit" class="pause-btn pause-btn-primary">
+              Create Account
+            </button>
+          </div>
+          <div class="pause-board-divider"></div>
+          <p class="auth-switch-text">
+            Already have an account?
+            <span id="auth-show-login" class="auth-switch-link">Sign In</span>
+          </p>
+        </div>
+
+        <button id="auth-close-btn" class="pause-btn">Close</button>
+      </div>
+    </div>
+
     <!-- ═══ Game UI ═══ -->
     <div id="app-wrapper">
       <div id="hud-panel">
@@ -1333,6 +1587,19 @@
         <p style="font-size: 7px; color: #555; text-align: center; margin-bottom: 2px">
           by D-EXP Team
         </p>
+        <hr class="hud-divider" />
+
+        <!-- Auth section -->
+        <div id="auth-guest" class="hud-auth-section">
+          <span class="hud-auth-label">Playing as Guest</span>
+          <button id="hud-login-btn" class="hud-auth-btn">Sign In</button>
+        </div>
+        <div id="auth-logged" class="hud-auth-section" style="display: none">
+          <span class="hud-auth-label">Player:</span>
+          <span id="auth-username" class="hud-auth-username">---</span>
+          <button id="hud-logout-btn" class="hud-auth-btn hud-auth-btn-small">Log Out</button>
+        </div>
+
         <hr class="hud-divider" />
 
         <div class="hud-section">
