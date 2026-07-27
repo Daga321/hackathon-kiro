@@ -2,8 +2,10 @@ import Phaser from 'phaser';
 import { MapGenerator } from '../map/MapGenerator';
 import { MAP_CONFIG } from '../config/map-config';
 import { Player } from '../entities/Player';
-import { Enemy, ENEMY_TYPES } from '../entities/Enemy';
+import { EnemySpawner } from '../ai/EnemySpawner';
+import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
+import { HudManager } from '../ui/HudManager';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -29,8 +31,10 @@ export class GameScene extends Phaser.Scene {
   private keyP!: Phaser.Input.Keyboard.Key;
   private keyL!: Phaser.Input.Keyboard.Key;
   private player!: Player;
-  private enemies: Enemy[] = [];
+  private waveManager!: WaveManager;
+  private spawner!: EnemySpawner;
   private touchControls!: TouchControls;
+  private hud!: HudManager;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -79,22 +83,17 @@ export class GameScene extends Phaser.Scene {
     if (treeColliders) this.physics.add.collider(playerSprite, treeColliders);
     if (obstacleColliders) this.physics.add.collider(playerSprite, obstacleColliders);
 
-    // Create enemies
-    const enemyConfigs = [ENEMY_TYPES.SKELETON, ENEMY_TYPES.SKELETON_SWORD, ENEMY_TYPES.SLIME];
-    for (const config of enemyConfigs) {
-      const pos = Enemy.findSpawnPosition(collisionLayer, elevatedLayer);
-      const enemy = new Enemy(this, pos.x, pos.y, config, pathfinder);
+    // Create enemy spawner and wave manager
+    this.spawner = new EnemySpawner(
+      this, pathfinder,
+      collisionLayer, elevatedLayer, fenceLayer,
+      graveColliders, treeColliders, obstacleColliders
+    );
+    this.waveManager = new WaveManager(this, this.spawner);
+    this.waveManager.start();
 
-      const enemySprite = enemy.getSprite();
-      if (collisionLayer) this.physics.add.collider(enemySprite, collisionLayer);
-      if (elevatedLayer) this.physics.add.collider(enemySprite, elevatedLayer);
-      if (fenceLayer) this.physics.add.collider(enemySprite, fenceLayer);
-      if (graveColliders) this.physics.add.collider(enemySprite, graveColliders);
-      if (treeColliders) this.physics.add.collider(enemySprite, treeColliders);
-      if (obstacleColliders) this.physics.add.collider(enemySprite, obstacleColliders);
-
-      this.enemies.push(enemy);
-    }
+    // Create HTML HUD manager
+    this.hud = new HudManager();
 
     // Camera follows the player
     const sprite = this.player.getSprite();
@@ -176,19 +175,27 @@ export class GameScene extends Phaser.Scene {
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
 
+    // Update wave manager
+    this.waveManager.update(this.player.getIsDead());
+
+    // Update HTML HUD
+    this.hud.update(this.player, this.waveManager, this.waveManager.getAllEnemies(), this.game.loop.delta);
+
     // Update enemies (skip if player is dead — enemies stop targeting)
-    for (const enemy of this.enemies) {
+    const enemies = this.waveManager.getAllEnemies();
+    const globalAggro = this.hud.getIsAggroActive();
+    for (const enemy of enemies) {
       if (!enemy.getIsDead()) {
         enemy.updateDepth();
         if (!this.player.getIsDead()) {
-          enemy.update(this.player.getSprite());
+          enemy.update(this.player.getSprite(), globalAggro);
         }
       }
     }
 
     // ─── Combat damage detection (skip if player dead) ───
     if (!this.player.getIsDead()) {
-      for (const enemy of this.enemies) {
+      for (const enemy of enemies) {
         if (enemy.getIsDead()) continue;
 
         // Player attacks enemy

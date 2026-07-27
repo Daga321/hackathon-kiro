@@ -170,8 +170,10 @@ export class Enemy extends Character {
 
   /**
    * Update enemy each frame. Handles detection, pursuit, attack, and obstacle avoidance.
+   * @param playerSprite The player sprite to target
+   * @param globalAggro If true, ignores detection radius and always pursues the player
    */
-  update(playerSprite: Phaser.Physics.Arcade.Sprite): void {
+  update(playerSprite: Phaser.Physics.Arcade.Sprite, globalAggro: boolean = false): void {
     // Skip AI if in knockback or dead
     if (this.isInKnockback || this.isDead) return;
 
@@ -183,8 +185,11 @@ export class Enemy extends Character {
     const distance = Math.sqrt(dx * dx + dy * dy);
     const delta = this.scene.game.loop.delta;
 
-    if (distance <= this.detectionRadius) {
-      // ─── Player in range ───
+    // Detection: normal range OR global aggro active
+    const inRange = distance <= this.detectionRadius || globalAggro;
+
+    if (inRange) {
+      // ─── Player in range (or global aggro active) ───
       if (!this.playerDetected) {
         this.playerDetected = true;
         this.isPlayingSpecial = false;
