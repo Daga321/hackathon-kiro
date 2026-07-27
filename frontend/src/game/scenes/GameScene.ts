@@ -10,6 +10,7 @@ import { HudManager } from '../ui/HudManager';
 import { WaveAnnouncement } from '../ui/WaveAnnouncement';
 import { PauseMenu } from '../ui/PauseMenu';
 import { GameOverScreen } from '../ui/GameOverScreen';
+import { DamageIndicatorSystem, DamageType } from '../ui/DamageIndicator';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 
@@ -46,6 +47,7 @@ export class GameScene extends Phaser.Scene {
   private waveAnnouncement!: WaveAnnouncement;
   private pauseMenu!: PauseMenu;
   private gameOverScreen!: GameOverScreen;
+  private damageIndicators!: DamageIndicatorSystem;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
@@ -158,6 +160,9 @@ export class GameScene extends Phaser.Scene {
     this.gameOverScreen.onRestart(() => {
       this.scene.restart();
     });
+
+    // Damage indicators
+    this.damageIndicators = new DamageIndicatorSystem(this);
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
@@ -334,7 +339,14 @@ export class GameScene extends Phaser.Scene {
             );
             if (dist < 20) {
               this.player.registerHit(enemy);
-              enemy.takeDamage(getPlayerDamage(this.waveManager.getWave()), this.player);
+              const dmg = getPlayerDamage(this.waveManager.getWave());
+              enemy.takeDamage(dmg, this.player);
+              this.damageIndicators.spawn(
+                enemySprite.x,
+                enemySprite.y - 8,
+                dmg,
+                DamageType.DEALT,
+              );
             }
           }
         }
@@ -347,12 +359,17 @@ export class GameScene extends Phaser.Scene {
             const dist = Phaser.Math.Distance.Between(hitbox.x, hitbox.y, plSprite.x, plSprite.y);
             if (dist < 20) {
               enemy.registerHit(this.player);
-              this.player.takeDamage(enemy.getAttackDamage(), enemy);
+              const dmg = enemy.getAttackDamage();
+              this.player.takeDamage(dmg, enemy);
+              this.damageIndicators.spawn(plSprite.x, plSprite.y - 8, dmg, DamageType.RECEIVED);
             }
           }
         }
       }
     }
+
+    // Update damage indicators
+    this.damageIndicators.update(this.game.loop.delta);
 
     // Debug: press L to toggle position HUD and log to console (dev tools only)
     if (DEV_TOOLS_ENABLED && Phaser.Input.Keyboard.JustDown(this.keyL)) {
