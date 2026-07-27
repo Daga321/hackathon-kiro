@@ -31,7 +31,8 @@ export class AuthUI {
   private _isLoggedIn: boolean = false;
   private onOpenCallback: (() => void) | null = null;
   private onCloseCallback: (() => void) | null = null;
-  private loginSuccessListeners: ((source: 'hud' | 'friends' | 'leaderboard' | null) => void)[] = [];
+  private loginSuccessListeners: ((source: 'hud' | 'friends' | 'leaderboard' | null) => void)[] =
+    [];
   private returnTo: 'hud' | 'friends' | 'leaderboard' | null = null;
 
   constructor() {
@@ -270,13 +271,9 @@ export class AuthUI {
     // Register submit (UI-only mock)
     if (this.registerSubmit) {
       this.registerSubmit.onclick = () => {
-        const usernameInput = document.getElementById(
-          'auth-register-username',
-        ) as HTMLInputElement;
+        const usernameInput = document.getElementById('auth-register-username') as HTMLInputElement;
         const emailInput = document.getElementById('auth-register-email') as HTMLInputElement;
-        const passwordInput = document.getElementById(
-          'auth-register-password',
-        ) as HTMLInputElement;
+        const passwordInput = document.getElementById('auth-register-password') as HTMLInputElement;
         const username = usernameInput?.value?.trim();
         const email = emailInput?.value?.trim();
         const password = passwordInput?.value;

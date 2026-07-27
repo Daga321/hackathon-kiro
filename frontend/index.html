@@ -716,7 +716,9 @@
         border-radius: 3px;
         cursor: pointer;
         text-align: center;
-        transition: color 0.15s, border-color 0.15s;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
       }
       .friends-tab:hover {
         color: #ccc;
@@ -780,7 +782,9 @@
         border-radius: 3px;
         cursor: pointer;
         background: transparent;
-        transition: color 0.15s, border-color 0.15s;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
       }
       .friends-item-btn-accept {
         color: #44ff44;
@@ -987,7 +991,9 @@
         border-radius: 4px;
         cursor: pointer;
         text-align: center;
-        transition: background 0.15s, transform 0.1s;
+        transition:
+          background 0.15s,
+          transform 0.1s;
       }
       .hud-auth-btn:hover {
         background: linear-gradient(180deg, #7a4a2a 0%, #5a3a1a 100%);
@@ -1831,7 +1837,9 @@
               />
             </div>
             <p id="friends-add-status" class="friends-status-text"></p>
-            <button id="friends-add-submit" class="pause-btn pause-btn-primary">Send Request</button>
+            <button id="friends-add-submit" class="pause-btn pause-btn-primary">
+              Send Request
+            </button>
           </div>
         </div>
 
@@ -1984,7 +1992,13 @@
                   placeholder="********"
                   autocomplete="current-password"
                 />
-                <button type="button" class="auth-toggle-password" data-target="auth-login-password">Show</button>
+                <button
+                  type="button"
+                  class="auth-toggle-password"
+                  data-target="auth-login-password"
+                >
+                  Show
+                </button>
               </div>
             </div>
             <p id="auth-login-error" class="auth-error"></p>
@@ -2032,7 +2046,13 @@
                   placeholder="********"
                   autocomplete="new-password"
                 />
-                <button type="button" class="auth-toggle-password" data-target="auth-register-password">Show</button>
+                <button
+                  type="button"
+                  class="auth-toggle-password"
+                  data-target="auth-register-password"
+                >
+                  Show
+                </button>
               </div>
             </div>
             <p id="auth-register-error" class="auth-error"></p>
