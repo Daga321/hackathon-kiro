@@ -156,7 +156,7 @@ export class TouchControls {
     const height = this.scene.scale.height;
     const attackBtnX = width - 90;
     const attackBtnY = height - 110;
-const attackRadius = 65; // Generous touch area matching larger button
+    const attackRadius = 65; // Generous touch area matching larger button
 
     this.scene.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       // Check attack button area first (right side, bottom)

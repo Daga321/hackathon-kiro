@@ -47,6 +47,13 @@ export class HudManager {
   }
 
   /**
+   * Get the current score.
+   */
+  getScore(): number {
+    return this.score;
+  }
+
+  /**
    * Whether the aggro countdown has reached zero (enemies should be aggressive).
    */
   getIsAggroActive(): boolean {

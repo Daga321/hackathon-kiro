@@ -206,7 +206,9 @@
       .wave-announcement-title {
         font-size: 2.2rem;
         color: #f0c040;
-        text-shadow: 3px 3px 0px #000, 0 0 16px rgba(240, 192, 64, 0.5);
+        text-shadow:
+          3px 3px 0px #000,
+          0 0 16px rgba(240, 192, 64, 0.5);
       }
       .wave-announcement-subtitle {
         font-size: 0.85rem;
@@ -238,7 +240,8 @@
       }
 
       /* ─── Pause Menu Overlay ─────────────────────────── */
-      #pause-menu-backdrop {
+      #pause-menu-backdrop,
+      #gameover-backdrop {
         position: fixed;
         top: 0;
         right: 0;
@@ -251,16 +254,19 @@
         background: rgba(0, 0, 0, 0.6);
         font-family: 'Press Start 2P', cursive;
       }
-      #pause-menu-backdrop.visible {
+      #pause-menu-backdrop.visible,
+      #gameover-backdrop.visible {
         display: flex;
       }
       @media (max-width: 900px) {
-        #pause-menu-backdrop {
+        #pause-menu-backdrop,
+        #gameover-backdrop {
           left: 180px;
         }
       }
       @media (max-width: 600px) {
-        #pause-menu-backdrop {
+        #pause-menu-backdrop,
+        #gameover-backdrop {
           left: 120px;
         }
       }
@@ -303,8 +309,7 @@
         position: absolute;
         inset: 12px;
         border-radius: 2px;
-        background:
-          radial-gradient(circle at 0% 0%, #888 3px, transparent 3px),
+        background: radial-gradient(circle at 0% 0%, #888 3px, transparent 3px),
           radial-gradient(circle at 100% 0%, #888 3px, transparent 3px),
           radial-gradient(circle at 0% 100%, #888 3px, transparent 3px),
           radial-gradient(circle at 100% 100%, #888 3px, transparent 3px);
@@ -336,7 +341,9 @@
         cursor: pointer;
         text-align: center;
         z-index: 1;
-        transition: background 0.15s, transform 0.1s;
+        transition:
+          background 0.15s,
+          transform 0.1s;
       }
       .pause-btn:hover {
         background: linear-gradient(180deg, #7a4a2a 0%, #5a3a1a 100%);
@@ -355,6 +362,39 @@
         color: #aaa;
         z-index: 1;
         margin-top: 4px;
+      }
+
+      /* ─── Game Over specifics ──────────────────────────── */
+      .gameover-title {
+        font-size: 1.3rem;
+        color: #c0392b;
+        text-shadow:
+          2px 2px 0px #000,
+          0 0 10px rgba(192, 57, 43, 0.4);
+        z-index: 1;
+      }
+      .gameover-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        z-index: 1;
+      }
+      .gameover-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+      }
+      .gameover-stat-label {
+        font-size: 0.5rem;
+        color: #ccc;
+      }
+      .gameover-stat-value {
+        font-size: 0.6rem;
+        color: #f0c040;
       }
 
       /* ─── Loading Screen Overlay ───────────────────────── */
@@ -821,12 +861,35 @@
       </div>
     </div>
 
+    <!-- ═══ Game Over Overlay ═══ -->
+    <div id="gameover-backdrop">
+      <div class="pause-board">
+        <p class="gameover-title">Game Over</p>
+        <div class="pause-board-divider"></div>
+        <div class="gameover-stats">
+          <div class="gameover-stat">
+            <span class="gameover-stat-label">Score</span>
+            <span id="gameover-score" class="gameover-stat-value">0</span>
+          </div>
+          <div class="gameover-stat">
+            <span class="gameover-stat-label">Wave</span>
+            <span id="gameover-wave" class="gameover-stat-value">1</span>
+          </div>
+        </div>
+        <div class="pause-board-divider"></div>
+        <button id="gameover-btn-restart" class="pause-btn pause-btn-primary">Play Again</button>
+        <button id="gameover-btn-share" class="pause-btn">Share Score</button>
+      </div>
+    </div>
+
     <!-- ═══ Game UI ═══ -->
     <div id="app-wrapper">
       <div id="hud-panel">
         <h1 class="hud-title">Horde Battle</h1>
         <p class="hud-subtitle">Graveyard Guard</p>
-        <p style="font-size: 7px; color: #555; text-align: center; margin-bottom: 2px;">by D-EXP Team</p>
+        <p style="font-size: 7px; color: #555; text-align: center; margin-bottom: 2px">
+          by D-EXP Team
+        </p>
         <hr class="hud-divider" />
 
         <div class="hud-section">
@@ -861,8 +924,8 @@
         <p class="hud-minimap-title">MINIMAP</p>
         <canvas id="minimap-canvas" width="270" height="270"></canvas>
 
-        <div style="margin-top: auto; padding-top: 12px; text-align: center;">
-          <p style="font-size: 7px; color: #555; line-height: 2.2;">Kiro Hackathon 2026</p>
+        <div style="margin-top: auto; padding-top: 12px; text-align: center">
+          <p style="font-size: 7px; color: #555; line-height: 2.2">Kiro Hackathon 2026</p>
         </div>
       </div>
       <div id="game-container"></div>
