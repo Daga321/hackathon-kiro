@@ -1,7 +1,13 @@
 import Phaser from 'phaser';
 import { EnemySpawner, SpawnRequest } from './EnemySpawner';
 import { Enemy, ENEMY_TYPES } from '../entities/Enemy';
-import { getEnemyCount, getEnemyHP, getEnemyDamage, getEnemySpeedMultiplier, getEnemyScoreReward } from '../config/difficulty-config';
+import {
+  getEnemyCount,
+  getEnemyHP,
+  getEnemyDamage,
+  getEnemySpeedMultiplier,
+  getEnemyScoreReward,
+} from '../config/difficulty-config';
 
 /** Wave state */
 type WaveState = 'spawning' | 'active' | 'waiting_next' | 'stopped';

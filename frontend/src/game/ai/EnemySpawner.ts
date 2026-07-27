@@ -72,7 +72,10 @@ export class EnemySpawner {
   /**
    * Spawn a batch of enemies from multiple requests.
    */
-  spawnBatch(requests: SpawnRequest[], waveOverrides?: { hp?: number; damage?: number; speedMultiplier?: number }): Enemy[] {
+  spawnBatch(
+    requests: SpawnRequest[],
+    waveOverrides?: { hp?: number; damage?: number; speedMultiplier?: number },
+  ): Enemy[] {
     const spawned: Enemy[] = [];
     for (const req of requests) {
       for (let i = 0; i < req.count; i++) {
@@ -87,7 +90,10 @@ export class EnemySpawner {
    * Spawn a single enemy of the given config at a valid position.
    * Returns null if no valid position found after max attempts.
    */
-  spawnEnemy(config: EnemyConfig, waveOverrides?: { hp?: number; damage?: number; speedMultiplier?: number }): Enemy | null {
+  spawnEnemy(
+    config: EnemyConfig,
+    waveOverrides?: { hp?: number; damage?: number; speedMultiplier?: number },
+  ): Enemy | null {
     const pos = this.findValidPosition();
     if (!pos) {
       console.warn(`[EnemySpawner] Could not find valid position for ${config.prefix}`);
