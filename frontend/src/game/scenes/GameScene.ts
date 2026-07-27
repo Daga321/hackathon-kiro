@@ -8,6 +8,7 @@ import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
 import { WaveAnnouncement } from '../ui/WaveAnnouncement';
+import { PauseMenu } from '../ui/PauseMenu';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 
@@ -42,6 +43,7 @@ export class GameScene extends Phaser.Scene {
   private touchControls!: TouchControls;
   private hud!: HudManager;
   private waveAnnouncement!: WaveAnnouncement;
+  private pauseMenu!: PauseMenu;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
@@ -139,6 +141,15 @@ export class GameScene extends Phaser.Scene {
       D: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     };
     this.keyP = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    // Pause menu (keyboard handled at document level inside PauseMenu)
+    this.pauseMenu = new PauseMenu();
+    this.pauseMenu.onPause(() => {
+      this.scene.pause();
+    });
+    this.pauseMenu.onResume(() => {
+      this.scene.resume();
+    });
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
