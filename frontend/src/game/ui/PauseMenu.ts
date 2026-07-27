@@ -1,9 +1,6 @@
 import { FriendsPanel } from './FriendsPanel';
 import { AuthUI } from './AuthUI';
-import {
-  getGlobalLeaderboard,
-  getFriendsLeaderboard,
-} from '../../services/leaderboard.service';
+import { getGlobalLeaderboard, getFriendsLeaderboard } from '../../services/leaderboard.service';
 import { isAuthenticated } from '../../services/token-manager';
 import type { LeaderboardEntry } from '../../services/types';
 
@@ -242,10 +239,7 @@ export class PauseMenu {
     }
   }
 
-  private renderLeaderboardEntries(
-    container: HTMLElement,
-    entries: LeaderboardEntry[],
-  ): void {
+  private renderLeaderboardEntries(container: HTMLElement, entries: LeaderboardEntry[]): void {
     if (entries.length === 0) {
       container.innerHTML = `
         <div class="lb-row" style="justify-content: center;">

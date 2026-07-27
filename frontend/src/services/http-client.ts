@@ -13,7 +13,7 @@ function getErrorMessage(status: number, body: { error?: string } | null): strin
     case 400:
       return body?.error || 'Invalid request.';
     case 401:
-      return 'Session expired. Please log in again.';
+      return body?.error || 'Session expired. Please log in again.';
     case 403:
       return 'Access denied.';
     case 404:

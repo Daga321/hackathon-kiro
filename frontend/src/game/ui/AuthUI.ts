@@ -313,13 +313,9 @@ export class AuthUI {
     // Register submit — calls auth.service.register() then auto-login
     if (this.registerSubmit) {
       this.registerSubmit.onclick = async () => {
-        const usernameInput = document.getElementById(
-          'auth-register-username',
-        ) as HTMLInputElement;
+        const usernameInput = document.getElementById('auth-register-username') as HTMLInputElement;
         const emailInput = document.getElementById('auth-register-email') as HTMLInputElement;
-        const passwordInput = document.getElementById(
-          'auth-register-password',
-        ) as HTMLInputElement;
+        const passwordInput = document.getElementById('auth-register-password') as HTMLInputElement;
         const username = usernameInput?.value?.trim();
         const email = emailInput?.value?.trim();
         const password = passwordInput?.value;
@@ -352,11 +348,11 @@ export class AuthUI {
         if (loginResult.success) {
           this.setLoggedIn(username);
         } else {
-          // Registration succeeded but login failed — show success message
+          // Registration succeeded but auto-login failed — let user try manually
           if (this.registerError) {
             this.registerError.style.color = '#44ff44';
             this.registerError.textContent =
-              'Account created! Please verify your email and log in.';
+              'Account created! Please log in with your credentials.';
           }
           this.showLoginForm();
         }
