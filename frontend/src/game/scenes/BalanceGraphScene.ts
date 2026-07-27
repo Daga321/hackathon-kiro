@@ -201,13 +201,16 @@ export class BalanceGraphScene extends Phaser.Scene {
 
     // Title bar
     const titleBar = document.createElement('div');
-    titleBar.style.cssText = 'color: #ffcc00; font-size: 13px; font-weight: bold; margin-bottom: 8px; padding: 4px 8px; background: #00000066; border-radius: 4px;';
-    titleBar.textContent = 'Balance Graphs — Click metrics to toggle | Hover for values | G / ESC to return';
+    titleBar.style.cssText =
+      'color: #ffcc00; font-size: 13px; font-weight: bold; margin-bottom: 8px; padding: 4px 8px; background: #00000066; border-radius: 4px;';
+    titleBar.textContent =
+      'Balance Graphs — Click metrics to toggle | Hover for values | G / ESC to return';
     graphArea.appendChild(titleBar);
 
     // Canvas
     this.graphCanvas = document.createElement('canvas');
-    this.graphCanvas.style.cssText = 'flex: 1; width: 100%; border-radius: 4px; background: #0a0a14; cursor: crosshair;';
+    this.graphCanvas.style.cssText =
+      'flex: 1; width: 100%; border-radius: 4px; background: #0a0a14; cursor: crosshair;';
     graphArea.appendChild(this.graphCanvas);
 
     this.rootContainer.appendChild(graphArea);
@@ -253,7 +256,8 @@ export class BalanceGraphScene extends Phaser.Scene {
       if (metric.category !== lastCategory) {
         lastCategory = metric.category;
         const header = document.createElement('div');
-        header.style.cssText = 'color: #6688cc; font-size: 11px; font-weight: bold; padding: 8px 12px 2px; text-transform: uppercase;';
+        header.style.cssText =
+          'color: #6688cc; font-size: 11px; font-weight: bold; padding: 8px 12px 2px; text-transform: uppercase;';
         header.textContent = metric.category;
         this.sidebarContainer.appendChild(header);
       }

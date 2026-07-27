@@ -62,12 +62,7 @@ export class BalancePanel {
   /**
    * Update all displayed values. Call once per frame when visible.
    */
-  update(
-    player: Player,
-    waveManager: WaveManager,
-    enemies: Enemy[],
-    hud: HudManager,
-  ): void {
+  update(player: Player, waveManager: WaveManager, enemies: Enemy[], hud: HudManager): void {
     if (!this.visible) return;
 
     const wave = waveManager.getWave();
@@ -164,7 +159,8 @@ export class BalancePanel {
 
     // Title
     const title = document.createElement('div');
-    title.style.cssText = 'font-size: 13px; font-weight: bold; color: #ffcc00; margin-bottom: 8px; border-bottom: 1px solid #555; padding-bottom: 4px;';
+    title.style.cssText =
+      'font-size: 13px; font-weight: bold; color: #ffcc00; margin-bottom: 8px; border-bottom: 1px solid #555; padding-bottom: 4px;';
     title.textContent = 'Balance Panel';
     panel.appendChild(title);
 
@@ -195,12 +191,14 @@ export class BalancePanel {
     panel.appendChild(multLabel);
 
     this.difficultyContainer = document.createElement('div');
-    this.difficultyContainer.style.cssText = 'background: rgba(255,255,255,0.04); border-radius: 3px; padding: 2px 0;';
+    this.difficultyContainer.style.cssText =
+      'background: rgba(255,255,255,0.04); border-radius: 3px; padding: 2px 0;';
     panel.appendChild(this.difficultyContainer);
 
     // Footer hint
     const footer = document.createElement('div');
-    footer.style.cssText = 'margin-top: 8px; border-top: 1px solid #555; padding-top: 4px; color: #888; font-size: 10px;';
+    footer.style.cssText =
+      'margin-top: 8px; border-top: 1px solid #555; padding-top: 4px; color: #888; font-size: 10px;';
     footer.textContent = 'Toggle: I key | Debug only';
     panel.appendChild(footer);
 
