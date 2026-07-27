@@ -17,10 +17,7 @@ export class PreloadScene extends Phaser.Scene {
     this.connectHtmlLoadingScreen();
 
     // Load the load-screen music FIRST so it can play ASAP while other assets load
-    this.load.audio(
-      'bgm_load',
-      'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav',
-    );
+    this.load.audio('bgm_load', 'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav');
 
     // Try to start music as soon as it's loaded (before all assets finish)
     this.load.once('filecomplete-audio-bgm_load', () => {
@@ -109,10 +106,7 @@ export class PreloadScene extends Phaser.Scene {
     });
 
     // ─── Audio ──────────────────────────────────────────────────────────
-    this.load.audio(
-      'bgm_load',
-      'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav',
-    );
+    this.load.audio('bgm_load', 'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav');
     this.load.audio(
       'bgm_battle',
       'audio/music/music_guardia_del_cementerio_ballte_stage_110bpm_.wav',
