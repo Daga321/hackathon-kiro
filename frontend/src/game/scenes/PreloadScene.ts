@@ -93,6 +93,11 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 32,
       frameHeight: 32,
     });
+
+    // ─── Audio ──────────────────────────────────────────────────────────
+    this.load.audio('bgm_battle', 'audio/music/music_guardia_del_cementerio_ballte_stage_110bpm_.wav');
+    this.load.audio('sfx_hit', 'audio/sfx/Efecto_golpe.mp3');
+    this.load.audio('sfx_steps', 'audio/sfx/Efecto_pasos.mp3');
   }
 
   create(): void {

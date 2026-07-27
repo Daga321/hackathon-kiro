@@ -377,6 +377,10 @@ export abstract class Character {
 
     this.currentHealth = Math.max(0, this.currentHealth - amount);
 
+    // Play hit SFX (seek past silent intro)
+    const hitSnd = this.scene.sound.add('sfx_hit', { volume: 0.5 });
+    (hitSnd as Phaser.Sound.WebAudioSound | Phaser.Sound.HTML5AudioSound).play({ seek: 0.7 });
+
     // Show health bar on first damage
     if (this.showHealthBar && !this.healthBarVisible) {
       this.healthBarVisible = true;

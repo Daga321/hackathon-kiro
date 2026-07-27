@@ -7,6 +7,7 @@ import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
 import { getPlayerDamage } from '../config/difficulty-config';
+import { AudioManager } from '../audio/AudioManager';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -31,6 +32,8 @@ export class GameScene extends Phaser.Scene {
   private spawner!: EnemySpawner;
   private touchControls!: TouchControls;
   private hud!: HudManager;
+  private audio!: AudioManager;
+  private playerWasAttacking: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -82,6 +85,10 @@ export class GameScene extends Phaser.Scene {
 
     // Create HTML HUD manager
     this.hud = new HudManager();
+
+    // Audio system
+    this.audio = new AudioManager(this);
+    this.audio.startMusic();
 
     // Camera follows the player
     const sprite = this.player.getSprite();
@@ -156,6 +163,18 @@ export class GameScene extends Phaser.Scene {
 
     // Player movement + attack (keyboard + touch)
     this.player.handleInput(this.cursors, this.wasd, this.keyP, touchMove, touchAttack);
+
+    // Player step sounds (only when actually moving, not just pressing keys)
+    const playerBody = this.player.getSprite().body as Phaser.Physics.Arcade.Body;
+    const playerActuallyMoving = playerBody && (Math.abs(playerBody.velocity.x) > 5 || Math.abs(playerBody.velocity.y) > 5) && !this.player.getIsDead();
+    this.audio.updateSteps(playerActuallyMoving);
+
+    // Player attack sound (play once when hitbox activates)
+    const playerAttacking = this.player.isHitboxActive();
+    if (playerAttacking && !this.playerWasAttacking) {
+      this.audio.playAttack();
+    }
+    this.playerWasAttacking = playerAttacking;
 
     // Update player depth for proper Y-sorting with tree canopies
     this.player.updateDepth();
