@@ -434,6 +434,14 @@ export abstract class Character {
     return this.currentHealth;
   }
 
+  /**
+   * Heal the character by the given amount. Cannot exceed max health.
+   */
+  heal(amount: number): void {
+    if (this.isDead) return;
+    this.currentHealth = Math.min(this.maxHealth, this.currentHealth + amount);
+  }
+
   getMaxHealth(): number {
     return this.maxHealth;
   }

@@ -111,6 +111,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('sfx_steps', 'audio/sfx/sfx_steps.mp3');
     this.load.audio('sfx_player_damage', 'audio/sfx/sfx_player_damage.mp3');
     this.load.audio('sfx_miss_attack', 'audio/sfx/sfx_miss_attack.mp3');
+    this.load.audio('sfx_health_pickup', 'audio/sfx/sfx_health_pickup.mp3');
   }
 
   create(): void {

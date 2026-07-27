@@ -94,6 +94,14 @@ export class AudioManager {
   }
 
   /**
+   * Play health pickup SFX once (when player collects a heart).
+   */
+  playHealthPickup(): void {
+    const sound = this.scene.sound.add('sfx_health_pickup', { volume: AudioManager.SFX_VOLUME });
+    sound.play();
+  }
+
+  /**
    * Play attack/swing SFX once (when player attacks), with offset.
    */
   playAttack(): void {

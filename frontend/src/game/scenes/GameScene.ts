@@ -13,6 +13,7 @@ import { GameOverScreen } from '../ui/GameOverScreen';
 import { DamageIndicatorSystem, DamageType } from '../ui/DamageIndicator';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
+import { HealthPickupManager } from '../entities/HealthPickupManager';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -48,10 +49,12 @@ export class GameScene extends Phaser.Scene {
   private pauseMenu!: PauseMenu;
   private gameOverScreen!: GameOverScreen;
   private damageIndicators!: DamageIndicatorSystem;
+  private healthPickups!: HealthPickupManager;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
   private missPlayed: boolean = false;
+  private swingHitConnected: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -159,11 +162,15 @@ export class GameScene extends Phaser.Scene {
     this.gameOverScreen = new GameOverScreen();
     this.gameOverScreen.onRestart(() => {
       this.audio.stopAll();
+      this.healthPickups.destroyAll();
       this.scene.restart();
     });
 
     // Damage indicators
     this.damageIndicators = new DamageIndicatorSystem(this);
+
+    // Health pickup system
+    this.healthPickups = new HealthPickupManager(this);
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
@@ -345,6 +352,11 @@ export class GameScene extends Phaser.Scene {
               );
               this.audio.playHit();
               playerHitConnected = true;
+
+              // Spawn health pickup on enemy death
+              if (enemy.getIsDead()) {
+                this.healthPickups.trySpawn(enemySprite.x, enemySprite.y);
+              }
             }
           }
         }
@@ -366,18 +378,40 @@ export class GameScene extends Phaser.Scene {
         }
       }
 
-      // Miss attack: player swung but didn't hit anyone this frame
-      if (this.player.isHitboxActive() && !playerHitConnected && !this.missPlayed) {
+      // Track if this swing connected with any enemy
+      if (playerHitConnected) {
+        this.swingHitConnected = true;
+      }
+    }
+
+    // Miss attack detection: when hitbox deactivates, check if swing connected
+    if (this.player.isHitboxActive()) {
+      // Hitbox is active — mark that we're in a swing
+      this.missPlayed = true; // reuse as "was swinging" flag
+    } else if (this.missPlayed) {
+      // Hitbox just deactivated this frame — end of swing
+      if (!this.swingHitConnected) {
         this.audio.playMissAttack();
-        this.missPlayed = true;
       }
-      if (!this.player.isHitboxActive()) {
-        this.missPlayed = false;
-      }
+      this.missPlayed = false;
+      this.swingHitConnected = false;
     }
 
     // Update damage indicators
     this.damageIndicators.update(this.game.loop.delta);
+
+    // Update health pickups and check collection
+    this.healthPickups.update(this.game.loop.delta);
+    if (!this.player.getIsDead()) {
+      const playerSprite = this.player.getSprite();
+      const heals = this.healthPickups.checkCollection(playerSprite.x, playerSprite.y);
+      for (const amount of heals) {
+        this.player.heal(amount);
+        this.damageIndicators.spawn(playerSprite.x, playerSprite.y - 8, amount, DamageType.HEAL);
+        this.audio.playHealthPickup();
+      }
+    }
+    this.hud.setPickupPositions(this.healthPickups.getActivePositions());
 
     // Debug: press L to toggle position HUD and log to console (dev tools only)
     if (DEV_TOOLS_ENABLED && Phaser.Input.Keyboard.JustDown(this.keyL)) {
