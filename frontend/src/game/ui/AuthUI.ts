@@ -185,8 +185,8 @@ export class AuthUI {
       prompt.style.cssText =
         'display:flex;flex-direction:column;align-items:center;gap:16px;z-index:1;';
       prompt.innerHTML = `
-        <p style="font-size:0.55rem;color:#44ff44;text-align:center;line-height:2;">Login successful!</p>
-        <p style="font-size:0.4rem;color:#aaa;text-align:center;line-height:2;">The game is paused.<br>Press continue when ready.</p>
+        <p style="font-size:0.75rem;color:#44ff44;text-align:center;line-height:2;">Login successful!</p>
+        <p style="font-size:0.55rem;color:#ddd;text-align:center;line-height:2;">The game is paused.<br>Press continue when ready.</p>
         <button id="auth-continue-btn" class="pause-btn pause-btn-primary">Continue</button>
       `;
       // Insert into the auth board
