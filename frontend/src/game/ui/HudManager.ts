@@ -22,9 +22,8 @@ export class HudManager {
   private gameStopped: boolean = false;
 
   // ─── Aggro Timer (countdown) ───
-  private static readonly AGGRO_BASE_DURATION_SEC = 30;
-  private static readonly AGGRO_INCREASE_PER_WAVE_SEC = 5;
-  private aggroTimeRemaining: number = HudManager.AGGRO_BASE_DURATION_SEC * 1000; // ms
+  private static readonly AGGRO_MIN_SEC = 15;
+  private aggroTimeRemaining: number = 0; // set on wave change
   private aggroCountdownAccumulator: number = 0;
   private isAggroActive: boolean = false;
   private lastWave: number = 0;
@@ -57,7 +56,13 @@ export class HudManager {
   /**
    * Update HUD each frame.
    */
-  update(player: Player, waveManager: WaveManager, enemies: Enemy[], delta: number): void {
+  update(
+    player: Player,
+    waveManager: WaveManager,
+    enemies: Enemy[],
+    delta: number,
+    scoreRewardPerKill?: number,
+  ): void {
     // Health bar
     const hp = player.getHealth();
     const maxHp = player.getMaxHealth();
@@ -74,12 +79,10 @@ export class HudManager {
     const currentWave = waveManager.getWave();
     if (this.waveText) this.waveText.textContent = `${currentWave}`;
 
-    // Reset aggro timer on new wave
+    // Reset aggro timer on new wave: aggroTimer = max(15, 60 - (wave * 2))
     if (currentWave > this.lastWave) {
       this.lastWave = currentWave;
-      const duration =
-        HudManager.AGGRO_BASE_DURATION_SEC +
-        (currentWave - 1) * HudManager.AGGRO_INCREASE_PER_WAVE_SEC;
+      const duration = Math.max(HudManager.AGGRO_MIN_SEC, 60 - currentWave * 2);
       this.aggroTimeRemaining = duration * 1000;
       this.aggroCountdownAccumulator = 0;
       this.isAggroActive = false;
@@ -94,10 +97,10 @@ export class HudManager {
         this.scoreTimeAccumulator -= 1000;
       }
 
-      // +100 per enemy killed (detect newly dead enemies)
+      // +score per enemy killed (detect newly dead enemies)
       for (const enemy of enemies) {
         if (enemy.getIsDead() && this.previousAliveEnemies.has(enemy)) {
-          this.score += 100;
+          this.score += scoreRewardPerKill ?? 10;
           this.previousAliveEnemies.delete(enemy);
         }
       }
