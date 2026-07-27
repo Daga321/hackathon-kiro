@@ -1,4 +1,4 @@
-import { getAccessToken } from './token-manager';
+import { getIdToken } from './token-manager';
 import type { ServiceResult } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -45,7 +45,7 @@ async function request<T>(
   };
 
   if (authenticated) {
-    const token = getAccessToken();
+    const token = getIdToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }

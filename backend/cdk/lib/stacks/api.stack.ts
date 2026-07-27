@@ -68,6 +68,28 @@ export class ApiStack extends Stack {
       },
     });
 
+    // ─── CORS Gateway Responses ──────────────────────────────────────────────
+    // API Gateway doesn't include CORS headers on authorizer rejections (401/403)
+    // by default. This causes browsers to see a network error instead of the
+    // actual status code. Add CORS headers to all 4XX gateway responses.
+    api.addGatewayResponse('GatewayResponse4XX', {
+      type: apigw.ResponseType.DEFAULT_4XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+      },
+    });
+
+    api.addGatewayResponse('GatewayResponse5XX', {
+      type: apigw.ResponseType.DEFAULT_5XX,
+      responseHeaders: {
+        'Access-Control-Allow-Origin': "'*'",
+        'Access-Control-Allow-Headers': "'Content-Type,Authorization,X-Amz-Date,X-Api-Key'",
+        'Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+      },
+    });
+
     // Map custom domain to this API
     if (apiDomainName) {
       new apigw.BasePathMapping(this, 'BasePathMapping', {
