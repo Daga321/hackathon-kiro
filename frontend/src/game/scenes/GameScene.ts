@@ -159,14 +159,21 @@ export class GameScene extends Phaser.Scene {
       // Main camera ignores touch UI objects
       uiObjects.forEach((obj) => this.cameras.main.ignore(obj));
 
-      // UI camera ignores everything EXCEPT touch UI objects
-      // By default the added camera sees nothing — we need to set it to visible
+      // UI camera ignores everything by default — only shows touch UI objects
       uiCam.visible = true;
 
-      // The trick: ignore all existing display list objects on UI cam, then un-ignore UI objects
+      // Ignore all current children on UI cam except touch controls
       this.children.list.forEach((child) => {
         if (!uiObjects.includes(child)) {
           uiCam.ignore(child);
+        }
+      });
+
+      // CRITICAL: Also ignore any future objects added to the scene
+      // by listening for the 'addedtoscene' event
+      this.events.on('addedtoscene', (gameObject: Phaser.GameObjects.GameObject) => {
+        if (!uiObjects.includes(gameObject)) {
+          uiCam.ignore(gameObject);
         }
       });
     }
