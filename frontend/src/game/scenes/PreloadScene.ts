@@ -7,12 +7,25 @@ import { TILESET_KEYS } from '../config/map-config';
  * Communicates loading progress to the HTML loading screen overlay.
  */
 export class PreloadScene extends Phaser.Scene {
+  private loadMusic: Phaser.Sound.BaseSound | null = null;
+
   constructor() {
     super({ key: 'PreloadScene' });
   }
 
   preload(): void {
     this.connectHtmlLoadingScreen();
+
+    // Load the load-screen music FIRST so it can play ASAP while other assets load
+    this.load.audio(
+      'bgm_load',
+      'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav',
+    );
+
+    // Try to start music as soon as it's loaded (before all assets finish)
+    this.load.once('filecomplete-audio-bgm_load', () => {
+      this.tryStartLoadMusic();
+    });
 
     // ─── Ground ─────────────────────────────────────────────────────────
     // grass.png is a single 16×16 tile — load as image for tilemap use
@@ -97,6 +110,10 @@ export class PreloadScene extends Phaser.Scene {
 
     // ─── Audio ──────────────────────────────────────────────────────────
     this.load.audio(
+      'bgm_load',
+      'audio/music/music_guardia_del_cementerio_load_screen_50bpm_.wav',
+    );
+    this.load.audio(
       'bgm_battle',
       'audio/music/music_guardia_del_cementerio_ballte_stage_110bpm_.wav',
     );
@@ -105,7 +122,42 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    // If music didn't start during preload (e.g., audio context was locked),
+    // it will start on the first user interaction via tryStartLoadMusic
     this.showStartPrompt();
+  }
+
+  /**
+   * Attempt to play load screen music. If browser blocks autoplay,
+   * registers a one-time interaction listener to resume.
+   */
+  private tryStartLoadMusic(): void {
+    if (this.loadMusic) return; // already playing
+
+    this.loadMusic = this.sound.add('bgm_load', { loop: true, volume: 0.35 });
+
+    // Try to play immediately
+    try {
+      this.loadMusic.play();
+    } catch {
+      // Autoplay blocked — will retry on interaction
+    }
+
+    // If the audio context is suspended (autoplay policy), resume on first interaction
+    const ctx = (this.sound as Phaser.Sound.WebAudioSoundManager)?.context;
+    if (ctx && ctx.state === 'suspended') {
+      const resumeAudio = (): void => {
+        ctx.resume().then(() => {
+          if (this.loadMusic && !(this.loadMusic as Phaser.Sound.WebAudioSound).isPlaying) {
+            this.loadMusic.play();
+          }
+        });
+        document.removeEventListener('pointerdown', resumeAudio);
+        document.removeEventListener('keydown', resumeAudio);
+      };
+      document.addEventListener('pointerdown', resumeAudio, { once: true });
+      document.addEventListener('keydown', resumeAudio, { once: true });
+    }
   }
 
   /**
@@ -154,6 +206,14 @@ export class PreloadScene extends Phaser.Scene {
    */
   private hideHtmlLoadingScreen(): void {
     const loadingScreen = document.getElementById('loading-screen');
+
+    // Stop load screen music before transitioning
+    if (this.loadMusic) {
+      this.loadMusic.stop();
+      this.loadMusic.destroy();
+      this.loadMusic = null;
+    }
+
     if (!loadingScreen) {
       this.scene.start('GameScene');
       return;
