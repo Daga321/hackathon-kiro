@@ -16,6 +16,7 @@ import { AudioManager } from '../audio/AudioManager';
 import { HealthPickupManager } from '../entities/HealthPickupManager';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { AuthUI } from '../ui/AuthUI';
+import { BalancePanel } from '../ui/BalancePanel';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -57,6 +58,9 @@ export class GameScene extends Phaser.Scene {
   private audio!: AudioManager;
   private missPlayed: boolean = false;
   private swingHitConnected: boolean = false;
+  private balancePanel?: BalancePanel;
+  private keyI!: Phaser.Input.Keyboard.Key;
+  private keyG!: Phaser.Input.Keyboard.Key;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -195,6 +199,11 @@ export class GameScene extends Phaser.Scene {
       this.keyL = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.L);
       this.keyT = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.T);
       this.keyBodies = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+      this.keyI = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I);
+      this.keyG = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.G);
+
+      // Balance Panel: real-time gameplay statistics overlay (toggle with I)
+      this.balancePanel = new BalancePanel();
 
       // Dev HUD: rendered on a separate camera with fixed zoom=1 so it stays
       // at a constant size regardless of the main camera zoom (like CSS position:fixed).
@@ -203,19 +212,20 @@ export class GameScene extends Phaser.Scene {
           .text(
             10,
             10,
-            'WASD/Arrows: Move | Space: Attack | Q/E: Zoom | F: Full map | R: Reset | L: Position | T: Tiles | B: Bodies',
+            'WASD: Move | Space: Attack | Q/E: Zoom | F: Map | R: Reset\nL: Position | T: Tiles | B: Bodies | I: Balance | G: Graphs',
             {
               fontSize: '12px',
               color: '#ffffff',
               backgroundColor: '#00000088',
               padding: { x: 4, y: 2 },
+              wordWrap: { width: 780 },
             },
           )
           .setScrollFactor(0)
           .setDepth(1000);
 
         this.devPosText = this.add
-          .text(10, 30, '', {
+          .text(10, 46, '', {
             fontSize: '12px',
             color: '#00ff88',
             backgroundColor: '#00000088',
@@ -491,6 +501,33 @@ export class GameScene extends Phaser.Scene {
         world.drawDebug = !world.drawDebug;
         world.debugGraphic.setVisible(world.drawDebug);
       }
+
+      // I: Toggle Balance Panel (real-time gameplay statistics)
+      if (Phaser.Input.Keyboard.JustDown(this.keyI)) {
+        this.balancePanel?.toggle();
+      }
+
+      // G: Toggle Balance Graph Scene (difficulty scaling curves)
+      if (Phaser.Input.Keyboard.JustDown(this.keyG)) {
+        if (this.scene.isActive('BalanceGraphScene')) {
+          this.scene.stop('BalanceGraphScene');
+          this.scene.wake('GameScene');
+        } else {
+          this.scene.sleep('GameScene');
+          this.scene.launch('BalanceGraphScene');
+          this.scene.bringToTop('BalanceGraphScene');
+        }
+      }
+    }
+
+    // Update Balance Panel (dev tools only, skips internally when hidden)
+    if (this.balancePanel) {
+      this.balancePanel.update(
+        this.player,
+        this.waveManager,
+        this.waveManager.getAllEnemies(),
+        this.hud,
+      );
     }
   }
 }

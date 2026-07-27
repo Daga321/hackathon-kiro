@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PreloadScene } from './game/scenes/PreloadScene';
 import { GameScene } from './game/scenes/GameScene';
 import { TileDebugScene } from './game/scenes/TileDebugScene';
+import { BalanceGraphScene } from './game/scenes/BalanceGraphScene';
 import { DEV_TOOLS_ENABLED } from './game/config/dev-tools';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -36,6 +37,7 @@ const game = new Phaser.Game(config);
 // Press T in-game to toggle it on/off (requires VITE_DEV_TOOLS=true).
 if (DEV_TOOLS_ENABLED) {
   game.scene.add('TileDebugScene', TileDebugScene, false);
+  game.scene.add('BalanceGraphScene', BalanceGraphScene, false);
 }
 
 export default game;
