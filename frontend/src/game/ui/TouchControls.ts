@@ -46,9 +46,13 @@ export class TouchControls {
   }
 
   /** Normalized movement X (-1 to 1) */
-  get moveX(): number { return this._moveX; }
+  get moveX(): number {
+    return this._moveX;
+  }
   /** Normalized movement Y (-1 to 1) */
-  get moveY(): number { return this._moveY; }
+  get moveY(): number {
+    return this._moveY;
+  }
 
   /**
    * Returns true once per attack tap, then resets.
@@ -103,16 +107,22 @@ export class TouchControls {
     this.joystickBaseY = height - 90;
 
     this.joystickBase = this.scene.add.circle(
-      this.joystickBaseX, this.joystickBaseY,
-      this.joystickRadius, 0x000000, 0.3
+      this.joystickBaseX,
+      this.joystickBaseY,
+      this.joystickRadius,
+      0x000000,
+      0.3,
     );
     this.joystickBase.setScrollFactor(0);
     this.joystickBase.setDepth(200);
     this.joystickBase.setStrokeStyle(2, 0xffffff, 0.5);
 
     this.joystickThumb = this.scene.add.circle(
-      this.joystickBaseX, this.joystickBaseY,
-      this.thumbRadius, 0xffffff, 0.5
+      this.joystickBaseX,
+      this.joystickBaseY,
+      this.thumbRadius,
+      0xffffff,
+      0.5,
     );
     this.joystickThumb.setScrollFactor(0);
     this.joystickThumb.setDepth(201);

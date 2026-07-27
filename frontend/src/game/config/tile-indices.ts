@@ -20,28 +20,28 @@
 //   Side edges = F9, F11, F12, F13 (partial transparency left/right)
 export const WALL_TILES = {
   // Top wall (player sees the front face from above) — use dark solid rows 4-5
-  TOP_LEFT: 32,      // Frame 32: dark solid fill (top-left corner)
-  TOP: 33,           // Frame 33: dark solid (top edge with perspective)
-  TOP_ALT: 34,       // Frame 34: dark solid variant
-  TOP_RIGHT: 35,     // Frame 35: dark solid (top-right corner)
+  TOP_LEFT: 32, // Frame 32: dark solid fill (top-left corner)
+  TOP: 33, // Frame 33: dark solid (top edge with perspective)
+  TOP_ALT: 34, // Frame 34: dark solid variant
+  TOP_RIGHT: 35, // Frame 35: dark solid (top-right corner)
 
   // Side edges — use partially transparent frames for left/right visibility
-  LEFT: 9,           // Frame 9: partial transparency (left edge)
-  LEFT_ALT: 13,      // Frame 13: left edge variant
-  RIGHT: 11,         // Frame 11: partial transparency (right edge)
-  RIGHT_ALT: 12,     // Frame 12: right edge variant
+  LEFT: 9, // Frame 9: partial transparency (left edge)
+  LEFT_ALT: 13, // Frame 13: left edge variant
+  RIGHT: 11, // Frame 11: partial transparency (right edge)
+  RIGHT_ALT: 12, // Frame 12: right edge variant
 
   // Bottom wall (same perspective as top) — use dark solid rows 4-5
-  BOTTOM_LEFT: 40,   // Frame 40: dark solid fill (bottom-left)
-  BOTTOM: 41,        // Frame 41: dark solid (bottom edge with perspective)
-  BOTTOM_ALT: 42,    // Frame 42: dark solid variant
-  BOTTOM_RIGHT: 43,  // Frame 43: dark solid (bottom-right)
+  BOTTOM_LEFT: 40, // Frame 40: dark solid fill (bottom-left)
+  BOTTOM: 41, // Frame 41: dark solid (bottom edge with perspective)
+  BOTTOM_ALT: 42, // Frame 42: dark solid variant
+  BOTTOM_RIGHT: 43, // Frame 43: dark solid (bottom-right)
 
   // Interior fills (use same dark solid for wall thickness)
-  FILL_1: 32,        // Frame 32: dark solid
-  FILL_2: 33,        // Frame 33: dark solid variant
-  FILL_3: 40,        // Frame 40: dark solid
-  FILL_4: 41,        // Frame 41: dark solid variant
+  FILL_1: 32, // Frame 32: dark solid
+  FILL_2: 33, // Frame 33: dark solid variant
+  FILL_3: 40, // Frame 40: dark solid
+  FILL_4: 41, // Frame 41: dark solid variant
 } as const;
 
 // ─── plains.png: 6 cols × 12 rows = 72 frames (index 0-71) ─────────────────
@@ -75,30 +75,30 @@ export const WALL_TILES = {
 // transparency frames for EDGES (they overlay on top of grass).
 export const PLAINS_TILES = {
   // Outer corners — determined by edge opacity (L/R/T/B = 0 means transparent on that side)
-  TOP_LEFT: 25,      // Frame 25: L=0 R=6 T=0 B=6 (transparent top+left = outer TL corner)
-  TOP_RIGHT: 27,     // Frame 27: L=6 R=0 T=0 B=7 (transparent top+right = outer TR corner)
-  BOTTOM_LEFT: 36,   // Frame 36: L=0 R=0 T=6 B=0 (transparent left+bottom = outer BL corner)
-  BOTTOM_RIGHT: 39,  // Frame 39: L=8 R=0 T=8 B=0 (transparent right+bottom = outer BR corner)
+  TOP_LEFT: 25, // Frame 25: L=0 R=6 T=0 B=6 (transparent top+left = outer TL corner)
+  TOP_RIGHT: 27, // Frame 27: L=6 R=0 T=0 B=7 (transparent top+right = outer TR corner)
+  BOTTOM_LEFT: 36, // Frame 36: L=0 R=0 T=6 B=0 (transparent left+bottom = outer BL corner)
+  BOTTOM_RIGHT: 39, // Frame 39: L=8 R=0 T=8 B=0 (transparent right+bottom = outer BR corner)
 
   // Edges — the transparent side faces OUTWARD (toward grass)
-  TOP: 26,           // Frame 26: L=6 R=6 T=0 B=8 (transparent top = grass above)
-  BOTTOM: 38,        // Frame 38: L=7 R=7 T=8 B=0 (transparent bottom = grass below)
-  LEFT: 31,          // Frame 31: L=0 R=8 T=6 B=6 (transparent left = grass to the left)
-  RIGHT: 33,         // Frame 33: L=8 R=0 T=7 B=7 (transparent right = grass to the right)
+  TOP: 26, // Frame 26: L=6 R=6 T=0 B=8 (transparent top = grass above)
+  BOTTOM: 38, // Frame 38: L=7 R=7 T=8 B=0 (transparent bottom = grass below)
+  LEFT: 31, // Frame 31: L=0 R=8 T=6 B=6 (transparent left = grass to the left)
+  RIGHT: 33, // Frame 33: L=8 R=0 T=7 B=7 (transparent right = grass to the right)
 
   // Interior fills (fully solid on all edges)
-  FILL_1: 32,        // Frame 32: L=8 R=8 T=8 B=8 (PERFECT 100% solid green)
-  FILL_2: 32,        // Same frame for uniform interior (no alternation pattern)
+  FILL_1: 32, // Frame 32: L=8 R=8 T=8 B=8 (PERFECT 100% solid green)
+  FILL_2: 32, // Same frame for uniform interior (no alternation pattern)
 
   // Inner corners (concave) — solid green fills work for these
-  INNER_TOP_LEFT: 34,    // Frame 34: L=8 R=7 T=8 B=8 (almost solid)
-  INNER_TOP_RIGHT: 34,   // Same
+  INNER_TOP_LEFT: 34, // Frame 34: L=8 R=7 T=8 B=8 (almost solid)
+  INNER_TOP_RIGHT: 34, // Same
   INNER_BOTTOM_LEFT: 34, // Same
   INNER_BOTTOM_RIGHT: 34, // Same
 
   // Alternatives
-  LEFT_ALT: 31,      // Same as LEFT
-  RIGHT_ALT: 33,     // Same as RIGHT
+  LEFT_ALT: 31, // Same as LEFT
+  RIGHT_ALT: 33, // Same as RIGHT
 } as const;
 
 // ─── fences.png: 4 cols × 4 rows = 16 frames (index 0-15) ──────────────────

@@ -48,7 +48,7 @@ export class WaveManager {
 
     if (this.state === 'active') {
       // Check if all wave enemies are dead
-      const alive = this.waveEnemies.filter(e => !e.getIsDead()).length;
+      const alive = this.waveEnemies.filter((e) => !e.getIsDead()).length;
 
       if (alive === 0) {
         this.state = 'waiting_next';

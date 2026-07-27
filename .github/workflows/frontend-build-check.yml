@@ -1,0 +1,42 @@
+name: Frontend Build Validation
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Validates that the frontend compiles successfully in a clean CI environment.
+# Only runs when frontend-related files are modified in the PR.
+#
+# The build script (tsc --noEmit && vite build) validates both TypeScript
+# types and the final bundle generation.
+#
+# This is a required check: PRs cannot be merged if the frontend build fails.
+# Skipped on draft PRs to avoid unnecessary CI consumption during development.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'frontend/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.base.json'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm --filter @hackathon-kiro/frontend build

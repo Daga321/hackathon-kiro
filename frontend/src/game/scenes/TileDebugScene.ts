@@ -4,10 +4,10 @@ import { TILESET_KEYS } from '../config/map-config';
 /**
  * Debug scene that displays all frames from each spritesheet
  * in a grid with their frame index numbers.
- * 
+ *
  * Use this to visually verify which frame index corresponds to which tile.
  * Navigate between tilesets using LEFT/RIGHT arrow keys.
- * 
+ *
  * To activate: change main.ts scene array to [PreloadScene, TileDebugScene]
  */
 export class TileDebugScene extends Phaser.Scene {
@@ -30,12 +30,15 @@ export class TileDebugScene extends Phaser.Scene {
       { key: TILESET_KEYS.FLOORING, cols: 5, rows: 3, tileSize: 16 },
     ];
 
-    this.infoText = this.add.text(10, 10, '', {
-      fontSize: '14px',
-      color: '#ffffff',
-      backgroundColor: '#000000',
-      padding: { x: 8, y: 4 },
-    }).setScrollFactor(0).setDepth(100);
+    this.infoText = this.add
+      .text(10, 10, '', {
+        fontSize: '14px',
+        color: '#ffffff',
+        backgroundColor: '#000000',
+        padding: { x: 8, y: 4 },
+      })
+      .setScrollFactor(0)
+      .setDepth(100);
 
     // Keyboard navigation
     this.input.keyboard?.on('keydown-RIGHT', () => {
@@ -63,8 +66,8 @@ export class TileDebugScene extends Phaser.Scene {
     // Update header info
     this.infoText.setText(
       `[${this.currentSheet + 1}/${this.sheets.length}] ` +
-      `"${key}" — ${cols}×${rows} = ${totalFrames} frames (${tileSize}px tiles)\n` +
-      `Use LEFT/RIGHT arrows to switch tilesets`
+        `"${key}" — ${cols}×${rows} = ${totalFrames} frames (${tileSize}px tiles)\n` +
+        `Use LEFT/RIGHT arrows to switch tilesets`,
     );
 
     // Scale factor so tiles are visible (render at 2x or 3x)
@@ -88,12 +91,7 @@ export class TileDebugScene extends Phaser.Scene {
         bg.fillRect(x, y, cellSize, cellSize);
 
         // Draw the sprite frame
-        const sprite = this.add.sprite(
-          x + cellSize / 2,
-          y + cellSize / 2,
-          key,
-          frameIndex
-        );
+        const sprite = this.add.sprite(x + cellSize / 2, y + cellSize / 2, key, frameIndex);
         sprite.setScale(scale);
         sprite.setOrigin(0.5, 0.5);
 

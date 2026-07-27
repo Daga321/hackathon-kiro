@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for local development and testing
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 128
+    Environment:
+      Variables:
+        ENVIRONMENT: dev
+
+Resources:
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      CodeUri: lambdas/health/
+      Events:
+        GetHealth:
+          Type: HttpApi
+          Properties:
+            Path: /health
+            Method: GET

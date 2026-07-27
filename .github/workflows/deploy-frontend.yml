@@ -1,0 +1,91 @@
+name: Deploy Frontend (S3)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# This workflow builds the frontend and syncs it to the S3 bucket configured
+# for static website hosting.
+#
+# Triggers:
+# 1. After deploy-infra completes successfully (ensures S3 bucket exists).
+# 2. On push to main/develop IF frontend/** files changed (infra already exists).
+# 3. On manual dispatch (always runs).
+#
+# The S3 bucket name is obtained dynamically from CloudFormation stack outputs.
+# This ensures we always target the correct bucket even if CDK recreates it.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_run:
+    workflows: ["Deploy Infrastructure (CDK)"]
+    types: [completed]
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+env:
+  ENVIRONMENT: ${{ (github.event.workflow_run.head_branch || github.ref_name) == 'main' && 'prod' || 'dev' }}
+
+jobs:
+  deploy:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+    # Run if:
+    # - Triggered by workflow_run AND infra deploy succeeded
+    # - Triggered by push (frontend files changed, infra assumed to exist)
+    # - Triggered manually
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Build frontend
+        run: pnpm build
+        working-directory: frontend
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+
+      # Retrieve bucket name from CloudFormation outputs.
+      # Not hardcoded — if CDK recreates the bucket, this resolves to the current one.
+      - name: Get S3 bucket name
+        id: cfn
+        run: |
+          STACK_NAME="S3HostingStack-${{ env.ENVIRONMENT }}"
+
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" \
+            --output text)
+
+          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync frontend/dist/ s3://${{ steps.cfn.outputs.bucket_name }} \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html"
+
+          # index.html gets a short cache so updates are picked up quickly
+          aws s3 cp frontend/dist/index.html s3://${{ steps.cfn.outputs.bucket_name }}/index.html \
+            --cache-control "public, max-age=60"
