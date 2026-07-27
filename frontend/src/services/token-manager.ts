@@ -7,11 +7,7 @@ const STORAGE_KEYS = {
 /**
  * Saves authentication tokens to localStorage.
  */
-export function saveTokens(
-  accessToken: string,
-  idToken: string,
-  refreshToken: string,
-): void {
+export function saveTokens(accessToken: string, idToken: string, refreshToken: string): void {
   localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
   localStorage.setItem(STORAGE_KEYS.ID_TOKEN, idToken);
   localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);

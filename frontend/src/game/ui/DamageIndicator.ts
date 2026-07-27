@@ -71,9 +71,9 @@ export class DamageIndicatorSystem {
     this.config = {
       maxIndicators: config?.maxIndicators ?? 20,
       lifetime: config?.lifetime ?? 650,
-      floatDistance: config?.floatDistance ?? 24,
-      fontSize: config?.fontSize ?? 10,
-      stackOffset: config?.stackOffset ?? 12,
+      floatDistance: config?.floatDistance ?? 18,
+      fontSize: config?.fontSize ?? 7,
+      stackOffset: config?.stackOffset ?? 10,
     };
 
     this.initPool();
@@ -117,7 +117,7 @@ export class DamageIndicatorSystem {
       fontFamily: '"Press Start 2P", cursive',
       color,
       stroke: '#000000',
-      strokeThickness: 3,
+      strokeThickness: 2,
     });
     entry.text.setPosition(x, startY);
     entry.text.setAlpha(1);
@@ -160,7 +160,7 @@ export class DamageIndicatorSystem {
       // Slight scale pop at start
       if (progress < 0.15) {
         const scaleProgress = progress / 0.15;
-        entry.text.setScale(1 + 0.3 * (1 - scaleProgress));
+        entry.text.setScale(1 + 0.15 * (1 - scaleProgress));
       } else {
         entry.text.setScale(1);
       }
@@ -201,7 +201,7 @@ export class DamageIndicatorSystem {
         fontFamily: '"Press Start 2P", cursive',
         color: '#ffffff',
         stroke: '#000000',
-        strokeThickness: 3,
+        strokeThickness: 2,
       });
       text.setOrigin(0.5, 0.5);
       text.setVisible(false);

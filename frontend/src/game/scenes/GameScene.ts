@@ -14,6 +14,8 @@ import { DamageIndicatorSystem, DamageType } from '../ui/DamageIndicator';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 import { HealthPickupManager } from '../entities/HealthPickupManager';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { AuthUI } from '../ui/AuthUI';
 
 /**
  * Main game scene that creates the tilemap-based graveyard world.
@@ -171,6 +173,18 @@ export class GameScene extends Phaser.Scene {
 
     // Health pickup system
     this.healthPickups = new HealthPickupManager(this);
+
+    // Auth UI (login/register) — pauses game while popup is open
+    const authUI = new AuthUI();
+    authUI.onOpen(() => {
+      this.scene.pause();
+    });
+    authUI.onClose(() => {
+      this.scene.resume();
+    });
+
+    // Connect auth to pause menu for friends panel
+    this.pauseMenu.setAuthUI(authUI);
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
@@ -344,12 +358,7 @@ export class GameScene extends Phaser.Scene {
               this.player.registerHit(enemy);
               const dmg = getPlayerDamage(this.waveManager.getWave());
               enemy.takeDamage(dmg, this.player);
-              this.damageIndicators.spawn(
-                enemySprite.x,
-                enemySprite.y - 8,
-                dmg,
-                DamageType.DEALT,
-              );
+              this.damageIndicators.spawn(enemySprite.x, enemySprite.y - 8, dmg, DamageType.DEALT);
               this.audio.playHit();
               playerHitConnected = true;
 

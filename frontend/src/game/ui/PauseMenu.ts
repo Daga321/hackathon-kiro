@@ -1,3 +1,6 @@
+import { FriendsPanel } from './FriendsPanel';
+import { AuthUI } from './AuthUI';
+
 /**
  * PauseMenu — controls the HTML pause menu overlay.
  *
@@ -14,9 +17,28 @@
 export class PauseMenu {
   private backdrop: HTMLElement | null;
   private btnResume: HTMLElement | null;
+  private btnControls: HTMLElement | null;
   private btnAudio: HTMLElement | null;
-  private btnLeaderboard: HTMLElement | null;
   private btnQuit: HTMLElement | null;
+
+  private controlsBackdrop: HTMLElement | null;
+  private controlsDesktop: HTMLElement | null;
+  private controlsMobile: HTMLElement | null;
+  private btnControlsBack: HTMLElement | null;
+
+  private btnGuide: HTMLElement | null;
+  private guideBackdrop: HTMLElement | null;
+  private btnGuideBack: HTMLElement | null;
+
+  private hudPauseBtn: HTMLElement | null;
+  private btnFriends: HTMLElement | null;
+  private friendsPanel: FriendsPanel | null = null;
+  private authRef: AuthUI | null = null;
+  private btnLeaderboard: HTMLElement | null;
+  private leaderboardBackdrop: HTMLElement | null;
+  private lbBtnBack: HTMLElement | null;
+  private lbTabGlobal: HTMLElement | null;
+  private lbTabFriends: HTMLElement | null;
 
   private _isPaused: boolean = false;
   private onResumeCallback: (() => void) | null = null;
@@ -25,9 +47,26 @@ export class PauseMenu {
   constructor() {
     this.backdrop = document.getElementById('pause-menu-backdrop');
     this.btnResume = document.getElementById('pause-btn-resume');
+    this.btnControls = document.getElementById('pause-btn-controls');
     this.btnAudio = document.getElementById('pause-btn-audio');
-    this.btnLeaderboard = document.getElementById('pause-btn-leaderboard');
     this.btnQuit = document.getElementById('pause-btn-quit');
+
+    this.controlsBackdrop = document.getElementById('controls-backdrop');
+    this.controlsDesktop = document.getElementById('controls-desktop');
+    this.controlsMobile = document.getElementById('controls-mobile');
+    this.btnControlsBack = document.getElementById('controls-btn-back');
+
+    this.btnGuide = document.getElementById('pause-btn-guide');
+    this.guideBackdrop = document.getElementById('guide-backdrop');
+    this.btnGuideBack = document.getElementById('guide-btn-back');
+
+    this.hudPauseBtn = document.getElementById('hud-pause-btn');
+    this.btnFriends = document.getElementById('pause-btn-friends');
+    this.btnLeaderboard = document.getElementById('pause-btn-leaderboard');
+    this.leaderboardBackdrop = document.getElementById('leaderboard-backdrop');
+    this.lbBtnBack = document.getElementById('lb-btn-back');
+    this.lbTabGlobal = document.getElementById('lb-tab-global');
+    this.lbTabFriends = document.getElementById('lb-tab-friends');
 
     this.bindButtons();
     this.bindKeyboard();
@@ -46,6 +85,29 @@ export class PauseMenu {
    */
   onResume(callback: () => void): void {
     this.onResumeCallback = callback;
+  }
+
+  /**
+   * Set the AuthUI reference for the friends panel.
+   */
+  setAuthUI(authUI: AuthUI): void {
+    this.authRef = authUI;
+    this.friendsPanel = new FriendsPanel(authUI);
+    this.friendsPanel.onBack(() => {
+      this.backdrop?.classList.add('visible');
+    });
+
+    // When login succeeds from leaderboard, re-show it with content
+    authUI.onLoginSuccess((source) => {
+      if (source === 'leaderboard') {
+        this.showLeaderboard();
+        setTimeout(() => this.lbTabFriends?.click(), 50);
+      }
+    });
+  }
+
+  private getAuthLoggedIn(): boolean {
+    return this.authRef?.isLoggedIn ?? false;
   }
 
   /**
@@ -94,6 +156,49 @@ export class PauseMenu {
 
   private hide(): void {
     this.backdrop?.classList.remove('visible');
+    this.controlsBackdrop?.classList.remove('visible');
+    this.guideBackdrop?.classList.remove('visible');
+    this.friendsPanel?.hide();
+    this.leaderboardBackdrop?.classList.remove('visible');
+  }
+
+  private showControls(): void {
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (this.controlsDesktop) this.controlsDesktop.style.display = isMobile ? 'none' : 'flex';
+    if (this.controlsMobile) this.controlsMobile.style.display = isMobile ? 'flex' : 'none';
+
+    this.backdrop?.classList.remove('visible');
+    this.controlsBackdrop?.classList.add('visible');
+  }
+
+  private hideControls(): void {
+    this.controlsBackdrop?.classList.remove('visible');
+    this.backdrop?.classList.add('visible');
+  }
+
+  private showGuide(): void {
+    this.backdrop?.classList.remove('visible');
+    this.guideBackdrop?.classList.add('visible');
+  }
+
+  private hideGuide(): void {
+    this.guideBackdrop?.classList.remove('visible');
+    this.backdrop?.classList.add('visible');
+  }
+
+  private showFriends(): void {
+    this.backdrop?.classList.remove('visible');
+    this.friendsPanel?.show();
+  }
+
+  private showLeaderboard(): void {
+    this.backdrop?.classList.remove('visible');
+    this.leaderboardBackdrop?.classList.add('visible');
+  }
+
+  private hideLeaderboard(): void {
+    this.leaderboardBackdrop?.classList.remove('visible');
+    this.backdrop?.classList.add('visible');
   }
 
   private bindButtons(): void {
@@ -104,6 +209,41 @@ export class PauseMenu {
       };
     }
 
+    // Controls help
+    if (this.btnControls) {
+      this.btnControls.onclick = () => {
+        this.showControls();
+      };
+    }
+
+    // Controls back button
+    if (this.btnControlsBack) {
+      this.btnControlsBack.onclick = () => {
+        this.hideControls();
+      };
+    }
+
+    // Game Guide
+    if (this.btnGuide) {
+      this.btnGuide.onclick = () => {
+        this.showGuide();
+      };
+    }
+
+    // Guide back button
+    if (this.btnGuideBack) {
+      this.btnGuideBack.onclick = () => {
+        this.hideGuide();
+      };
+    }
+
+    // Friends panel
+    if (this.btnFriends) {
+      this.btnFriends.onclick = () => {
+        this.showFriends();
+      };
+    }
+
     // Audio settings (placeholder — future implementation)
     if (this.btnAudio) {
       this.btnAudio.onclick = () => {
@@ -111,17 +251,69 @@ export class PauseMenu {
       };
     }
 
-    // Leaderboard (placeholder — future implementation)
+    // Leaderboard
     if (this.btnLeaderboard) {
       this.btnLeaderboard.onclick = () => {
-        // TODO: Open leaderboard panel
+        this.showLeaderboard();
       };
     }
 
-    // Quit to main menu (placeholder — future implementation)
+    // Leaderboard back button
+    if (this.lbBtnBack) {
+      this.lbBtnBack.onclick = () => {
+        this.hideLeaderboard();
+      };
+    }
+
+    // Leaderboard tabs (UI-only, same data for now)
+    const lbTabs = [this.lbTabGlobal, this.lbTabFriends];
+    const lbListContainer = document.getElementById('lb-list-container');
+    const lbHeader = document.querySelector('.lb-header') as HTMLElement | null;
+    const lbFriendsNotLogged = document.getElementById('lb-friends-not-logged');
+    const lbFriendsLoginBtn = document.getElementById('lb-friends-login-btn');
+
+    lbTabs.forEach((tab) => {
+      if (tab) {
+        tab.onclick = () => {
+          lbTabs.forEach((t) => t?.classList.remove('friends-tab-active'));
+          tab.classList.add('friends-tab-active');
+
+          const isFriendsTab = tab === this.lbTabFriends;
+
+          if (isFriendsTab && this.friendsPanel && !this.getAuthLoggedIn()) {
+            // Not logged in — show login prompt, hide list
+            if (lbListContainer) lbListContainer.style.display = 'none';
+            if (lbHeader) lbHeader.style.display = 'none';
+            if (lbFriendsNotLogged) lbFriendsNotLogged.style.display = 'flex';
+          } else {
+            // Show list
+            if (lbListContainer) lbListContainer.style.display = 'flex';
+            if (lbHeader) lbHeader.style.display = 'flex';
+            if (lbFriendsNotLogged) lbFriendsNotLogged.style.display = 'none';
+          }
+        };
+      }
+    });
+
+    // Leaderboard friends tab login button
+    if (lbFriendsLoginBtn) {
+      lbFriendsLoginBtn.onclick = () => {
+        this.leaderboardBackdrop?.classList.remove('visible');
+        this.authRef?.openFrom('leaderboard');
+      };
+    }
+
+    // Quit to main menu — reload to return to loading/login screen
     if (this.btnQuit) {
       this.btnQuit.onclick = () => {
-        // TODO: Return to main menu
+        window.location.reload();
+      };
+    }
+
+    // HUD pause button (in the lateral panel)
+    if (this.hudPauseBtn) {
+      this.hudPauseBtn.onclick = () => {
+        this.pause();
       };
     }
   }

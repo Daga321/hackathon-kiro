@@ -90,7 +90,11 @@ export function get<T>(path: string, authenticated = true): Promise<ServiceResul
 /**
  * POST request (authenticated by default).
  */
-export function post<T>(path: string, body?: unknown, authenticated = true): Promise<ServiceResult<T>> {
+export function post<T>(
+  path: string,
+  body?: unknown,
+  authenticated = true,
+): Promise<ServiceResult<T>> {
   return request<T>('POST', path, body, authenticated);
 }
 
