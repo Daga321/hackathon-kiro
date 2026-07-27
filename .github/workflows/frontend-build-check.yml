@@ -1,0 +1,62 @@
+name: Frontend Build Validation
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Validates that the frontend compiles successfully in a clean CI environment.
+# Only runs when frontend-related files are modified in the PR.
+#
+# The build script (tsc --noEmit && vite build) validates both TypeScript
+# types and the final bundle generation.
+#
+# This is a required check: PRs cannot be merged if the frontend build fails.
+# Skipped on draft PRs to avoid unnecessary CI consumption during development.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    name: Detect frontend changes
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch'
+    outputs:
+      frontend_changed: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig.base.json'
+
+  build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: [detect-changes]
+    if: |
+      always() &&
+      (github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch') &&
+      (needs.detect-changes.outputs.frontend_changed == 'true' || github.event_name == 'workflow_dispatch')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm --filter @hackathon-kiro/frontend build
