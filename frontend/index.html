@@ -25,7 +25,7 @@
         height: 100%;
         overflow: hidden;
         background: #1a1a2e;
-        font-family: 'Courier New', monospace;
+        font-family: 'Press Start 2P', cursive;
       }
 
       /* ─── Game layout ──────────────────────────────────── */
@@ -115,17 +115,19 @@
         touch-action: none;
       }
       .hud-title {
-        font-size: 22px;
+        font-size: 16px;
         font-weight: bold;
-        color: #f0c040;
+        color: #c0392b;
         text-align: center;
         letter-spacing: 1px;
+        text-shadow: 2px 2px 0px #000;
       }
       .hud-subtitle {
-        font-size: 14px;
-        color: #aaa;
+        font-size: 9px;
+        color: #8e8e8e;
         text-align: center;
         margin-bottom: 6px;
+        text-shadow: 1px 1px 0px #000;
       }
       .hud-divider {
         border: none;
@@ -137,7 +139,7 @@
         flex-wrap: wrap;
         align-items: center;
         gap: 6px;
-        font-size: 16px;
+        font-size: 11px;
       }
       .hud-label {
         color: #aaa;
@@ -162,7 +164,7 @@
         transition: width 0.3s;
       }
       .hud-minimap-title {
-        font-size: 13px;
+        font-size: 9px;
         color: #aaa;
         text-align: center;
         margin-bottom: 6px;
@@ -177,6 +179,62 @@
         display: block;
         margin: 0 auto;
         image-rendering: pixelated;
+      }
+
+      /* ─── Wave Announcement Overlay ─────────────────── */
+      .wave-announcement {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 500;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        font-family: 'Press Start 2P', cursive;
+        /* Offset left to account for HUD panel width — centers over game area */
+        left: 320px;
+      }
+      .wave-announcement.visible {
+        opacity: 1;
+      }
+      .wave-announcement-title {
+        font-size: 2.2rem;
+        color: #f0c040;
+        text-shadow: 3px 3px 0px #000, 0 0 16px rgba(240, 192, 64, 0.5);
+      }
+      .wave-announcement-subtitle {
+        font-size: 0.85rem;
+        color: #ccc;
+        text-shadow: 2px 2px 0px #000;
+        letter-spacing: 0.1em;
+      }
+      @media (max-width: 900px) {
+        .wave-announcement {
+          left: 180px;
+        }
+        .wave-announcement-title {
+          font-size: 1.6rem;
+        }
+        .wave-announcement-subtitle {
+          font-size: 0.65rem;
+        }
+      }
+      @media (max-width: 600px) {
+        .wave-announcement {
+          left: 120px;
+        }
+        .wave-announcement-title {
+          font-size: 1.2rem;
+        }
+        .wave-announcement-subtitle {
+          font-size: 0.5rem;
+        }
       }
 
       /* ─── Loading Screen Overlay ───────────────────────── */
@@ -622,11 +680,20 @@
       </div>
     </div>
 
+    <!-- ═══ Wave Announcement Overlay ═══ -->
+    <div id="wave-announcement" class="wave-announcement">
+      <p id="wave-announcement-title" class="wave-announcement-title">Wave 1</p>
+      <p id="wave-announcement-subtitle" class="wave-announcement-subtitle">
+        5 Enemies Approaching
+      </p>
+    </div>
+
     <!-- ═══ Game UI ═══ -->
     <div id="app-wrapper">
       <div id="hud-panel">
-        <h1 class="hud-title">HACKATHON KIRO</h1>
-        <p class="hud-subtitle">D-EXP</p>
+        <h1 class="hud-title">Horde Battle</h1>
+        <p class="hud-subtitle">Graveyard Guard</p>
+        <p style="font-size: 7px; color: #555; text-align: center; margin-bottom: 2px;">by D-EXP Team</p>
         <hr class="hud-divider" />
 
         <div class="hud-section">
@@ -660,6 +727,10 @@
         <hr class="hud-divider" />
         <p class="hud-minimap-title">MINIMAP</p>
         <canvas id="minimap-canvas" width="270" height="270"></canvas>
+
+        <div style="margin-top: auto; padding-top: 12px; text-align: center;">
+          <p style="font-size: 7px; color: #555; line-height: 2.2;">Kiro Hackathon 2026</p>
+        </div>
       </div>
       <div id="game-container"></div>
     </div>

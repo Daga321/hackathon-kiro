@@ -95,6 +95,7 @@ export class WaveManager {
     this.state = 'spawning';
     this.currentWaveScoreReward = getEnemyScoreReward(wave);
 
+    const enemyCount = getEnemyCount(wave);
     const requests = this.buildWaveRequests(wave);
     const waveOverrides = {
       hp: getEnemyHP(wave),
@@ -104,6 +105,9 @@ export class WaveManager {
     this.waveEnemies = this.spawner.spawnBatch(requests, waveOverrides);
 
     this.state = 'active';
+
+    // Emit event for UI systems (e.g., wave announcement overlay)
+    this.scene.events.emit('wave-start', wave, enemyCount);
   }
 
   /**

@@ -7,6 +7,7 @@ import { EnemySpawner } from '../ai/EnemySpawner';
 import { WaveManager } from '../ai/WaveManager';
 import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
+import { WaveAnnouncement } from '../ui/WaveAnnouncement';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 
@@ -40,6 +41,7 @@ export class GameScene extends Phaser.Scene {
   private spawner!: EnemySpawner;
   private touchControls!: TouchControls;
   private hud!: HudManager;
+  private waveAnnouncement!: WaveAnnouncement;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
@@ -104,10 +106,17 @@ export class GameScene extends Phaser.Scene {
       obstacleColliders,
     );
     this.waveManager = new WaveManager(this, this.spawner);
-    this.waveManager.start();
 
     // Create HTML HUD manager
     this.hud = new HudManager();
+
+    // Wave announcement overlay (register BEFORE waveManager.start so Wave 1 is captured)
+    this.waveAnnouncement = new WaveAnnouncement();
+    this.events.on('wave-start', (wave: number, enemyCount: number) => {
+      this.waveAnnouncement.show(wave, enemyCount);
+    });
+
+    this.waveManager.start();
 
     // Audio system
     this.audio = new AudioManager(this);
