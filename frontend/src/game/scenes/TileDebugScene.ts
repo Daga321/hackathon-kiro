@@ -190,35 +190,35 @@ export class TileDebugScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => this.returnToGame());
 
     // Mouse wheel scroll
-    this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
-      const pointer = this.input.activePointer;
-      if (pointer.x < this.SIDEBAR_WIDTH) {
-        // Scroll sidebar
-        this.sidebarScrollY = Phaser.Math.Clamp(
-          this.sidebarScrollY + dy * (this.SCROLL_SPEED / 30),
-          0,
-          this.sidebarMaxScrollY,
-        );
-        this.sidebarCam.setScroll(0, this.sidebarScrollY);
-      } else {
-        // Scroll content (keep X offset constant)
-        this.contentScrollY = Phaser.Math.Clamp(
-          this.contentScrollY + dy * (this.SCROLL_SPEED / 30),
-          0,
-          this.contentMaxScrollY,
-        );
-        this.contentCam.setScroll(this.CONTENT_OFFSET_X, this.contentScrollY);
-      }
-    });
+    this.input.on(
+      'wheel',
+      (_pointer: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
+        const pointer = this.input.activePointer;
+        if (pointer.x < this.SIDEBAR_WIDTH) {
+          // Scroll sidebar
+          this.sidebarScrollY = Phaser.Math.Clamp(
+            this.sidebarScrollY + dy * (this.SCROLL_SPEED / 30),
+            0,
+            this.sidebarMaxScrollY,
+          );
+          this.sidebarCam.setScroll(0, this.sidebarScrollY);
+        } else {
+          // Scroll content (keep X offset constant)
+          this.contentScrollY = Phaser.Math.Clamp(
+            this.contentScrollY + dy * (this.SCROLL_SPEED / 30),
+            0,
+            this.contentMaxScrollY,
+          );
+          this.contentCam.setScroll(this.CONTENT_OFFSET_X, this.contentScrollY);
+        }
+      },
+    );
   }
 
   private buildAssetRegistry(): void {
     this.assets = [];
 
-    const getFrameInfo = (
-      key: string,
-      tileSize: number,
-    ): { cols: number; rows: number } => {
+    const getFrameInfo = (key: string, tileSize: number): { cols: number; rows: number } => {
       const texture = this.textures.get(key);
       if (texture && texture.key !== '__MISSING') {
         const source = texture.getSourceImage();
@@ -261,9 +261,14 @@ export class TileDebugScene extends Phaser.Scene {
     });
 
     [
-      'chest_01', 'chest_02',
-      'rock_in_water_01', 'rock_in_water_02', 'rock_in_water_03',
-      'rock_in_water_04', 'rock_in_water_05', 'rock_in_water_06',
+      'chest_01',
+      'chest_02',
+      'rock_in_water_01',
+      'rock_in_water_02',
+      'rock_in_water_03',
+      'rock_in_water_04',
+      'rock_in_water_05',
+      'rock_in_water_06',
     ].forEach((name) => {
       this.assets.push({
         label: `${name}.png`,
@@ -301,29 +306,155 @@ export class TileDebugScene extends Phaser.Scene {
     });
 
     // ─── Tilesets ────────────────────────────────────────────────────────
-    const tilesetEntries: { key: string; label: string; path: string; tileSize: number; category: string }[] = [
-      { key: 'grass', label: 'grass.png', path: 'tilesets/grass.png', tileSize: 16, category: 'tilesets' },
-      { key: 'plains', label: 'plains.png', path: 'tilesets/plains.png', tileSize: 16, category: 'tilesets' },
-      { key: 'fences', label: 'fences.png', path: 'tilesets/fences.png', tileSize: 16, category: 'tilesets' },
-      { key: 'decor16', label: 'decor_16x16.png', path: 'tilesets/decor_16x16.png', tileSize: 16, category: 'tilesets' },
-      { key: 'decor8', label: 'decor_8x8.png', path: 'tilesets/decor_8x8.png', tileSize: 8, category: 'tilesets' },
-      { key: 'tileset_water_sheet', label: 'water-sheet.png', path: 'tilesets/water-sheet.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water_decorations', label: 'water_decorations.png', path: 'tilesets/water_decorations.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water_lillies', label: 'water_lillies.png', path: 'tilesets/water_lillies.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water1', label: 'water1.png', path: 'tilesets/water1.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water2', label: 'water2.png', path: 'tilesets/water2.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water3', label: 'water3.png', path: 'tilesets/water3.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water4', label: 'water4.png', path: 'tilesets/water4.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water5', label: 'water5.png', path: 'tilesets/water5.png', tileSize: 16, category: 'tilesets' },
-      { key: 'tileset_water6', label: 'water6.png', path: 'tilesets/water6.png', tileSize: 16, category: 'tilesets' },
+    const tilesetEntries: {
+      key: string;
+      label: string;
+      path: string;
+      tileSize: number;
+      category: string;
+    }[] = [
+      {
+        key: 'grass',
+        label: 'grass.png',
+        path: 'tilesets/grass.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'plains',
+        label: 'plains.png',
+        path: 'tilesets/plains.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'fences',
+        label: 'fences.png',
+        path: 'tilesets/fences.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'decor16',
+        label: 'decor_16x16.png',
+        path: 'tilesets/decor_16x16.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'decor8',
+        label: 'decor_8x8.png',
+        path: 'tilesets/decor_8x8.png',
+        tileSize: 8,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water_sheet',
+        label: 'water-sheet.png',
+        path: 'tilesets/water-sheet.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water_decorations',
+        label: 'water_decorations.png',
+        path: 'tilesets/water_decorations.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water_lillies',
+        label: 'water_lillies.png',
+        path: 'tilesets/water_lillies.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water1',
+        label: 'water1.png',
+        path: 'tilesets/water1.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water2',
+        label: 'water2.png',
+        path: 'tilesets/water2.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water3',
+        label: 'water3.png',
+        path: 'tilesets/water3.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water4',
+        label: 'water4.png',
+        path: 'tilesets/water4.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water5',
+        label: 'water5.png',
+        path: 'tilesets/water5.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
+      {
+        key: 'tileset_water6',
+        label: 'water6.png',
+        path: 'tilesets/water6.png',
+        tileSize: 16,
+        category: 'tilesets',
+      },
       // walls/
-      { key: 'walls', label: 'walls.png', path: 'tilesets/walls/walls.png', tileSize: 16, category: 'tilesets/walls' },
-      { key: 'tileset_wooden_door', label: 'wooden_door.png', path: 'tilesets/walls/wooden_door.png', tileSize: 16, category: 'tilesets/walls' },
-      { key: 'tileset_wooden_door_b', label: 'wooden_door_b.png', path: 'tilesets/walls/wooden_door_b.png', tileSize: 16, category: 'tilesets/walls' },
+      {
+        key: 'walls',
+        label: 'walls.png',
+        path: 'tilesets/walls/walls.png',
+        tileSize: 16,
+        category: 'tilesets/walls',
+      },
+      {
+        key: 'tileset_wooden_door',
+        label: 'wooden_door.png',
+        path: 'tilesets/walls/wooden_door.png',
+        tileSize: 16,
+        category: 'tilesets/walls',
+      },
+      {
+        key: 'tileset_wooden_door_b',
+        label: 'wooden_door_b.png',
+        path: 'tilesets/walls/wooden_door_b.png',
+        tileSize: 16,
+        category: 'tilesets/walls',
+      },
       // floors/
-      { key: 'flooring', label: 'flooring.png', path: 'tilesets/floors/flooring.png', tileSize: 16, category: 'tilesets/floors' },
-      { key: 'tileset_carpet', label: 'carpet.png', path: 'tilesets/floors/carpet.png', tileSize: 16, category: 'tilesets/floors' },
-      { key: 'tileset_wooden', label: 'wooden.png', path: 'tilesets/floors/wooden.png', tileSize: 16, category: 'tilesets/floors' },
+      {
+        key: 'flooring',
+        label: 'flooring.png',
+        path: 'tilesets/floors/flooring.png',
+        tileSize: 16,
+        category: 'tilesets/floors',
+      },
+      {
+        key: 'tileset_carpet',
+        label: 'carpet.png',
+        path: 'tilesets/floors/carpet.png',
+        tileSize: 16,
+        category: 'tilesets/floors',
+      },
+      {
+        key: 'tileset_wooden',
+        label: 'wooden.png',
+        path: 'tilesets/floors/wooden.png',
+        tileSize: 16,
+        category: 'tilesets/floors',
+      },
     ];
 
     tilesetEntries.forEach(({ key, label, path, tileSize, category }) => {
@@ -411,7 +542,9 @@ export class TileDebugScene extends Phaser.Scene {
 
     this.infoText.setText(
       `[${this.currentIndex + 1}/${this.assets.length}] "${asset.path}" — ` +
-        (isSingleImage ? 'single image' : `${cols}x${rows} = ${totalFrames} frames (${tileSize}px)`) +
+        (isSingleImage
+          ? 'single image'
+          : `${cols}x${rows} = ${totalFrames} frames (${tileSize}px)`) +
         ' | Arrows/Click: navigate | Scroll: mouse wheel | T/ESC: back',
     );
 
