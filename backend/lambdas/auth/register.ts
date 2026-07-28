@@ -32,6 +32,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return badRequest('username, email, and password are required');
     }
 
+    if (/\s/.test(username)) {
+      return badRequest('Username cannot contain spaces');
+    }
+
     // Register user in Cognito
     const signUpResponse = await cognitoClient.send(
       new SignUpCommand({
