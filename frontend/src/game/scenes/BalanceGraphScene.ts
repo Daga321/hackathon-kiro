@@ -209,7 +209,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const prob = 0.25;
           let sum = 0;
           for (let i = 1; i <= w; i++) {
-            sum += UPGRADE_BASE[UpgradeType.SHIELD] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SHIELD], i - 1);
+            sum +=
+              UPGRADE_BASE[UpgradeType.SHIELD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SHIELD], i - 1);
           }
           return basePlayerHP + Math.round(sum * prob * 100) / 100;
         },
@@ -217,7 +219,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const basePlayerHP = DIFFICULTY_CONFIG.PLAYER_HP_BASE;
           let max = 0;
           for (let i = 1; i <= w; i++) {
-            max += UPGRADE_BASE[UpgradeType.SHIELD] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SHIELD], i - 1);
+            max +=
+              UPGRADE_BASE[UpgradeType.SHIELD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SHIELD], i - 1);
           }
           return { min: basePlayerHP, max: basePlayerHP + Math.round(max * 100) / 100 };
         },
@@ -231,7 +235,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const prob = 0.25;
           let sum = 0;
           for (let i = 1; i <= w; i++) {
-            sum += UPGRADE_BASE[UpgradeType.SWORD] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SWORD], i - 1);
+            sum +=
+              UPGRADE_BASE[UpgradeType.SWORD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SWORD], i - 1);
           }
           return basePlayerDmg + Math.round(sum * prob * 100) / 100;
         },
@@ -239,7 +245,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const basePlayerDmg = DIFFICULTY_CONFIG.PLAYER_DAMAGE_BASE;
           let max = 0;
           for (let i = 1; i <= w; i++) {
-            max += UPGRADE_BASE[UpgradeType.SWORD] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SWORD], i - 1);
+            max +=
+              UPGRADE_BASE[UpgradeType.SWORD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SWORD], i - 1);
           }
           return { min: basePlayerDmg, max: basePlayerDmg + Math.round(max * 100) / 100 };
         },
@@ -253,7 +261,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const prob = 0.25;
           let sum = 0;
           for (let i = 1; i <= w; i++) {
-            sum += UPGRADE_BASE[UpgradeType.GOLDEN_HEART] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.GOLDEN_HEART], i - 1);
+            sum +=
+              UPGRADE_BASE[UpgradeType.GOLDEN_HEART] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.GOLDEN_HEART], i - 1);
           }
           return basePlayerDef + Math.round(sum * prob * 100) / 100;
         },
@@ -261,7 +271,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const basePlayerDef = 0;
           let max = 0;
           for (let i = 1; i <= w; i++) {
-            max += UPGRADE_BASE[UpgradeType.GOLDEN_HEART] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.GOLDEN_HEART], i - 1);
+            max +=
+              UPGRADE_BASE[UpgradeType.GOLDEN_HEART] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.GOLDEN_HEART], i - 1);
           }
           return { min: basePlayerDef, max: basePlayerDef + Math.round(max * 100) / 100 };
         },
@@ -275,7 +287,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const prob = 0.25;
           let sum = 0;
           for (let i = 1; i <= w; i++) {
-            sum += UPGRADE_BASE[UpgradeType.WINGED_BOOTS] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.WINGED_BOOTS], i - 1);
+            sum +=
+              UPGRADE_BASE[UpgradeType.WINGED_BOOTS] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.WINGED_BOOTS], i - 1);
           }
           return basePlayerSpeed + Math.round(sum * prob * 100) / 100;
         },
@@ -283,7 +297,9 @@ export class BalanceGraphScene extends Phaser.Scene {
           const basePlayerSpeed = 120;
           let max = 0;
           for (let i = 1; i <= w; i++) {
-            max += UPGRADE_BASE[UpgradeType.WINGED_BOOTS] * Math.pow(UPGRADE_MULTIPLIER[UpgradeType.WINGED_BOOTS], i - 1);
+            max +=
+              UPGRADE_BASE[UpgradeType.WINGED_BOOTS] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.WINGED_BOOTS], i - 1);
           }
           return { min: basePlayerSpeed, max: basePlayerSpeed + Math.round(max * 100) / 100 };
         },
