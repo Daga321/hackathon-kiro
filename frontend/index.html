@@ -6,6 +6,8 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
     <title>Horde Battle: Graveyard Guard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1119,6 +1121,8 @@
         display: none;
         align-items: center;
         justify-content: center;
+        overflow-y: auto;
+        padding: 16px;
         background: rgba(0, 0, 0, 0.7);
         font-family: 'Press Start 2P', cursive;
       }
@@ -1126,7 +1130,7 @@
         display: flex;
       }
       .auth-board {
-        width: 380px;
+        width: 420px;
         max-width: 95%;
       }
       .auth-form {
@@ -1144,14 +1148,20 @@
         z-index: 1;
       }
       .auth-label {
+        font-size: 0.55rem;
+        color: #ccc;
+      }
+      .auth-hint {
         font-size: 0.4rem;
-        color: #aaa;
+        color: #ccc;
+        line-height: 1.6;
+        margin-top: 2px;
       }
       .auth-input {
         width: 100%;
-        padding: 8px 10px;
+        padding: 10px 12px;
         font-family: 'Press Start 2P', cursive;
-        font-size: 0.45rem;
+        font-size: 0.55rem;
         color: #eee;
         background: #2a2a4a;
         border: 2px solid #3a3a5e;
@@ -1178,7 +1188,7 @@
         right: 6px;
         padding: 4px 6px;
         font-family: 'Press Start 2P', cursive;
-        font-size: 0.3rem;
+        font-size: 0.4rem;
         color: #888;
         background: transparent;
         border: 1px solid #555;
@@ -1191,14 +1201,15 @@
         border-color: #f0c040;
       }
       .auth-error {
-        font-size: 0.35rem;
-        color: #ff4444;
-        min-height: 12px;
+        font-size: 0.5rem;
+        color: #ff6b6b;
+        min-height: 14px;
         z-index: 1;
+        text-shadow: 0 0 4px rgba(255, 50, 50, 0.4);
       }
       .auth-switch-text {
-        font-size: 0.35rem;
-        color: #888;
+        font-size: 0.5rem;
+        color: #ccc;
         text-align: center;
         z-index: 1;
         margin-top: 10px;
@@ -2417,6 +2428,7 @@
                 placeholder="PlayerName"
                 autocomplete="username"
               />
+              <small class="auth-hint">1–128 chars. Letters, numbers, _ . - @ + allowed. No spaces.</small>
             </div>
             <div class="auth-field">
               <label class="auth-label" for="auth-register-email">Email</label>
@@ -2427,6 +2439,7 @@
                 placeholder="your@email.com"
                 autocomplete="email"
               />
+              <small class="auth-hint">A valid email address for account verification.</small>
             </div>
             <div class="auth-field">
               <label class="auth-label" for="auth-register-password">Password</label>
@@ -2446,6 +2459,7 @@
                   Show
                 </button>
               </div>
+              <small class="auth-hint">Min 8 chars. Must include uppercase, lowercase, and a number.</small>
             </div>
             <p id="auth-register-error" class="auth-error"></p>
             <button id="auth-register-submit" class="pause-btn pause-btn-primary">

@@ -325,6 +325,12 @@ export class AuthUI {
           return;
         }
 
+        if (/\s/.test(username)) {
+          if (this.registerError)
+            this.registerError.textContent = 'Username cannot contain spaces';
+          return;
+        }
+
         if (!this.isValidEmail(email)) {
           if (this.registerError) this.registerError.textContent = 'Invalid email format';
           return;
