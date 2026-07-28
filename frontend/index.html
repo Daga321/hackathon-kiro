@@ -638,6 +638,110 @@
         color: #44ff44;
       }
 
+      /* ─── Audio Settings Panel ─────────────────────────── */
+      #audio-settings-backdrop {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 320px;
+        z-index: 650;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        font-family: 'Press Start 2P', cursive;
+      }
+      #audio-settings-backdrop.visible {
+        display: flex;
+      }
+      @media (max-width: 900px) {
+        #audio-settings-backdrop {
+          left: 180px;
+        }
+      }
+      @media (max-width: 600px) {
+        #audio-settings-backdrop {
+          left: 120px;
+        }
+      }
+      .audio-settings-board {
+        width: 340px;
+      }
+      .audio-settings-list {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        z-index: 1;
+      }
+      .audio-setting {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .audio-setting-label {
+        font-size: 0.5rem;
+        color: #f0c040;
+        text-shadow: 1px 1px 0px #000;
+      }
+      .audio-slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .audio-slider {
+        flex: 1;
+        height: 8px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: #3a2210;
+        border: 1px solid #4a2a0a;
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+      }
+      .audio-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #f0c040;
+        border: 2px solid #4a2a0a;
+        cursor: pointer;
+      }
+      .audio-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #f0c040;
+        border: 2px solid #4a2a0a;
+        cursor: pointer;
+      }
+      .audio-slider-value {
+        font-size: 0.45rem;
+        color: #eee;
+        min-width: 36px;
+        text-align: right;
+      }
+      @media (max-width: 600px) {
+        .audio-settings-board {
+          width: 90%;
+        }
+        .audio-slider::-webkit-slider-thumb {
+          width: 24px;
+          height: 24px;
+        }
+        .audio-slider::-moz-range-thumb {
+          width: 24px;
+          height: 24px;
+        }
+        .audio-slider {
+          height: 10px;
+        }
+      }
+
       /* ─── Friends Panel ────────────────────────────────── */
       #friends-backdrop {
         position: fixed;
@@ -1125,12 +1229,51 @@
 
       /* ─── Game Over specifics ──────────────────────────── */
       .gameover-title {
-        font-size: 1.3rem;
+        font-size: 2.5rem;
         color: #c0392b;
         text-shadow:
-          2px 2px 0px #000,
-          0 0 10px rgba(192, 57, 43, 0.4);
+          3px 3px 0px #000,
+          0 0 20px rgba(192, 57, 43, 0.5);
         z-index: 1;
+        margin-top: 10px;
+      }
+      #gameover-backdrop.visible {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      @media (max-width: 600px) {
+        .gameover-title {
+          font-size: 1.1rem;
+          margin-top: 4px;
+        }
+        #gameover-backdrop.visible {
+          padding-top: 6px;
+          gap: 6px;
+          padding-bottom: 10px;
+          justify-content: flex-start;
+        }
+      }
+      @media (max-height: 500px) {
+        .gameover-title {
+          font-size: 0.9rem;
+          margin-top: 2px;
+        }
+        #gameover-backdrop.visible {
+          padding-top: 4px;
+          gap: 4px;
+        }
+        .results-stat-value {
+          font-size: 0.75rem !important;
+        }
+        .results-stat-label {
+          font-size: 0.32rem !important;
+        }
       }
       .gameover-stats {
         display: flex;
@@ -1154,6 +1297,196 @@
       .gameover-stat-value {
         font-size: 0.6rem;
         color: #f0c040;
+      }
+
+      /* ─── Results Screen (merged into Game Over) ──────── */
+      .results-lb-wrapper {
+        width: 340px;
+        max-width: 90%;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(74, 42, 10, 0.6);
+        border-radius: 6px;
+        padding: 14px 12px;
+      }
+      @media (max-width: 600px) {
+        .results-lb-wrapper {
+          width: 95%;
+          padding: 10px 6px;
+          gap: 4px;
+        }
+        .results-lb-wrapper .lb-header span {
+          font-size: 0.35rem;
+        }
+        .results-lb-wrapper .lb-row span {
+          font-size: 0.38rem;
+        }
+        .results-lb-wrapper .lb-row {
+          padding: 6px 6px;
+        }
+        .results-lb-wrapper .lb-col-score {
+          width: 60px;
+        }
+        .results-lb-wrapper .lb-col-wave {
+          width: 36px;
+        }
+      }
+      @media (max-height: 500px) {
+        .results-lb-wrapper {
+          padding: 8px 6px;
+        }
+        .results-lb-wrapper .lb-list-container {
+          max-height: 120px;
+        }
+      }
+      .results-stats {
+        display: flex;
+        gap: 40px;
+        z-index: 1;
+      }
+      @media (max-width: 600px) {
+        .results-stats {
+          gap: 20px;
+        }
+      }
+      .results-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .results-stat-label {
+        font-size: 0.5rem;
+        color: #aaa;
+        letter-spacing: 0.1em;
+      }
+      .results-stat-value {
+        font-size: 1.4rem;
+        color: #f0c040;
+        text-shadow: 2px 2px 0px #000;
+      }
+      @media (max-width: 600px) {
+        .results-stat-label {
+          font-size: 0.38rem;
+        }
+        .results-stat-value {
+          font-size: 0.9rem;
+        }
+      }
+      .results-lb-title {
+        font-size: 0.55rem;
+        color: #f0c040;
+        text-shadow: 1px 1px 0px #000;
+        z-index: 1;
+        margin-bottom: 4px;
+        text-align: center;
+      }
+      .results-lb-current {
+        background: rgba(76, 175, 80, 0.2) !important;
+        border: 1px solid rgba(76, 175, 80, 0.5) !important;
+        animation: results-highlight-pulse 1.5s ease-in-out infinite;
+      }
+      .results-lb-current .lb-col-name {
+        color: #4caf50 !important;
+      }
+      @keyframes results-highlight-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      .results-lb-empty {
+        font-size: 0.45rem;
+        color: #888;
+        text-align: center;
+        padding: 16px;
+        z-index: 1;
+      }
+
+      /* ─── Game Over Action Buttons ───────────────────── */
+      .gameover-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 280px;
+        max-width: 90%;
+        z-index: 1;
+        margin-top: 8px;
+        padding-bottom: 20px;
+      }
+      @media (max-width: 600px) {
+        .gameover-actions {
+          width: 95%;
+          gap: 4px;
+          margin-top: 2px;
+          padding-bottom: 6px;
+        }
+      }
+      .gameover-action-btn {
+        width: 100%;
+        padding: 14px 16px;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.55rem;
+        color: #eee;
+        background: linear-gradient(180deg, #5a3a1a 0%, #3a2210 100%);
+        border: 2px solid #2a1808;
+        border-radius: 4px;
+        cursor: pointer;
+        text-align: center;
+        z-index: 1;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+        min-height: 44px;
+      }
+      .gameover-action-btn:hover {
+        background: linear-gradient(180deg, #7a4a2a 0%, #5a3a1a 100%);
+        transform: scale(1.03);
+      }
+      .gameover-action-btn:active {
+        transform: scale(0.97);
+      }
+      @media (max-width: 600px) {
+        .gameover-action-btn {
+          padding: 6px 8px;
+          font-size: 0.35rem;
+          min-height: 28px;
+          border-width: 1px;
+        }
+      }
+      .gameover-btn-primary {
+        color: #f0c040;
+        border-color: #f0c040;
+      }
+      .gameover-btn-share {
+        color: #7ecbff;
+        border-color: #7ecbff;
+        background: linear-gradient(180deg, #1a3a5a 0%, #0e2240 100%);
+      }
+      .gameover-btn-share:hover {
+        background: linear-gradient(180deg, #2a4a6a 0%, #1a3a5a 100%);
+      }
+      /* Share feedback toast */
+      .share-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: #7ecbff;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.45rem;
+        padding: 10px 20px;
+        border-radius: 4px;
+        border: 1px solid #7ecbff;
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+      }
+      .share-toast.visible {
+        opacity: 1;
       }
 
       /* ─── Loading Screen Overlay ───────────────────────── */
@@ -1790,6 +2123,37 @@
       </div>
     </div>
 
+    <!-- ═══ Audio Settings Overlay ═══ -->
+    <div id="audio-settings-backdrop">
+      <div class="pause-board audio-settings-board">
+        <p class="pause-board-title">Audio Settings</p>
+        <div class="pause-board-divider"></div>
+
+        <div class="audio-settings-list">
+          <!-- Music Volume -->
+          <div class="audio-setting">
+            <label class="audio-setting-label" for="audio-music-slider">Music Volume</label>
+            <div class="audio-slider-row">
+              <input id="audio-music-slider" class="audio-slider" type="range" min="0" max="100" value="100" />
+              <span id="audio-music-value" class="audio-slider-value">100%</span>
+            </div>
+          </div>
+
+          <!-- SFX Volume -->
+          <div class="audio-setting">
+            <label class="audio-setting-label" for="audio-sfx-slider">SFX Volume</label>
+            <div class="audio-slider-row">
+              <input id="audio-sfx-slider" class="audio-slider" type="range" min="0" max="100" value="100" />
+              <span id="audio-sfx-value" class="audio-slider-value">100%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pause-board-divider"></div>
+        <button id="audio-settings-btn-back" class="pause-btn pause-btn-primary">Back</button>
+      </div>
+    </div>
+
     <!-- ═══ Friends Panel Overlay ═══ -->
     <div id="friends-backdrop">
       <div class="pause-board friends-board">
@@ -1945,24 +2309,42 @@
 
     <!-- ═══ Game Over Overlay ═══ -->
     <div id="gameover-backdrop">
-      <div class="pause-board">
-        <p class="gameover-title">Game Over</p>
-        <div class="pause-board-divider"></div>
-        <div class="gameover-stats">
-          <div class="gameover-stat">
-            <span class="gameover-stat-label">Score</span>
-            <span id="gameover-score" class="gameover-stat-value">0</span>
-          </div>
-          <div class="gameover-stat">
-            <span class="gameover-stat-label">Wave</span>
-            <span id="gameover-wave" class="gameover-stat-value">1</span>
-          </div>
+      <p class="gameover-title">GAME OVER</p>
+
+      <!-- Stats -->
+      <div class="results-stats">
+        <div class="results-stat">
+          <span class="results-stat-label">WAVE</span>
+          <span id="results-wave-value" class="results-stat-value">0</span>
         </div>
-        <div class="pause-board-divider"></div>
-        <button id="gameover-btn-restart" class="pause-btn pause-btn-primary">Play Again</button>
-        <button id="gameover-btn-share" class="pause-btn">Share Score</button>
+        <div class="results-stat">
+          <span class="results-stat-label">SCORE</span>
+          <span id="results-score-value" class="results-stat-value">0</span>
+        </div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="results-lb-wrapper">
+        <p class="results-lb-title">Leaderboard</p>
+        <div class="lb-header">
+          <span class="lb-col-rank">#</span>
+          <span class="lb-col-name">Player</span>
+          <span class="lb-col-score">Score</span>
+          <span class="lb-col-wave">Wave</span>
+        </div>
+        <div id="results-lb-list" class="lb-list-container"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="gameover-actions">
+        <button id="gameover-btn-share" class="gameover-action-btn gameover-btn-share">Share</button>
+        <button id="gameover-btn-retry" class="gameover-action-btn gameover-btn-primary">Play Again</button>
+        <button id="gameover-btn-menu" class="gameover-action-btn">Main Menu</button>
       </div>
     </div>
+
+    <!-- ═══ Results Screen Overlay (deprecated — merged into gameover) ═══ -->
+    <div id="results-backdrop" style="display:none"></div>
 
     <!-- ═══ Login/Register Popup ═══ -->
     <div id="auth-backdrop">
@@ -2135,6 +2517,7 @@
       </div>
       <div id="game-container"></div>
     </div>
+    <div id="share-toast" class="share-toast"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

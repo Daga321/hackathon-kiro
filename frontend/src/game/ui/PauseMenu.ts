@@ -1,5 +1,6 @@
 import { FriendsPanel } from './FriendsPanel';
 import { AuthUI } from './AuthUI';
+import { AudioManager } from '../audio/AudioManager';
 
 /**
  * PauseMenu — controls the HTML pause menu overlay.
@@ -40,7 +41,16 @@ export class PauseMenu {
   private lbTabGlobal: HTMLElement | null;
   private lbTabFriends: HTMLElement | null;
 
+  private audioSettingsBackdrop: HTMLElement | null;
+  private audioSettingsBtnBack: HTMLElement | null;
+  private audioMusicSlider: HTMLInputElement | null;
+  private audioMusicValue: HTMLElement | null;
+  private audioSfxSlider: HTMLInputElement | null;
+  private audioSfxValue: HTMLElement | null;
+
   private _isPaused: boolean = false;
+  private _disabled: boolean = false;
+  private _audioManager: AudioManager | null = null;
   private onResumeCallback: (() => void) | null = null;
   private onPauseCallback: (() => void) | null = null;
 
@@ -67,6 +77,13 @@ export class PauseMenu {
     this.lbBtnBack = document.getElementById('lb-btn-back');
     this.lbTabGlobal = document.getElementById('lb-tab-global');
     this.lbTabFriends = document.getElementById('lb-tab-friends');
+
+    this.audioSettingsBackdrop = document.getElementById('audio-settings-backdrop');
+    this.audioSettingsBtnBack = document.getElementById('audio-settings-btn-back');
+    this.audioMusicSlider = document.getElementById('audio-music-slider') as HTMLInputElement | null;
+    this.audioMusicValue = document.getElementById('audio-music-value');
+    this.audioSfxSlider = document.getElementById('audio-sfx-slider') as HTMLInputElement | null;
+    this.audioSfxValue = document.getElementById('audio-sfx-value');
 
     this.bindButtons();
     this.bindKeyboard();
@@ -111,6 +128,13 @@ export class PauseMenu {
   }
 
   /**
+   * Set the AudioManager reference for the audio settings panel.
+   */
+  setAudioManager(audioManager: AudioManager): void {
+    this._audioManager = audioManager;
+  }
+
+  /**
    * Whether the game is currently paused.
    */
   get isPaused(): boolean {
@@ -121,6 +145,7 @@ export class PauseMenu {
    * Toggle pause state. Called from keyboard handler in GameScene.
    */
   toggle(): void {
+    if (this._disabled) return;
     if (this._isPaused) {
       this.resume();
     } else {
@@ -129,10 +154,18 @@ export class PauseMenu {
   }
 
   /**
+   * Disable or enable the pause menu.
+   * When disabled, keyboard, visibility change, and HUD button won't trigger pause.
+   */
+  setDisabled(disabled: boolean): void {
+    this._disabled = disabled;
+  }
+
+  /**
    * Pause the game and show the menu.
    */
   pause(): void {
-    if (this._isPaused) return;
+    if (this._isPaused || this._disabled) return;
     this._isPaused = true;
     this.show();
     this.onPauseCallback?.();
@@ -158,6 +191,7 @@ export class PauseMenu {
     this.backdrop?.classList.remove('visible');
     this.controlsBackdrop?.classList.remove('visible');
     this.guideBackdrop?.classList.remove('visible');
+    this.audioSettingsBackdrop?.classList.remove('visible');
     this.friendsPanel?.hide();
     this.leaderboardBackdrop?.classList.remove('visible');
   }
@@ -183,6 +217,25 @@ export class PauseMenu {
 
   private hideGuide(): void {
     this.guideBackdrop?.classList.remove('visible');
+    this.backdrop?.classList.add('visible');
+  }
+
+  private showAudioSettings(): void {
+    // Sync sliders with current values from AudioManager
+    if (this._audioManager) {
+      const musicVal = Math.round(this._audioManager.getMusicVolume() * 100);
+      const sfxVal = Math.round(this._audioManager.getSfxVolume() * 100);
+      if (this.audioMusicSlider) this.audioMusicSlider.value = `${musicVal}`;
+      if (this.audioMusicValue) this.audioMusicValue.textContent = `${musicVal}%`;
+      if (this.audioSfxSlider) this.audioSfxSlider.value = `${sfxVal}`;
+      if (this.audioSfxValue) this.audioSfxValue.textContent = `${sfxVal}%`;
+    }
+    this.backdrop?.classList.remove('visible');
+    this.audioSettingsBackdrop?.classList.add('visible');
+  }
+
+  private hideAudioSettings(): void {
+    this.audioSettingsBackdrop?.classList.remove('visible');
     this.backdrop?.classList.add('visible');
   }
 
@@ -244,10 +297,33 @@ export class PauseMenu {
       };
     }
 
-    // Audio settings (placeholder — future implementation)
+    // Audio settings
     if (this.btnAudio) {
       this.btnAudio.onclick = () => {
-        // TODO: Open audio settings panel
+        this.showAudioSettings();
+      };
+    }
+
+    // Audio settings back button
+    if (this.audioSettingsBtnBack) {
+      this.audioSettingsBtnBack.onclick = () => {
+        this.hideAudioSettings();
+      };
+    }
+
+    // Audio sliders
+    if (this.audioMusicSlider) {
+      this.audioMusicSlider.oninput = () => {
+        const val = parseInt(this.audioMusicSlider!.value, 10);
+        if (this.audioMusicValue) this.audioMusicValue.textContent = `${val}%`;
+        this._audioManager?.setMusicVolume(val / 100);
+      };
+    }
+    if (this.audioSfxSlider) {
+      this.audioSfxSlider.oninput = () => {
+        const val = parseInt(this.audioSfxSlider!.value, 10);
+        if (this.audioSfxValue) this.audioSfxValue.textContent = `${val}%`;
+        this._audioManager?.setSfxVolume(val / 100);
       };
     }
 
@@ -323,6 +399,10 @@ export class PauseMenu {
    * app switch, back gesture, etc.)
    */
   private bindVisibilityChange(): void {
+    // Prevent duplicate listeners on scene restart
+    if (PauseMenu._visibilityBound) return;
+    PauseMenu._visibilityBound = true;
+
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && !this._isPaused) {
         this.pause();
@@ -330,11 +410,23 @@ export class PauseMenu {
     });
   }
 
+  /** Static flag to prevent duplicate document-level event listeners */
+  private static _visibilityBound = false;
+  private static _keyboardBound = false;
+  private static _activeInstance: PauseMenu | null = null;
+
   /**
    * Listen for ESC and P keys at the document level.
    * This works even when Phaser's update loop is paused.
    */
   private bindKeyboard(): void {
+    // Update active instance reference so restarted scenes use the new PauseMenu
+    PauseMenu._activeInstance = this;
+
+    // Prevent duplicate listeners on scene restart
+    if (PauseMenu._keyboardBound) return;
+    PauseMenu._keyboardBound = true;
+
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
         // Don't toggle if user is typing in an input field
@@ -342,7 +434,8 @@ export class PauseMenu {
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
         e.preventDefault();
-        this.toggle();
+        // Always use the latest active instance
+        PauseMenu._activeInstance?.toggle();
       }
     });
   }
