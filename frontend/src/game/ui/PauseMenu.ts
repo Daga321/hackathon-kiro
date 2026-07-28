@@ -1,5 +1,8 @@
 import { FriendsPanel } from './FriendsPanel';
 import { AuthUI } from './AuthUI';
+import { getGlobalLeaderboard, getFriendsLeaderboard } from '../../services/leaderboard.service';
+import { isAuthenticated } from '../../services/token-manager';
+import type { LeaderboardEntry } from '../../services/types';
 
 /**
  * PauseMenu — controls the HTML pause menu overlay.
@@ -163,7 +166,8 @@ export class PauseMenu {
   }
 
   private showControls(): void {
-    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const ua = navigator.userAgent.toLowerCase();
+    const isMobile = /android|iphone|ipad|ipod|mobile|tablet/.test(ua);
     if (this.controlsDesktop) this.controlsDesktop.style.display = isMobile ? 'none' : 'flex';
     if (this.controlsMobile) this.controlsMobile.style.display = isMobile ? 'flex' : 'none';
 
@@ -194,11 +198,73 @@ export class PauseMenu {
   private showLeaderboard(): void {
     this.backdrop?.classList.remove('visible');
     this.leaderboardBackdrop?.classList.add('visible');
+    this.loadLeaderboardData('global');
   }
 
   private hideLeaderboard(): void {
     this.leaderboardBackdrop?.classList.remove('visible');
     this.backdrop?.classList.add('visible');
+  }
+
+  private async loadLeaderboardData(tab: 'global' | 'friends'): Promise<void> {
+    const container = document.getElementById('lb-list-container');
+    if (!container) return;
+
+    // Show loading state
+    container.innerHTML = `
+      <div class="lb-row" style="justify-content: center;">
+        <span class="lb-col-name" style="text-align: center; width: 100%;">Loading...</span>
+      </div>`;
+
+    if (tab === 'global') {
+      const result = await getGlobalLeaderboard(20);
+      if (result.success) {
+        this.renderLeaderboardEntries(container, result.data.leaderboard);
+      } else {
+        container.innerHTML = `
+          <div class="lb-row" style="justify-content: center;">
+            <span class="lb-col-name" style="text-align: center; width: 100%; color: #cc3333;">${result.error}</span>
+          </div>`;
+      }
+    } else {
+      if (!isAuthenticated()) return;
+      const result = await getFriendsLeaderboard();
+      if (result.success) {
+        this.renderLeaderboardEntries(container, result.data.leaderboard);
+      } else {
+        container.innerHTML = `
+          <div class="lb-row" style="justify-content: center;">
+            <span class="lb-col-name" style="text-align: center; width: 100%; color: #cc3333;">${result.error}</span>
+          </div>`;
+      }
+    }
+  }
+
+  private renderLeaderboardEntries(container: HTMLElement, entries: LeaderboardEntry[]): void {
+    if (entries.length === 0) {
+      container.innerHTML = `
+        <div class="lb-row" style="justify-content: center;">
+          <span class="lb-col-name" style="text-align: center; width: 100%;">No scores yet.</span>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = entries
+      .map((entry) => {
+        let rowClass = 'lb-row';
+        if (entry.rank === 1) rowClass += ' lb-row-gold';
+        else if (entry.rank === 2) rowClass += ' lb-row-silver';
+        else if (entry.rank === 3) rowClass += ' lb-row-bronze';
+
+        return `
+          <div class="${rowClass}">
+            <span class="lb-col-rank">${entry.rank}</span>
+            <span class="lb-col-name">${entry.username}</span>
+            <span class="lb-col-score">${entry.totalScore.toLocaleString()}</span>
+            <span class="lb-col-wave">${entry.highestRound}</span>
+          </div>`;
+      })
+      .join('');
   }
 
   private bindButtons(): void {
@@ -265,7 +331,7 @@ export class PauseMenu {
       };
     }
 
-    // Leaderboard tabs (UI-only, same data for now)
+    // Leaderboard tabs
     const lbTabs = [this.lbTabGlobal, this.lbTabFriends];
     const lbListContainer = document.getElementById('lb-list-container');
     const lbHeader = document.querySelector('.lb-header') as HTMLElement | null;
@@ -280,16 +346,17 @@ export class PauseMenu {
 
           const isFriendsTab = tab === this.lbTabFriends;
 
-          if (isFriendsTab && this.friendsPanel && !this.getAuthLoggedIn()) {
+          if (isFriendsTab && !this.getAuthLoggedIn()) {
             // Not logged in — show login prompt, hide list
             if (lbListContainer) lbListContainer.style.display = 'none';
             if (lbHeader) lbHeader.style.display = 'none';
             if (lbFriendsNotLogged) lbFriendsNotLogged.style.display = 'flex';
           } else {
-            // Show list
+            // Show list and load data from API
             if (lbListContainer) lbListContainer.style.display = 'flex';
             if (lbHeader) lbHeader.style.display = 'flex';
             if (lbFriendsNotLogged) lbFriendsNotLogged.style.display = 'none';
+            this.loadLeaderboardData(isFriendsTab ? 'friends' : 'global');
           }
         };
       }
