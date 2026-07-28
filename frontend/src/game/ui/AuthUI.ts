@@ -326,8 +326,7 @@ export class AuthUI {
         }
 
         if (/\s/.test(username)) {
-          if (this.registerError)
-            this.registerError.textContent = 'Username cannot contain spaces';
+          if (this.registerError) this.registerError.textContent = 'Username cannot contain spaces';
           return;
         }
 
