@@ -4,7 +4,6 @@
 
 <p align="center">
   <a href="http://s3hostingstack-prod-frontendbucketefe2e19c-tths0rket46m.s3-website-us-east-1.amazonaws.com/" target="_blank"><strong>🎮 Play Demo</strong></a> &nbsp;·&nbsp;
-  <a href="./presentation/video.md" target="_blank"><strong>🎬 Video</strong></a> &nbsp;·&nbsp;
   <a href="./docs/" target="_blank"><strong>📚 Documentation</strong></a> &nbsp;·&nbsp;
   <a href="https://github.com/Daga321/hackathon-kiro/issues/new?template=bug_report.yml" target="_blank"><strong>🐛 Report Bug</strong></a> &nbsp;·&nbsp;
   <a href="https://github.com/users/Daga321/projects/5" target="_blank"><strong>📋 Kanban Board</strong></a>
@@ -54,21 +53,6 @@ The horde survival genre is **ideal for cognitive stimulation** because:
 ### The Graveyard Guard Metaphor
 
 The protagonist — an elderly guard defending a cemetery — metaphorically represents **defending health and vitality against the passage of time**. The undead enemies symbolize cognitive decline, and each wave survived is a small victory for the mind.
-
----
-
-## 🖼️ Screenshots & Gameplay
-
-<table>
-  <tr>
-    <td align="center"><code>[ SCREENSHOT 1 ]</code><br><em>Melee combat against zombie horde</em></td>
-    <td align="center"><code>[ SCREENSHOT 2 ]</code><br><em>Wave notification between rounds</em></td>
-  </tr>
-  <tr>
-    <td align="center"><code>[ SCREENSHOT 3 ]</code><br><em>HUD showing health, score, round</em></td>
-    <td align="center"><code>[ SCREENSHOT 4 ]</code><br><em>Game over screen with leaderboard</em></td>
-  </tr>
-</table>
 
 ---
 
@@ -203,15 +187,6 @@ Start Round → Undead spawn at arena edges → Guard fights with melee
 | 10 | 32 | Challenging |
 | 25 | 77 | Expert |
 | 50 | 152 | Extreme |
-
----
-
-## 🎬 Presentation
-
-The video and slides are available in the [`presentation/`](./presentation/) directory:
-
-- `video.md` — Link to the presentation video (max 5 min)
-- Slides and supporting materials
 
 ---
 
