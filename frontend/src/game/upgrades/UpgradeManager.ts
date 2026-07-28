@@ -27,7 +27,7 @@ export interface UpgradeResult {
 }
 
 /** Base values per upgrade type */
-const UPGRADE_BASE: Record<UpgradeType, number> = {
+export const UPGRADE_BASE: Record<UpgradeType, number> = {
   [UpgradeType.SWORD]: 5,
   [UpgradeType.SHIELD]: 10,
   [UpgradeType.WINGED_BOOTS]: 3,
@@ -35,7 +35,7 @@ const UPGRADE_BASE: Record<UpgradeType, number> = {
 };
 
 /** Exponential multiplier per wave: value = base × multiplier^(wave-1) */
-const UPGRADE_MULTIPLIER: Record<UpgradeType, number> = {
+export const UPGRADE_MULTIPLIER: Record<UpgradeType, number> = {
   [UpgradeType.SWORD]: 1.03,
   [UpgradeType.SHIELD]: 1.04,
   [UpgradeType.WINGED_BOOTS]: 1.02,
