@@ -15,6 +15,8 @@ import { AudioManager } from '../audio/AudioManager';
 import { HealthPickupManager } from '../entities/HealthPickupManager';
 import { ResultsScreen } from '../ui/ResultsScreen';
 import { ShareManager } from '../ui/ShareManager';
+import { UpgradeManager, UpgradeType, UpgradeResult } from '../upgrades/UpgradeManager';
+import { RouletteWheel } from '../ui/RouletteWheel';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { AuthUI } from '../ui/AuthUI';
 import { BalancePanel } from '../ui/BalancePanel';
@@ -60,6 +62,8 @@ export class GameScene extends Phaser.Scene {
   private audio!: AudioManager;
   private resultsScreen!: ResultsScreen;
   private shareManager!: ShareManager;
+  private upgradeManager!: UpgradeManager;
+  private rouletteWheel!: RouletteWheel;
   private missPlayed: boolean = false;
   private swingHitConnected: boolean = false;
   private balancePanel?: BalancePanel;
@@ -72,6 +76,7 @@ export class GameScene extends Phaser.Scene {
   private static _waveAnnouncement: WaveAnnouncement | null = null;
   private static _resultsScreen: ResultsScreen | null = null;
   private static _shareManager: ShareManager | null = null;
+  private static _rouletteWheel: RouletteWheel | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -152,7 +157,20 @@ export class GameScene extends Phaser.Scene {
       this.waveAnnouncement.show(wave, enemyCount);
     });
 
-    this.waveManager.start();
+    // Upgrade manager — handles random upgrade selection between waves
+    this.upgradeManager = new UpgradeManager();
+    if (!GameScene._rouletteWheel) {
+      GameScene._rouletteWheel = new RouletteWheel();
+    }
+    this.rouletteWheel = GameScene._rouletteWheel;
+    this.events.on('pre-wave', (wave: number) => {
+      this.handleUpgradePhase(wave);
+    });
+
+    // Delay wave start so the scene renders at least one frame before the roulette appears
+    this.time.delayedCall(100, () => {
+      this.waveManager.start();
+    });
 
     // Audio system
     this.audio = new AudioManager(this);
@@ -424,7 +442,9 @@ export class GameScene extends Phaser.Scene {
             );
             if (dist < 20) {
               this.player.registerHit(enemy);
-              const dmg = getPlayerDamage(this.waveManager.getWave());
+              const dmg =
+                getPlayerDamage(this.waveManager.getWave()) +
+                Math.round(this.player.getBonusDamage());
               enemy.takeDamage(dmg, this.player);
               this.damageIndicators.spawn(enemySprite.x, enemySprite.y - 8, dmg, DamageType.DEALT);
               this.audio.playHit();
@@ -647,6 +667,55 @@ export class GameScene extends Phaser.Scene {
 
   /** Radius within which enemies play their special celebration animation on game over */
   private static readonly GAME_OVER_ENEMY_REACTION_RADIUS = 200;
+
+  /**
+   * Handle the upgrade phase before a wave starts.
+   * Shows the roulette wheel with a predetermined result.
+   * The player clicks to spin, then clicks Continue to proceed.
+   * Skipped if player is dead (Game Over takes priority).
+   */
+  private handleUpgradePhase(wave: number): void {
+    // Game Over has priority — don't show roulette if player is dead
+    if (this.player.getIsDead()) return;
+
+    const result = this.upgradeManager.rollUpgrade(wave);
+
+    // Disable pause during upgrade phase
+    this.pauseMenu.setDisabled(true);
+
+    // Show roulette — when player completes the interaction, apply upgrade and proceed
+    this.rouletteWheel.show(result, (confirmedResult: UpgradeResult) => {
+      this.applyUpgrade(confirmedResult);
+
+      // Re-enable pause menu
+      this.pauseMenu.setDisabled(false);
+
+      this.waveManager.proceedWave();
+    });
+  }
+
+  /**
+   * Apply an upgrade result to the player.
+   * Note: SHIELD icon gives Max HP, GOLDEN_HEART icon gives Defense (matching visual design)
+   */
+  private applyUpgrade(upgrade: UpgradeResult): void {
+    switch (upgrade.type) {
+      case UpgradeType.SWORD:
+        this.player.addBonusDamage(upgrade.value);
+        break;
+      case UpgradeType.SHIELD:
+        // Shield icon = Max HP + Heal
+        this.player.addMaxHP(upgrade.value);
+        break;
+      case UpgradeType.WINGED_BOOTS:
+        this.player.addSpeed(upgrade.value);
+        break;
+      case UpgradeType.GOLDEN_HEART:
+        // Heart icon = Defense
+        this.player.addDefense(upgrade.value);
+        break;
+    }
+  }
 
   /**
    * Show the Game Over overlay with results and leaderboard directly.

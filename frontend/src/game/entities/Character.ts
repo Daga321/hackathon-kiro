@@ -85,6 +85,7 @@ export abstract class Character {
   // ─── Health & damage system ───
   protected maxHealth: number;
   protected currentHealth: number;
+  protected defense: number = 0;
   protected isInvulnerable: boolean = false;
   protected isDead: boolean = false;
   protected isInKnockback: boolean = false;
@@ -382,7 +383,9 @@ export abstract class Character {
   takeDamage(amount: number, attacker: Character): void {
     if (this.isInvulnerable || this.isDead) return;
 
-    this.currentHealth = Math.max(0, this.currentHealth - amount);
+    // Apply defense reduction: damageTaken = max(1, incomingDamage - defense)
+    const effectiveDamage = Math.max(1, amount - this.defense);
+    this.currentHealth = Math.max(0, this.currentHealth - effectiveDamage);
 
     // Show health bar on first damage
     if (this.showHealthBar && !this.healthBarVisible) {
