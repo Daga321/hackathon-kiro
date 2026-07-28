@@ -54,16 +54,31 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: frontend
 
-      - name: Build frontend
-        run: pnpm build
-        working-directory: frontend
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+
+      # Retrieve API URL from CloudFormation outputs so Vite can embed it at build time.
+      - name: Get API URL
+        id: api
+        run: |
+          STACK_NAME="ApiStack-${{ env.ENVIRONMENT }}"
+
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
+            --output text)
+
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+
+      - name: Build frontend
+        run: pnpm build
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ steps.api.outputs.api_url }}
 
       # Retrieve bucket name from CloudFormation outputs.
       # Not hardcoded — if CDK recreates the bucket, this resolves to the current one.
