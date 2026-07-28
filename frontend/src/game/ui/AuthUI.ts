@@ -7,7 +7,7 @@
  * Connected to auth.service.ts for real authentication via API Gateway.
  */
 import { login, register, logout, hasActiveSession } from '../../services/auth.service';
-import { getUsername, clearTokens } from '../../services/token-manager';
+import { getUsername } from '../../services/token-manager';
 import { retryPendingScores } from '../../services/leaderboard.service';
 
 export class AuthUI {
