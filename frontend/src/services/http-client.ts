@@ -1,7 +1,7 @@
 import { getIdToken } from './token-manager';
 import type { ServiceResult } from './types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 const IS_DEV = import.meta.env.VITE_DEV_TOOLS === 'true';
 
 /**

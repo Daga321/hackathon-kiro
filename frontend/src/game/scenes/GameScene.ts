@@ -9,11 +9,12 @@ import { TouchControls } from '../ui/TouchControls';
 import { HudManager } from '../ui/HudManager';
 import { WaveAnnouncement } from '../ui/WaveAnnouncement';
 import { PauseMenu } from '../ui/PauseMenu';
-import { GameOverScreen } from '../ui/GameOverScreen';
 import { DamageIndicatorSystem, DamageType } from '../ui/DamageIndicator';
 import { getPlayerDamage } from '../config/difficulty-config';
 import { AudioManager } from '../audio/AudioManager';
 import { HealthPickupManager } from '../entities/HealthPickupManager';
+import { ResultsScreen } from '../ui/ResultsScreen';
+import { ShareManager } from '../ui/ShareManager';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { AuthUI } from '../ui/AuthUI';
 import { BalancePanel } from '../ui/BalancePanel';
@@ -46,27 +47,42 @@ export class GameScene extends Phaser.Scene {
   private player!: Player;
   private waveManager!: WaveManager;
   private spawner!: EnemySpawner;
+  private pathfinder!: import('../ai/Pathfinder').Pathfinder;
+  private graveSpawned: boolean = false;
   private touchControls!: TouchControls;
   private hud!: HudManager;
   private waveAnnouncement!: WaveAnnouncement;
   private pauseMenu!: PauseMenu;
-  private gameOverScreen!: GameOverScreen;
   private damageIndicators!: DamageIndicatorSystem;
   private healthPickups!: HealthPickupManager;
   private devHudObjects: Phaser.GameObjects.GameObject[] = [];
   private devPosText?: Phaser.GameObjects.Text;
   private audio!: AudioManager;
+  private resultsScreen!: ResultsScreen;
+  private shareManager!: ShareManager;
   private missPlayed: boolean = false;
   private swingHitConnected: boolean = false;
   private balancePanel?: BalancePanel;
   private keyI!: Phaser.Input.Keyboard.Key;
   private keyG!: Phaser.Input.Keyboard.Key;
 
+  // HTML UI managers — persist across scene restarts (singletons)
+  private static _pauseMenu: PauseMenu | null = null;
+  private static _authUI: AuthUI | null = null;
+  private static _waveAnnouncement: WaveAnnouncement | null = null;
+  private static _resultsScreen: ResultsScreen | null = null;
+  private static _shareManager: ShareManager | null = null;
+
   constructor() {
     super({ key: 'GameScene' });
   }
 
   create(): void {
+    // Reset per-game state (scene.restart() reuses the same instance)
+    this.graveSpawned = false;
+    this.missPlayed = false;
+    this.swingHitConnected = false;
+
     // Generate the tilemap layers
     const mapGen = new MapGenerator(this);
     const {
@@ -98,6 +114,7 @@ export class GameScene extends Phaser.Scene {
     // Objects layer: NO tilemap collision — graves and trees use circular physics bodies instead
 
     // Create player at a random valid position (uses pathfinder for full collision check)
+    this.pathfinder = pathfinder;
     this.player = new Player(this, collisionLayer, pathfinder);
 
     // Add physics colliders between player and all collidable layers
@@ -126,7 +143,11 @@ export class GameScene extends Phaser.Scene {
     this.hud = new HudManager();
 
     // Wave announcement overlay (register BEFORE waveManager.start so Wave 1 is captured)
-    this.waveAnnouncement = new WaveAnnouncement();
+    // Singleton to prevent duplicate timeouts on restart
+    if (!GameScene._waveAnnouncement) {
+      GameScene._waveAnnouncement = new WaveAnnouncement();
+    }
+    this.waveAnnouncement = GameScene._waveAnnouncement;
     this.events.on('wave-start', (wave: number, enemyCount: number) => {
       this.waveAnnouncement.show(wave, enemyCount);
     });
@@ -156,7 +177,11 @@ export class GameScene extends Phaser.Scene {
     this.keyP = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // Pause menu (keyboard handled at document level inside PauseMenu)
-    this.pauseMenu = new PauseMenu();
+    // Use singleton to prevent duplicate document-level event listeners on restart
+    if (!GameScene._pauseMenu) {
+      GameScene._pauseMenu = new PauseMenu();
+    }
+    this.pauseMenu = GameScene._pauseMenu;
     this.pauseMenu.onPause(() => {
       this.scene.pause();
     });
@@ -164,13 +189,20 @@ export class GameScene extends Phaser.Scene {
       this.scene.resume();
     });
 
-    // Game over screen
-    this.gameOverScreen = new GameOverScreen();
-    this.gameOverScreen.onRestart(() => {
-      this.audio.stopAll();
-      this.healthPickups.destroyAll();
-      this.scene.restart();
-    });
+    // Game over screen (disabled — will be reimplemented in upcoming phases)
+    // this.gameOverScreen = new GameOverScreen();
+
+    // Results screen (shown in Game Over overlay) — singleton to prevent duplicate state
+    if (!GameScene._resultsScreen) {
+      GameScene._resultsScreen = new ResultsScreen();
+    }
+    this.resultsScreen = GameScene._resultsScreen;
+
+    // Share manager — singleton
+    if (!GameScene._shareManager) {
+      GameScene._shareManager = new ShareManager();
+    }
+    this.shareManager = GameScene._shareManager;
 
     // Damage indicators
     this.damageIndicators = new DamageIndicatorSystem(this);
@@ -179,7 +211,11 @@ export class GameScene extends Phaser.Scene {
     this.healthPickups = new HealthPickupManager(this);
 
     // Auth UI (login/register) — pauses game while popup is open
-    const authUI = new AuthUI();
+    // Singleton to prevent duplicate listeners on restart
+    if (!GameScene._authUI) {
+      GameScene._authUI = new AuthUI();
+    }
+    const authUI = GameScene._authUI;
     authUI.onOpen(() => {
       this.scene.pause();
     });
@@ -189,6 +225,9 @@ export class GameScene extends Phaser.Scene {
 
     // Connect auth to pause menu for friends panel
     this.pauseMenu.setAuthUI(authUI);
+
+    // Connect audio manager to pause menu for audio settings
+    this.pauseMenu.setAudioManager(this.audio);
 
     // Dev tools: debug keys (only registered when VITE_DEV_TOOLS=true)
     if (DEV_TOOLS_ENABLED) {
@@ -329,9 +368,28 @@ export class GameScene extends Phaser.Scene {
       this.waveManager.getScoreReward(),
     );
 
-    // ─── Game Over detection ───
-    if (this.player.getIsDead() && !this.gameOverScreen.isShowing) {
-      this.gameOverScreen.show(this.hud.getScore(), this.waveManager.getWave());
+    // ─── Game Over detection (placeholder for future phases) ───
+    // Player death state is already detected via player.getIsDead() which stops all gameplay
+
+    // Spawn grave once after player death animation completes
+    if (this.player.getIsDead() && !this.graveSpawned) {
+      this.graveSpawned = true;
+
+      // Disable pause menu during game over
+      this.pauseMenu.setDisabled(true);
+
+      // Transition audio: stop battle music, start game over music
+      this.audio.transitionToGameOver();
+
+      // Wait for death animation to finish, then place grave and trigger enemy reactions
+      this.time.delayedCall(1200, () => {
+        this.spawnGraveNearPlayer();
+        this.triggerGameOverEnemyReactions();
+        // Show game over overlay after a brief pause
+        this.time.delayedCall(1500, () => {
+          this.showGameOverOverlay();
+        });
+      });
     }
 
     // Update enemies (skip if player is dead — enemies stop targeting)
@@ -528,6 +586,181 @@ export class GameScene extends Phaser.Scene {
         this.waveManager.getAllEnemies(),
         this.hud,
       );
+    }
+  }
+
+  /**
+   * Spawn a gravestone near the player's death position.
+   * Uses pathfinder to find a valid walkable tile nearby.
+   */
+  private spawnGraveNearPlayer(): void {
+    const px = this.player.getSprite().x;
+    const py = this.player.getSprite().y;
+    const tileSize = 16;
+
+    // Directions to try: 1 tile away + small extra offset to avoid visual overlap
+    const offset = tileSize + 4; // 20px — one tile plus a few pixels of separation
+    const offsets = [
+      { x: offset, y: 0 },
+      { x: -offset, y: 0 },
+      { x: 0, y: offset },
+      { x: 0, y: -offset },
+      { x: offset, y: -offset },
+      { x: -offset, y: -offset },
+      { x: offset, y: offset },
+      { x: -offset, y: offset },
+      // Extend search if adjacent tiles are blocked
+      { x: tileSize * 2, y: 0 },
+      { x: -tileSize * 2, y: 0 },
+      { x: 0, y: tileSize * 2 },
+      { x: 0, y: -tileSize * 2 },
+    ];
+
+    let graveX = px + offset;
+    let graveY = py;
+
+    for (const offset of offsets) {
+      const testX = px + offset.x;
+      const testY = py + offset.y;
+      const tile = this.pathfinder.worldToTile(testX, testY);
+      if (this.pathfinder.isWalkable(tile.x, tile.y)) {
+        graveX = testX;
+        graveY = testY;
+        break;
+      }
+    }
+
+    // Place grave sprite (frame 6 from objects.png = gravestone)
+    const grave = this.add.sprite(graveX, graveY, 'objects', 6);
+    grave.setOrigin(0.5, 0.5);
+    grave.setDepth(5 + graveY / 10000);
+    grave.setAlpha(0);
+
+    // Fade in from transparent to fully visible
+    this.tweens.add({
+      targets: grave,
+      alpha: 1,
+      duration: 800,
+      ease: 'Sine.easeIn',
+    });
+  }
+
+  /** Radius within which enemies play their special celebration animation on game over */
+  private static readonly GAME_OVER_ENEMY_REACTION_RADIUS = 200;
+
+  /**
+   * Show the Game Over overlay with results and leaderboard directly.
+   * No continue button — stats and leaderboard appear immediately.
+   * Binds Play Again and Main Menu action buttons.
+   */
+  private showGameOverOverlay(): void {
+    // Capture final stats
+    const finalWave = this.waveManager.getWave();
+    const finalScore = this.hud.getScore();
+
+    // Populate stats and leaderboard
+    this.resultsScreen.show(finalScore, finalWave);
+
+    // Show the gameover overlay (which now contains everything)
+    const backdrop = document.getElementById('gameover-backdrop');
+    if (backdrop) {
+      backdrop.classList.add('visible');
+    }
+
+    // Bind action buttons (using onclick to prevent duplicate listeners on restart)
+    const btnRetry = document.getElementById('gameover-btn-retry');
+    const btnMenu = document.getElementById('gameover-btn-menu');
+    const btnShare = document.getElementById('gameover-btn-share');
+
+    if (btnRetry) {
+      btnRetry.onclick = () => {
+        this.handleRetry(backdrop);
+      };
+    }
+
+    if (btnMenu) {
+      btnMenu.onclick = () => {
+        this.handleMainMenu(backdrop);
+      };
+    }
+
+    if (btnShare) {
+      btnShare.onclick = () => {
+        this.shareManager.share(finalScore, finalWave);
+      };
+    }
+  }
+
+  /**
+   * VOLVER A INTENTAR — restart the game from Wave 1.
+   * Cleans up all state, hides overlay, and restarts the scene.
+   */
+  private handleRetry(backdrop: HTMLElement | null): void {
+    // Hide overlay
+    backdrop?.classList.remove('visible');
+
+    // Reset results screen state
+    this.resultsScreen.hide();
+
+    // Re-enable pause menu for next game
+    this.pauseMenu.setDisabled(false);
+
+    // Stop all audio to prevent duplicates
+    this.audio.stopAll();
+
+    // Restart the scene (Phaser destroys all game objects and calls create() fresh)
+    this.scene.restart();
+  }
+
+  /**
+   * MENÚ — return to main menu (reload the page).
+   * Cleans up audio and reloads to return to the loading/login screen.
+   */
+  private handleMainMenu(backdrop: HTMLElement | null): void {
+    // Hide overlay
+    backdrop?.classList.remove('visible');
+
+    // Reset results screen state
+    this.resultsScreen.hide();
+
+    // Stop all audio
+    this.audio.stopAll();
+
+    // Reload page to return to main menu (loading screen)
+    window.location.reload();
+  }
+
+  /**
+   * Stop all enemies and make nearby ones play their special idle animation.
+   */
+  private triggerGameOverEnemyReactions(): void {
+    const px = this.player.getSprite().x;
+    const py = this.player.getSprite().y;
+    const enemies = this.waveManager.getAllEnemies();
+
+    for (const enemy of enemies) {
+      if (enemy.getIsDead()) continue;
+
+      // Stop all enemies
+      enemy.getSprite().setVelocity(0, 0);
+
+      // Check distance for special animation
+      const ex = enemy.getSprite().x;
+      const ey = enemy.getSprite().y;
+      const dist = Math.sqrt((ex - px) ** 2 + (ey - py) ** 2);
+
+      if (dist <= GameScene.GAME_OVER_ENEMY_REACTION_RADIUS) {
+        // Push enemy away from player before playing special animation
+        const minDist = 40; // minimum distance from player corpse
+        if (dist < minDist && dist > 0) {
+          const pushX = ((ex - px) / dist) * minDist;
+          const pushY = ((ey - py) / dist) * minDist;
+          enemy.getSprite().setPosition(px + pushX, py + pushY);
+        }
+
+        // Near enemies: play special idle animation in loop
+        enemy.playSpecialIdleLoop();
+      }
     }
   }
 }

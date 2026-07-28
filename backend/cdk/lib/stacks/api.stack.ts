@@ -342,6 +342,19 @@ export class ApiStack extends Stack {
     tables['users'].grantReadData(getFriendsLeaderboardLambda);
     tables['friends'].grantReadData(getFriendsLeaderboardLambda);
 
+    // ─── Lambda: Leaderboard Get My Scores ───────────────────────────────────
+    const getMyScoresLambda = new nodejs.NodejsFunction(this, 'GetMyScoresFunction', {
+      entry: '../lambdas/leaderboard/get-my-scores.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(10),
+      memorySize: 128,
+      environment: {
+        SCORES_TABLE: tables['scores'].tableName,
+      },
+    });
+    tables['scores'].grantReadData(getMyScoresLambda);
+
     // ─── Leaderboard Routes ──────────────────────────────────────────────────
     const leaderboardResource = api.root.addResource('leaderboard');
 
@@ -363,6 +376,13 @@ export class ApiStack extends Stack {
       new apigw.LambdaIntegration(getFriendsLeaderboardLambda),
       { authorizer, authorizationType: apigw.AuthorizationType.COGNITO },
     );
+
+    // GET /leaderboard/my-scores — protected (personal best scores)
+    const myScoresResource = leaderboardResource.addResource('my-scores');
+    myScoresResource.addMethod('GET', new apigw.LambdaIntegration(getMyScoresLambda), {
+      authorizer,
+      authorizationType: apigw.AuthorizationType.COGNITO,
+    });
 
     // ─── Outputs ─────────────────────────────────────────────────────────────
     new CfnOutput(this, 'ApiUrl', {

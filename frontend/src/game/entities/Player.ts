@@ -70,30 +70,31 @@ export class Player extends Character {
   }
 
   private createDeathAnimations(scene: Phaser.Scene): void {
-    if (scene.anims.exists('player_death_down')) return;
+    if (!scene.anims.exists('player_death_down')) {
+      scene.anims.create({
+        key: 'player_death_down',
+        frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 56 }),
+        frameRate: 3,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+      scene.anims.create({
+        key: 'player_death_right',
+        frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 56 }),
+        frameRate: 3,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+      scene.anims.create({
+        key: 'player_death_up',
+        frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 56 }),
+        frameRate: 3,
+        repeat: 0,
+        hideOnComplete: false,
+      });
+    }
 
-    scene.anims.create({
-      key: 'player_death_down',
-      frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }),
-      frameRate: 8,
-      repeat: 0,
-      hideOnComplete: false,
-    });
-    scene.anims.create({
-      key: 'player_death_right',
-      frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }),
-      frameRate: 8,
-      repeat: 0,
-      hideOnComplete: false,
-    });
-    scene.anims.create({
-      key: 'player_death_up',
-      frames: scene.anims.generateFrameNumbers('player', { start: 54, end: 59 }),
-      frameRate: 8,
-      repeat: 0,
-      hideOnComplete: false,
-    });
-
+    // Always assign the map (new Player instance each restart)
     this.deathAnims = {
       down: 'player_death_down',
       right: 'player_death_right',
@@ -123,7 +124,11 @@ export class Player extends Character {
       const deathKey = this.deathAnims[this.direction];
       this.sprite.setFlipX(this.direction === 'left');
       this.sprite.play(deathKey);
-      // Player stays in last frame — no destroy, ready for future Game Over/Respawn
+
+      // When animation completes, freeze on the last frame permanently
+      this.sprite.once('animationcomplete', () => {
+        this.sprite.anims.stop();
+      });
     }
   }
 
