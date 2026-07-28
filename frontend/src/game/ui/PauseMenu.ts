@@ -1,9 +1,13 @@
 import { FriendsPanel } from './FriendsPanel';
 import { AuthUI } from './AuthUI';
 import { AudioManager } from '../audio/AudioManager';
-import { getGlobalLeaderboard, getFriendsLeaderboard } from '../../services/leaderboard.service';
+import {
+  getGlobalLeaderboard,
+  getFriendsLeaderboard,
+  getMyScores,
+} from '../../services/leaderboard.service';
 import { isAuthenticated } from '../../services/token-manager';
-import type { LeaderboardEntry } from '../../services/types';
+import type { LeaderboardEntry, MyScoreEntry } from '../../services/types';
 
 /**
  * PauseMenu — controls the HTML pause menu overlay.
@@ -43,6 +47,7 @@ export class PauseMenu {
   private lbBtnBack: HTMLElement | null;
   private lbTabGlobal: HTMLElement | null;
   private lbTabFriends: HTMLElement | null;
+  private lbTabMyBest: HTMLElement | null;
 
   private audioSettingsBackdrop: HTMLElement | null;
   private audioSettingsBtnBack: HTMLElement | null;
@@ -80,6 +85,7 @@ export class PauseMenu {
     this.lbBtnBack = document.getElementById('lb-btn-back');
     this.lbTabGlobal = document.getElementById('lb-tab-global');
     this.lbTabFriends = document.getElementById('lb-tab-friends');
+    this.lbTabMyBest = document.getElementById('lb-tab-my-best');
 
     this.audioSettingsBackdrop = document.getElementById('audio-settings-backdrop');
     this.audioSettingsBtnBack = document.getElementById('audio-settings-btn-back');
@@ -261,7 +267,7 @@ export class PauseMenu {
     this.backdrop?.classList.add('visible');
   }
 
-  private async loadLeaderboardData(tab: 'global' | 'friends'): Promise<void> {
+  private async loadLeaderboardData(tab: 'global' | 'friends' | 'my-best'): Promise<void> {
     const container = document.getElementById('lb-list-container');
     if (!container) return;
 
@@ -281,11 +287,23 @@ export class PauseMenu {
             <span class="lb-col-name" style="text-align: center; width: 100%; color: #cc3333;">${result.error}</span>
           </div>`;
       }
-    } else {
+    } else if (tab === 'friends') {
       if (!isAuthenticated()) return;
       const result = await getFriendsLeaderboard();
       if (result.success) {
         this.renderLeaderboardEntries(container, result.data.leaderboard);
+      } else {
+        container.innerHTML = `
+          <div class="lb-row" style="justify-content: center;">
+            <span class="lb-col-name" style="text-align: center; width: 100%; color: #cc3333;">${result.error}</span>
+          </div>`;
+      }
+    } else {
+      // my-best
+      if (!isAuthenticated()) return;
+      const result = await getMyScores(20);
+      if (result.success) {
+        this.renderMyScoresEntries(container, result.data.scores);
       } else {
         container.innerHTML = `
           <div class="lb-row" style="justify-content: center;">
@@ -320,6 +338,56 @@ export class PauseMenu {
           </div>`;
       })
       .join('');
+  }
+
+  private renderMyScoresEntries(container: HTMLElement, scores: MyScoreEntry[]): void {
+    if (scores.length === 0) {
+      container.innerHTML = `
+        <div class="lb-row" style="justify-content: center;">
+          <span class="lb-col-name" style="text-align: center; width: 100%;">No scores yet. Play a game!</span>
+        </div>`;
+      return;
+    }
+
+    // Get current username from the HUD
+    const username = this.getPlayerName();
+
+    container.innerHTML = scores
+      .map((entry) => {
+        let rowClass = 'lb-row';
+        if (entry.rank === 1) rowClass += ' lb-row-gold';
+        else if (entry.rank === 2) rowClass += ' lb-row-silver';
+        else if (entry.rank === 3) rowClass += ' lb-row-bronze';
+
+        const dateStr = this.formatScoreDate(entry.timestamp);
+
+        return `
+          <div class="${rowClass}">
+            <span class="lb-col-rank">${entry.rank}</span>
+            <span class="lb-col-name">${username}</span>
+            <span class="lb-col-score">${entry.score.toLocaleString()}</span>
+            <span class="lb-col-wave">${entry.round}</span>
+            <span class="lb-col-date">${dateStr}</span>
+          </div>`;
+      })
+      .join('');
+  }
+
+  private getPlayerName(): string {
+    const usernameEl = document.getElementById('auth-username');
+    if (usernameEl && usernameEl.textContent && usernameEl.textContent !== '---') {
+      return usernameEl.textContent;
+    }
+    return 'You';
+  }
+
+  private formatScoreDate(isoString: string): string {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return '—';
+    }
   }
 
   private bindButtons(): void {
@@ -410,9 +478,10 @@ export class PauseMenu {
     }
 
     // Leaderboard tabs
-    const lbTabs = [this.lbTabGlobal, this.lbTabFriends];
+    const lbTabs = [this.lbTabGlobal, this.lbTabFriends, this.lbTabMyBest];
     const lbListContainer = document.getElementById('lb-list-container');
-    const lbHeader = document.querySelector('.lb-header') as HTMLElement | null;
+    const lbHeader = document.querySelector('#lb-panel-header') as HTMLElement | null;
+    const lbHeaderDate = lbHeader?.querySelector('.lb-col-date') as HTMLElement | null;
     const lbFriendsNotLogged = document.getElementById('lb-friends-not-logged');
     const lbFriendsLoginBtn = document.getElementById('lb-friends-login-btn');
 
@@ -423,8 +492,15 @@ export class PauseMenu {
           tab.classList.add('friends-tab-active');
 
           const isFriendsTab = tab === this.lbTabFriends;
+          const isMyBestTab = tab === this.lbTabMyBest;
+          const needsAuth = isFriendsTab || isMyBestTab;
 
-          if (isFriendsTab && !this.getAuthLoggedIn()) {
+          // Toggle Date column visibility
+          if (lbHeaderDate) {
+            lbHeaderDate.style.display = isMyBestTab ? '' : 'none';
+          }
+
+          if (needsAuth && !this.getAuthLoggedIn()) {
             // Not logged in — show login prompt, hide list
             if (lbListContainer) lbListContainer.style.display = 'none';
             if (lbHeader) lbHeader.style.display = 'none';
@@ -434,7 +510,12 @@ export class PauseMenu {
             if (lbListContainer) lbListContainer.style.display = 'flex';
             if (lbHeader) lbHeader.style.display = 'flex';
             if (lbFriendsNotLogged) lbFriendsNotLogged.style.display = 'none';
-            this.loadLeaderboardData(isFriendsTab ? 'friends' : 'global');
+
+            let tabKey: 'global' | 'friends' | 'my-best' = 'global';
+            if (isFriendsTab) tabKey = 'friends';
+            else if (isMyBestTab) tabKey = 'my-best';
+
+            this.loadLeaderboardData(tabKey);
           }
         };
       }

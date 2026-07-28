@@ -42,6 +42,16 @@ export interface FriendEntry {
   createdAt: string;
 }
 
+/** Personal best score entry (from DB) */
+export interface MyScoreEntry {
+  rank: number;
+  score: number;
+  round: number;
+  enemiesKilled: number;
+  sessionDuration: number;
+  timestamp: string;
+}
+
 /** Pending score saved in localStorage for retry */
 export interface PendingScore {
   round: number;

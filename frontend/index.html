@@ -1057,6 +1057,10 @@
         width: 50px;
         text-align: right;
       }
+      .lb-col-date {
+        width: 65px;
+        text-align: right;
+      }
 
       /* ─── HUD Auth Section ────────────────────────────── */
       .hud-auth-section {
@@ -2223,14 +2227,16 @@
         <div class="friends-tabs">
           <button id="lb-tab-global" class="friends-tab friends-tab-active">Global</button>
           <button id="lb-tab-friends" class="friends-tab">Friends</button>
+          <button id="lb-tab-my-best" class="friends-tab">My Best</button>
         </div>
 
         <!-- Table header -->
-        <div class="lb-header">
+        <div id="lb-panel-header" class="lb-header">
           <span class="lb-col-rank">#</span>
           <span class="lb-col-name">Player</span>
           <span class="lb-col-score">Score</span>
           <span class="lb-col-wave">Wave</span>
+          <span class="lb-col-date" style="display:none;">Date</span>
         </div>
 
         <!-- Leaderboard list -->
@@ -2326,7 +2332,7 @@
 
       <!-- Leaderboard -->
       <div class="results-lb-wrapper">
-        <p class="results-lb-title">Leaderboard</p>
+        <p id="results-lb-title" class="results-lb-title">My Best</p>
         <div class="lb-header">
           <span class="lb-col-rank">#</span>
           <span class="lb-col-name">Player</span>

@@ -1,6 +1,12 @@
 import { get, post } from './http-client';
 import { isAuthenticated } from './token-manager';
-import type { ServiceResult, LeaderboardEntry, SubmitScoreResponse, PendingScore } from './types';
+import type {
+  ServiceResult,
+  LeaderboardEntry,
+  MyScoreEntry,
+  SubmitScoreResponse,
+  PendingScore,
+} from './types';
 
 const PENDING_SCORES_KEY = 'horde_pending_scores';
 const MAX_RETRIES = 3;
@@ -56,6 +62,16 @@ export async function getFriendsLeaderboard(): Promise<
   ServiceResult<{ leaderboard: LeaderboardEntry[] }>
 > {
   return get<{ leaderboard: LeaderboardEntry[] }>('/leaderboard/friends');
+}
+
+/**
+ * Get the authenticated user's personal best scores (highest first).
+ * Protected endpoint — requires valid token.
+ */
+export async function getMyScores(
+  limit = 10,
+): Promise<ServiceResult<{ scores: MyScoreEntry[] }>> {
+  return get<{ scores: MyScoreEntry[] }>(`/leaderboard/my-scores?limit=${limit}`);
 }
 
 // ─── Pending Scores Retry Logic ──────────────────────────────────────────────
