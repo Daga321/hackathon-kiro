@@ -68,9 +68,7 @@ export async function getFriendsLeaderboard(): Promise<
  * Get the authenticated user's personal best scores (highest first).
  * Protected endpoint — requires valid token.
  */
-export async function getMyScores(
-  limit = 10,
-): Promise<ServiceResult<{ scores: MyScoreEntry[] }>> {
+export async function getMyScores(limit = 10): Promise<ServiceResult<{ scores: MyScoreEntry[] }>> {
   return get<{ scores: MyScoreEntry[] }>(`/leaderboard/my-scores?limit=${limit}`);
 }
 
