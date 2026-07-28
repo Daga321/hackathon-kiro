@@ -166,7 +166,8 @@ export class PauseMenu {
   }
 
   private showControls(): void {
-    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const ua = navigator.userAgent.toLowerCase();
+    const isMobile = /android|iphone|ipad|ipod|mobile|tablet/.test(ua);
     if (this.controlsDesktop) this.controlsDesktop.style.display = isMobile ? 'none' : 'flex';
     if (this.controlsMobile) this.controlsMobile.style.display = isMobile ? 'flex' : 'none';
 
