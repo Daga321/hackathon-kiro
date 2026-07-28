@@ -9,6 +9,7 @@ import {
   getPlayerHP,
   getPlayerDamage,
 } from '../config/difficulty-config';
+import { UpgradeType, UPGRADE_BASE, UPGRADE_MULTIPLIER } from '../upgrades/UpgradeManager';
 
 /**
  * A metric definition for the graph viewer.
@@ -19,6 +20,12 @@ interface MetricDef {
   /** Function that returns the value for a given wave number */
   getValue: (wave: number) => number;
   category: string;
+  /**
+   * Optional range metric: returns { min, max } for a shaded band.
+   * When present, getValue returns the "expected" (average) value,
+   * and getRange provides the min/max bounds for shading.
+   */
+  getRange?: (wave: number) => { min: number; max: number };
 }
 
 /**
@@ -85,7 +92,7 @@ export class BalanceGraphScene extends Phaser.Scene {
   private buildMetrics(): void {
     /* eslint-disable @typescript-eslint/explicit-function-return-type */
     this.metrics = [
-      // Player
+      // Player (order: HP, ATK, DEF, Speed)
       {
         label: 'Player Max HP',
         color: '#44cc44',
@@ -99,19 +106,19 @@ export class BalanceGraphScene extends Phaser.Scene {
         category: 'Player',
       },
       {
+        label: 'Player Defense',
+        color: '#11bb88',
+        getValue: () => 0,
+        category: 'Player',
+      },
+      {
         label: 'Player Speed',
         color: '#22ee99',
         getValue: () => 120,
         category: 'Player',
       },
 
-      // Enemies
-      {
-        label: 'Enemy Count',
-        color: '#ff6666',
-        getValue: (w) => getEnemyCount(w),
-        category: 'Enemies',
-      },
+      // Enemies (order: HP, ATK, DEF, Speed, Count)
       {
         label: 'Enemy HP',
         color: '#ff4444',
@@ -125,10 +132,45 @@ export class BalanceGraphScene extends Phaser.Scene {
         category: 'Enemies',
       },
       {
-        label: 'Enemy Speed Mult',
-        color: '#ffaa44',
-        getValue: (w) => getEnemySpeedMultiplier(w),
+        label: 'Enemy Defense',
+        color: '#ff5577',
+        getValue: () => 0,
         category: 'Enemies',
+      },
+      {
+        label: 'Enemy Speed',
+        color: '#ffaa44',
+        getValue: (w) => {
+          const baseEnemySpeed = 108;
+          return baseEnemySpeed * getEnemySpeedMultiplier(w);
+        },
+        category: 'Enemies',
+      },
+      {
+        label: 'Enemy Count',
+        color: '#ff6666',
+        getValue: (w) => getEnemyCount(w),
+        category: 'Enemies',
+      },
+
+      // Multipliers (order: HP, ATK, Speed)
+      {
+        label: 'Enemy HP Mult',
+        color: '#dd4466',
+        getValue: (w) => Math.pow(DIFFICULTY_CONFIG.ENEMY_HP_MULTIPLIER, w - 1),
+        category: 'Multipliers',
+      },
+      {
+        label: 'Enemy ATK Mult',
+        color: '#dd8844',
+        getValue: (w) => Math.pow(DIFFICULTY_CONFIG.ENEMY_DAMAGE_MULTIPLIER, w - 1),
+        category: 'Multipliers',
+      },
+      {
+        label: 'Enemy Speed Mult',
+        color: '#ddaa44',
+        getValue: (w) => getEnemySpeedMultiplier(w),
+        category: 'Multipliers',
       },
 
       // Gameplay
@@ -156,6 +198,112 @@ export class BalanceGraphScene extends Phaser.Scene {
             ),
           ),
         category: 'Gameplay',
+      },
+
+      // Roulette Upgrades (order: HP, ATK, DEF, Speed)
+      {
+        label: 'Roulette: Max HP (Shield)',
+        color: '#2980b9',
+        getValue: (w) => {
+          const basePlayerHP = DIFFICULTY_CONFIG.PLAYER_HP_BASE;
+          const prob = 0.25;
+          let sum = 0;
+          for (let i = 1; i <= w; i++) {
+            sum +=
+              UPGRADE_BASE[UpgradeType.SHIELD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SHIELD], i - 1);
+          }
+          return basePlayerHP + Math.round(sum * prob * 100) / 100;
+        },
+        getRange: (w) => {
+          const basePlayerHP = DIFFICULTY_CONFIG.PLAYER_HP_BASE;
+          let max = 0;
+          for (let i = 1; i <= w; i++) {
+            max +=
+              UPGRADE_BASE[UpgradeType.SHIELD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SHIELD], i - 1);
+          }
+          return { min: basePlayerHP, max: basePlayerHP + Math.round(max * 100) / 100 };
+        },
+        category: 'Roulette',
+      },
+      {
+        label: 'Roulette: ATK (Sword)',
+        color: '#c0392b',
+        getValue: (w) => {
+          const basePlayerDmg = DIFFICULTY_CONFIG.PLAYER_DAMAGE_BASE;
+          const prob = 0.25;
+          let sum = 0;
+          for (let i = 1; i <= w; i++) {
+            sum +=
+              UPGRADE_BASE[UpgradeType.SWORD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SWORD], i - 1);
+          }
+          return basePlayerDmg + Math.round(sum * prob * 100) / 100;
+        },
+        getRange: (w) => {
+          const basePlayerDmg = DIFFICULTY_CONFIG.PLAYER_DAMAGE_BASE;
+          let max = 0;
+          for (let i = 1; i <= w; i++) {
+            max +=
+              UPGRADE_BASE[UpgradeType.SWORD] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.SWORD], i - 1);
+          }
+          return { min: basePlayerDmg, max: basePlayerDmg + Math.round(max * 100) / 100 };
+        },
+        category: 'Roulette',
+      },
+      {
+        label: 'Roulette: DEF (Heart)',
+        color: '#f39c12',
+        getValue: (w) => {
+          const basePlayerDef = 0;
+          const prob = 0.25;
+          let sum = 0;
+          for (let i = 1; i <= w; i++) {
+            sum +=
+              UPGRADE_BASE[UpgradeType.GOLDEN_HEART] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.GOLDEN_HEART], i - 1);
+          }
+          return basePlayerDef + Math.round(sum * prob * 100) / 100;
+        },
+        getRange: (w) => {
+          const basePlayerDef = 0;
+          let max = 0;
+          for (let i = 1; i <= w; i++) {
+            max +=
+              UPGRADE_BASE[UpgradeType.GOLDEN_HEART] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.GOLDEN_HEART], i - 1);
+          }
+          return { min: basePlayerDef, max: basePlayerDef + Math.round(max * 100) / 100 };
+        },
+        category: 'Roulette',
+      },
+      {
+        label: 'Roulette: SPD (Boots)',
+        color: '#27ae60',
+        getValue: (w) => {
+          const basePlayerSpeed = 120;
+          const prob = 0.25;
+          let sum = 0;
+          for (let i = 1; i <= w; i++) {
+            sum +=
+              UPGRADE_BASE[UpgradeType.WINGED_BOOTS] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.WINGED_BOOTS], i - 1);
+          }
+          return basePlayerSpeed + Math.round(sum * prob * 100) / 100;
+        },
+        getRange: (w) => {
+          const basePlayerSpeed = 120;
+          let max = 0;
+          for (let i = 1; i <= w; i++) {
+            max +=
+              UPGRADE_BASE[UpgradeType.WINGED_BOOTS] *
+              Math.pow(UPGRADE_MULTIPLIER[UpgradeType.WINGED_BOOTS], i - 1);
+          }
+          return { min: basePlayerSpeed, max: basePlayerSpeed + Math.round(max * 100) / 100 };
+        },
+        category: 'Roulette',
       },
     ];
     /* eslint-enable @typescript-eslint/explicit-function-return-type */
@@ -352,13 +500,20 @@ export class BalanceGraphScene extends Phaser.Scene {
       return;
     }
 
-    // Find global min/max Y across all active series
+    // Find global min/max Y across all active series (including range bands)
     let minY = Infinity;
     let maxY = -Infinity;
     for (const s of series) {
-      for (const v of s.values) {
+      for (let i = 0; i < s.values.length; i++) {
+        const v = s.values[i];
         if (v < minY) minY = v;
         if (v > maxY) maxY = v;
+        // Also consider range bounds for Y scaling
+        if (s.metric.getRange) {
+          const range = s.metric.getRange(i + 1);
+          if (range.min < minY) minY = range.min;
+          if (range.max > maxY) maxY = range.max;
+        }
       }
     }
 
@@ -403,6 +558,55 @@ export class BalanceGraphScene extends Phaser.Scene {
     ctx.font = '11px Courier New';
     ctx.textAlign = 'center';
     ctx.fillText('Wave', pad + graphW / 2, h - 5);
+
+    // ─── Draw shaded range bands (behind lines) ───
+    for (const s of series) {
+      if (!s.metric.getRange) continue;
+
+      const minValues: number[] = [];
+      const maxValues: number[] = [];
+      for (let wave = 1; wave <= this.MAX_WAVES; wave++) {
+        const range = s.metric.getRange(wave);
+        minValues.push(range.min);
+        maxValues.push(range.max);
+      }
+
+      // Draw filled area between min and max
+      ctx.beginPath();
+      // Top edge (max values, left to right)
+      for (let i = 0; i < this.MAX_WAVES; i++) {
+        const x = pad + (i / (this.MAX_WAVES - 1)) * graphW;
+        const y = pad + graphH - ((maxValues[i] - minY) / (maxY - minY)) * graphH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      // Bottom edge (min values, right to left)
+      for (let i = this.MAX_WAVES - 1; i >= 0; i--) {
+        const x = pad + (i / (this.MAX_WAVES - 1)) * graphW;
+        const y = pad + graphH - ((minValues[i] - minY) / (maxY - minY)) * graphH;
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+
+      // Semi-transparent fill using the metric's color
+      ctx.fillStyle = s.metric.color + '25'; // ~15% opacity
+      ctx.fill();
+
+      // Dashed border on max edge
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = s.metric.color + '55'; // ~33% opacity
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < this.MAX_WAVES; i++) {
+        const x = pad + (i / (this.MAX_WAVES - 1)) * graphW;
+        const y = pad + graphH - ((maxValues[i] - minY) / (maxY - minY)) * graphH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // ─── Draw series ───
     for (const s of series) {
@@ -531,10 +735,17 @@ export class BalanceGraphScene extends Phaser.Scene {
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      // Include range info in tooltip if available
+      let valueText = this.formatValue(val);
+      if (s.metric.getRange) {
+        const range = s.metric.getRange(wave);
+        valueText = `${valueText} [${this.formatValue(range.min)}–${this.formatValue(range.max)}]`;
+      }
+
       tooltipLines.push({
         color: s.metric.color,
         label: s.metric.label,
-        value: this.formatValue(val),
+        value: valueText,
       });
     }
 
@@ -545,7 +756,7 @@ export class BalanceGraphScene extends Phaser.Scene {
       const lineHeight = 16;
       const tooltipPadding = 8;
       const tooltipH = tooltipLines.length * lineHeight + tooltipPadding * 2 + 16;
-      const tooltipW = 180;
+      const tooltipW = 240;
 
       // Adjust position if too close to right edge
       const finalX = tooltipX + tooltipW > pad + graphW ? snappedX - tooltipW - 12 : tooltipX;

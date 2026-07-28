@@ -10,13 +10,16 @@ import {
 } from '../config/difficulty-config';
 
 /** Wave state */
-type WaveState = 'spawning' | 'active' | 'waiting_next' | 'stopped';
+type WaveState = 'spawning' | 'active' | 'waiting_next' | 'upgrade' | 'stopped';
 
 /**
  * WaveManager — controls the wave-based enemy spawn system.
  *
  * Uses EnemySpawner for actual enemy creation.
  * Handles wave progression, enemy count scaling, and wave transitions.
+ *
+ * Lifecycle per wave:
+ *   waiting_next → upgrade (emit 'pre-wave') → [wait for proceedWave()] → spawning → active
  */
 export class WaveManager {
   private scene: Phaser.Scene;
@@ -25,6 +28,7 @@ export class WaveManager {
   private currentWave: number = 0;
   private waveEnemies: Enemy[] = [];
   private currentWaveScoreReward: number = 10;
+  private pendingWave: number = 0;
 
   /** Time between waves (ms) */
   private static readonly WAVE_DELAY_MS = 3000;
@@ -36,9 +40,10 @@ export class WaveManager {
 
   /**
    * Start the wave system. Call once after scene setup.
+   * Enters upgrade phase before Wave 1.
    */
   start(): void {
-    this.startWave(1);
+    this.requestWave(1);
   }
 
   /**
@@ -60,7 +65,7 @@ export class WaveManager {
         this.state = 'waiting_next';
         this.scene.time.delayedCall(WaveManager.WAVE_DELAY_MS, () => {
           if (this.state === 'waiting_next') {
-            this.startWave(this.currentWave + 1);
+            this.requestWave(this.currentWave + 1);
           }
         });
       }
@@ -68,10 +73,33 @@ export class WaveManager {
   }
 
   /**
+   * Whether the game is in upgrade phase (gameplay should be frozen).
+   */
+  isInUpgradePhase(): boolean {
+    return this.state === 'upgrade';
+  }
+
+  /**
+   * Called by external systems (e.g., GameScene) after upgrade selection is complete.
+   * Proceeds to spawn the pending wave.
+   */
+  proceedWave(): void {
+    if (this.state !== 'upgrade') return;
+    this.startWave(this.pendingWave);
+  }
+
+  /**
    * Get current wave number.
    */
   getWave(): number {
     return this.currentWave;
+  }
+
+  /**
+   * Get the upcoming wave number (during upgrade phase).
+   */
+  getPendingWave(): number {
+    return this.pendingWave;
   }
 
   /**
@@ -89,6 +117,24 @@ export class WaveManager {
   }
 
   // ─── Private ───
+
+  /** How often the upgrade phase triggers (every N waves) */
+  private static readonly UPGRADE_INTERVAL = 3;
+
+  /**
+   * Request a new wave. Enters upgrade phase every UPGRADE_INTERVAL waves
+   * starting from wave 3 (i.e., waves 3, 6, 9, 12...).
+   */
+  private requestWave(wave: number): void {
+    this.pendingWave = wave;
+
+    if (wave >= 3 && wave % WaveManager.UPGRADE_INTERVAL === 0) {
+      this.state = 'upgrade';
+      this.scene.events.emit('pre-wave', wave);
+    } else {
+      this.startWave(wave);
+    }
+  }
 
   private startWave(wave: number): void {
     this.currentWave = wave;
