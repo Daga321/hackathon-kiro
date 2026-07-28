@@ -129,7 +129,7 @@ export class ShareManager {
 
     // ─── Terrain (matching loading screen exactly) ───
     const T = 16; // native tile size
-    const S = 3;  // scale factor (same as loading screen)
+    const S = 3; // scale factor (same as loading screen)
     const ST = T * S; // 48px scaled tile
     // Fit terrain within border margins (16px each side)
     const terrainMargin = 20;
@@ -149,21 +149,35 @@ export class ShareManager {
       const srcCol = col === 0 ? 1 : col === cols - 1 ? 3 : 2;
 
       // Row 0: Top edge (row 4 in plains.png)
-      ctx.drawImage(plainsImg,
-        srcCol * T, 4 * T, T, T,
-        terrainX + col * ST, terrainTopY, ST, ST);
+      ctx.drawImage(plainsImg, srcCol * T, 4 * T, T, T, terrainX + col * ST, terrainTopY, ST, ST);
 
       // Rows 1-3: Surface fill (row 5 in plains.png)
       for (let r = 1; r <= 3; r++) {
-        ctx.drawImage(plainsImg,
-          srcCol * T, 5 * T, T, T,
-          terrainX + col * ST, terrainTopY + r * ST, ST, ST);
+        ctx.drawImage(
+          plainsImg,
+          srcCol * T,
+          5 * T,
+          T,
+          T,
+          terrainX + col * ST,
+          terrainTopY + r * ST,
+          ST,
+          ST,
+        );
       }
 
       // Row 4: Bottom fill (row 6 in plains.png)
-      ctx.drawImage(plainsImg,
-        srcCol * T, 6 * T, T, T,
-        terrainX + col * ST, terrainTopY + 4 * ST, ST, ST);
+      ctx.drawImage(
+        plainsImg,
+        srcCol * T,
+        6 * T,
+        T,
+        T,
+        terrainX + col * ST,
+        terrainTopY + 4 * ST,
+        ST,
+        ST,
+      );
     }
 
     // ─── Surface line (where characters/objects rest) ───
@@ -171,43 +185,79 @@ export class ShareManager {
 
     // ─── Objects on terrain ───
     // Tombstone — left side
-    ctx.drawImage(objectsImg,
-      6 * T, 0, T, T,
-      terrainX + ST, surfaceY - ST + 12, ST, ST);
+    ctx.drawImage(objectsImg, 6 * T, 0, T, T, terrainX + ST, surfaceY - ST + 12, ST, ST);
 
     // Skull — right side
-    ctx.drawImage(objectsImg,
-      8 * T, 0, T, T,
-      terrainX + (cols - 2) * ST, surfaceY - ST + 12, ST, ST);
+    ctx.drawImage(
+      objectsImg,
+      8 * T,
+      0,
+      T,
+      T,
+      terrainX + (cols - 2) * ST,
+      surfaceY - ST + 12,
+      ST,
+      ST,
+    );
 
     // Rock — far left on surface
-    ctx.drawImage(objectsImg,
-      0, 1 * T, T, T,
-      terrainX + 4, surfaceY - ST + 16, ST, ST);
+    ctx.drawImage(objectsImg, 0, 1 * T, T, T, terrainX + 4, surfaceY - ST + 16, ST, ST);
 
     // Rock — far right on surface
-    ctx.drawImage(objectsImg,
-      0, 1 * T, T, T,
-      terrainX + (cols - 1) * ST - 4, surfaceY - ST + 16, ST, ST);
+    ctx.drawImage(
+      objectsImg,
+      0,
+      1 * T,
+      T,
+      T,
+      terrainX + (cols - 1) * ST - 4,
+      surfaceY - ST + 16,
+      ST,
+      ST,
+    );
 
     // ─── Characters on terrain ───
     const charSize = 48 * S; // 144px
 
     // Player — left, feet resting on surface
-    ctx.drawImage(playerImg,
-      0, 0, 48, 48,
-      terrainX + ST * 2, surfaceY - charSize + 24, charSize, charSize);
+    ctx.drawImage(
+      playerImg,
+      0,
+      0,
+      48,
+      48,
+      terrainX + ST * 2,
+      surfaceY - charSize + 24,
+      charSize,
+      charSize,
+    );
 
     // Skeleton — right side
-    ctx.drawImage(skeletonImg,
-      0, 0, 48, 48,
-      terrainX + (cols - 2) * ST - charSize + ST, surfaceY - charSize + 24, charSize, charSize);
+    ctx.drawImage(
+      skeletonImg,
+      0,
+      0,
+      48,
+      48,
+      terrainX + (cols - 2) * ST - charSize + ST,
+      surfaceY - charSize + 24,
+      charSize,
+      charSize,
+    );
 
     // Slime — center
     const slimeSize = 32 * S; // 96px
-    ctx.drawImage(slimeImg,
-      0, 0, 32, 32,
-      terrainX + (cols * ST) / 2 - slimeSize / 2 + 20, surfaceY - slimeSize + 16, slimeSize, slimeSize);
+    ctx.drawImage(
+      slimeImg,
+      0,
+      0,
+      32,
+      32,
+      terrainX + (cols * ST) / 2 - slimeSize / 2 + 20,
+      surfaceY - slimeSize + 16,
+      slimeSize,
+      slimeSize,
+    );
 
     ctx.imageSmoothingEnabled = true;
 
@@ -331,7 +381,11 @@ export class ShareManager {
           ctx.lineWidth = 1;
           ctx.strokeRect(40, y - 12, width - 80, rowHeight - 2);
         } else if (i < 3) {
-          const colors = ['rgba(240, 192, 64, 0.08)', 'rgba(192, 192, 192, 0.06)', 'rgba(205, 127, 50, 0.06)'];
+          const colors = [
+            'rgba(240, 192, 64, 0.08)',
+            'rgba(192, 192, 192, 0.06)',
+            'rgba(205, 127, 50, 0.06)',
+          ];
           ctx.fillStyle = colors[i];
           ctx.fillRect(40, y - 12, width - 80, rowHeight - 2);
         }

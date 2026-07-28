@@ -4,7 +4,7 @@ const PREFS_KEY = 'horde_audio_prefs';
 
 interface AudioPrefs {
   musicVolume: number; // 0.0 to 1.0
-  sfxVolume: number;   // 0.0 to 1.0
+  sfxVolume: number; // 0.0 to 1.0
 }
 
 /**

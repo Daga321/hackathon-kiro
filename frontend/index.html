@@ -360,7 +360,8 @@
         position: absolute;
         inset: 12px;
         border-radius: 2px;
-        background: radial-gradient(circle at 0% 0%, #888 3px, transparent 3px),
+        background:
+          radial-gradient(circle at 0% 0%, #888 3px, transparent 3px),
           radial-gradient(circle at 100% 0%, #888 3px, transparent 3px),
           radial-gradient(circle at 0% 100%, #888 3px, transparent 3px),
           radial-gradient(circle at 100% 100%, #888 3px, transparent 3px);
@@ -1374,8 +1375,13 @@
         color: #4caf50 !important;
       }
       @keyframes results-highlight-pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
       }
       .results-lb-empty {
         font-size: 0.45rem;
@@ -2115,7 +2121,14 @@
           <div class="audio-setting">
             <label class="audio-setting-label" for="audio-music-slider">Music Volume</label>
             <div class="audio-slider-row">
-              <input id="audio-music-slider" class="audio-slider" type="range" min="0" max="100" value="100" />
+              <input
+                id="audio-music-slider"
+                class="audio-slider"
+                type="range"
+                min="0"
+                max="100"
+                value="100"
+              />
               <span id="audio-music-value" class="audio-slider-value">100%</span>
             </div>
           </div>
@@ -2124,7 +2137,14 @@
           <div class="audio-setting">
             <label class="audio-setting-label" for="audio-sfx-slider">SFX Volume</label>
             <div class="audio-slider-row">
-              <input id="audio-sfx-slider" class="audio-slider" type="range" min="0" max="100" value="100" />
+              <input
+                id="audio-sfx-slider"
+                class="audio-slider"
+                type="range"
+                min="0"
+                max="100"
+                value="100"
+              />
               <span id="audio-sfx-value" class="audio-slider-value">100%</span>
             </div>
           </div>
@@ -2318,14 +2338,18 @@
 
       <!-- Actions -->
       <div class="gameover-actions">
-        <button id="gameover-btn-share" class="gameover-action-btn gameover-btn-share">Share</button>
-        <button id="gameover-btn-retry" class="gameover-action-btn gameover-btn-primary">Play Again</button>
+        <button id="gameover-btn-share" class="gameover-action-btn gameover-btn-share">
+          Share
+        </button>
+        <button id="gameover-btn-retry" class="gameover-action-btn gameover-btn-primary">
+          Play Again
+        </button>
         <button id="gameover-btn-menu" class="gameover-action-btn">Main Menu</button>
       </div>
     </div>
 
     <!-- ═══ Results Screen Overlay (deprecated — merged into gameover) ═══ -->
-    <div id="results-backdrop" style="display:none"></div>
+    <div id="results-backdrop" style="display: none"></div>
 
     <!-- ═══ Login/Register Popup ═══ -->
     <div id="auth-backdrop">

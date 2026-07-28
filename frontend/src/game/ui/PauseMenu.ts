@@ -83,7 +83,9 @@ export class PauseMenu {
 
     this.audioSettingsBackdrop = document.getElementById('audio-settings-backdrop');
     this.audioSettingsBtnBack = document.getElementById('audio-settings-btn-back');
-    this.audioMusicSlider = document.getElementById('audio-music-slider') as HTMLInputElement | null;
+    this.audioMusicSlider = document.getElementById(
+      'audio-music-slider',
+    ) as HTMLInputElement | null;
     this.audioMusicValue = document.getElementById('audio-music-value');
     this.audioSfxSlider = document.getElementById('audio-sfx-slider') as HTMLInputElement | null;
     this.audioSfxValue = document.getElementById('audio-sfx-value');
