@@ -442,7 +442,9 @@ export class GameScene extends Phaser.Scene {
             );
             if (dist < 20) {
               this.player.registerHit(enemy);
-              const dmg = getPlayerDamage(this.waveManager.getWave()) + Math.round(this.player.getBonusDamage());
+              const dmg =
+                getPlayerDamage(this.waveManager.getWave()) +
+                Math.round(this.player.getBonusDamage());
               enemy.takeDamage(dmg, this.player);
               this.damageIndicators.spawn(enemySprite.x, enemySprite.y - 8, dmg, DamageType.DEALT);
               this.audio.playHit();
