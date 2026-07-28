@@ -1,4 +1,12 @@
 import { AuthUI } from './AuthUI';
+import {
+  listFriends,
+  listPendingRequests,
+  sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  removeFriend,
+} from '../../services/friends.service';
 
 /**
  * FriendsPanel — manages the Friends Management Panel overlay.
@@ -6,7 +14,7 @@ import { AuthUI } from './AuthUI';
  * Accessible from Pause Menu. If user is not logged in, shows a prompt
  * to sign in. Otherwise shows tabs: My Friends, Requests, Add Friend.
  *
- * UI-only — actual friend operations will be connected to backend later.
+ * Connected to friends.service.ts for real API operations via API Gateway.
  */
 export class FriendsPanel {
   private backdrop: HTMLElement | null;
@@ -96,18 +104,148 @@ export class FriendsPanel {
       if (p) p.style.display = 'none';
     });
 
-    // Activate selected tab
+    // Activate selected tab and load data
     if (tab === 'list') {
       this.tabList?.classList.add('friends-tab-active');
       if (this.panelList) this.panelList.style.display = 'block';
+      this.loadFriendsList();
     } else if (tab === 'requests') {
       this.tabRequests?.classList.add('friends-tab-active');
       if (this.panelRequests) this.panelRequests.style.display = 'block';
+      this.loadPendingRequests();
     } else if (tab === 'add') {
       this.tabAdd?.classList.add('friends-tab-active');
       if (this.panelAdd) this.panelAdd.style.display = 'block';
       if (this.addStatus) this.addStatus.textContent = '';
     }
+  }
+
+  private async loadFriendsList(): Promise<void> {
+    const container = document.getElementById('friends-list-container');
+    if (!container) return;
+
+    container.innerHTML = '<p class="friends-empty-text">Loading...</p>';
+
+    const result = await listFriends();
+
+    if (!result.success) {
+      container.innerHTML = `<p class="friends-empty-text" style="color: #cc3333;">${result.error}</p>`;
+      return;
+    }
+
+    const friends = result.data.friends;
+
+    if (friends.length === 0) {
+      container.innerHTML = '<p class="friends-empty-text">No friends yet. Add some!</p>';
+      return;
+    }
+
+    container.innerHTML = friends
+      .map(
+        (friend) => `
+        <div class="friends-row" data-friend-id="${friend.friendId}">
+          <span class="friends-row-name">${friend.friendId}</span>
+          <button class="friends-row-action friends-remove-btn" data-id="${friend.friendId}">Remove</button>
+        </div>`,
+      )
+      .join('');
+
+    // Bind remove buttons
+    container.querySelectorAll('.friends-remove-btn').forEach((btn) => {
+      (btn as HTMLElement).onclick = async () => {
+        const friendId = btn.getAttribute('data-id');
+        if (!friendId) return;
+
+        (btn as HTMLElement).textContent = '...';
+        const removeResult = await removeFriend(friendId);
+
+        if (removeResult.success) {
+          const row = btn.closest('.friends-row');
+          row?.remove();
+          if (container.querySelectorAll('.friends-row').length === 0) {
+            container.innerHTML = '<p class="friends-empty-text">No friends yet. Add some!</p>';
+          }
+        } else {
+          (btn as HTMLElement).textContent = 'Remove';
+        }
+      };
+    });
+  }
+
+  private async loadPendingRequests(): Promise<void> {
+    const container = document.getElementById('friends-requests-container');
+    if (!container) return;
+
+    container.innerHTML = '<p class="friends-empty-text">Loading...</p>';
+
+    const result = await listPendingRequests();
+
+    if (!result.success) {
+      container.innerHTML = `<p class="friends-empty-text" style="color: #cc3333;">${result.error}</p>`;
+      return;
+    }
+
+    const pending = result.data.friends;
+
+    if (pending.length === 0) {
+      container.innerHTML = '<p class="friends-empty-text">No pending requests.</p>';
+      return;
+    }
+
+    container.innerHTML = pending
+      .map(
+        (entry) => `
+        <div class="friends-row" data-friend-id="${entry.friendId}">
+          <span class="friends-row-name">${entry.friendId}</span>
+          <div style="display: flex; gap: 4px;">
+            <button class="friends-row-action friends-accept-btn" data-id="${entry.friendId}" style="background: #2d6b2d;">Accept</button>
+            <button class="friends-row-action friends-reject-btn" data-id="${entry.friendId}" style="background: #6b2d2d;">Reject</button>
+          </div>
+        </div>`,
+      )
+      .join('');
+
+    // Bind accept buttons
+    container.querySelectorAll('.friends-accept-btn').forEach((btn) => {
+      (btn as HTMLElement).onclick = async () => {
+        const friendId = btn.getAttribute('data-id');
+        if (!friendId) return;
+
+        (btn as HTMLElement).textContent = '...';
+        const acceptResult = await acceptFriendRequest(friendId);
+
+        if (acceptResult.success) {
+          const row = btn.closest('.friends-row');
+          row?.remove();
+          if (container.querySelectorAll('.friends-row').length === 0) {
+            container.innerHTML = '<p class="friends-empty-text">No pending requests.</p>';
+          }
+        } else {
+          (btn as HTMLElement).textContent = 'Accept';
+        }
+      };
+    });
+
+    // Bind reject buttons
+    container.querySelectorAll('.friends-reject-btn').forEach((btn) => {
+      (btn as HTMLElement).onclick = async () => {
+        const friendId = btn.getAttribute('data-id');
+        if (!friendId) return;
+
+        (btn as HTMLElement).textContent = '...';
+        const rejectResult = await rejectFriendRequest(friendId);
+
+        if (rejectResult.success) {
+          const row = btn.closest('.friends-row');
+          row?.remove();
+          if (container.querySelectorAll('.friends-row').length === 0) {
+            container.innerHTML = '<p class="friends-empty-text">No pending requests.</p>';
+          }
+        } else {
+          (btn as HTMLElement).textContent = 'Reject';
+        }
+      };
+    });
   }
 
   private bindEvents(): void {
@@ -145,9 +283,9 @@ export class FriendsPanel {
       this.tabAdd.onclick = () => this.switchTab('add');
     }
 
-    // Add friend submit
+    // Add friend submit — calls friends.service.sendFriendRequest()
     if (this.addSubmit) {
-      this.addSubmit.onclick = () => {
+      this.addSubmit.onclick = async () => {
         const value = this.addInput?.value?.trim();
         if (!value) {
           if (this.addStatus) {
@@ -157,13 +295,25 @@ export class FriendsPanel {
           return;
         }
 
-        // TODO: Replace with real friend request API call
-        // For now, simulate success
         if (this.addStatus) {
-          this.addStatus.textContent = `Request sent to "${value}"`;
-          this.addStatus.style.color = '#44ff44';
+          this.addStatus.textContent = 'Sending...';
+          this.addStatus.style.color = '#aaa';
         }
-        if (this.addInput) this.addInput.value = '';
+
+        const result = await sendFriendRequest(value);
+
+        if (result.success) {
+          if (this.addStatus) {
+            this.addStatus.textContent = `Request sent to "${value}"`;
+            this.addStatus.style.color = '#44ff44';
+          }
+          if (this.addInput) this.addInput.value = '';
+        } else {
+          if (this.addStatus) {
+            this.addStatus.textContent = result.error;
+            this.addStatus.style.color = '#ff4444';
+          }
+        }
       };
     }
 

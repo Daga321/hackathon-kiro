@@ -446,6 +446,10 @@ export abstract class Character {
     return this.maxHealth;
   }
 
+  getSpeed(): number {
+    return this.speed;
+  }
+
   getIsDead(): boolean {
     return this.isDead;
   }

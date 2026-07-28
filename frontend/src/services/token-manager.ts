@@ -21,6 +21,14 @@ export function getAccessToken(): string | null {
 }
 
 /**
+ * Returns the current ID token, or null if not authenticated.
+ * Used for API Gateway authorization (Cognito Authorizer validates ID tokens).
+ */
+export function getIdToken(): string | null {
+  return localStorage.getItem(STORAGE_KEYS.ID_TOKEN);
+}
+
+/**
  * Returns the current refresh token, or null if not available.
  */
 export function getRefreshToken(): string | null {
