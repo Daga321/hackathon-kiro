@@ -50,6 +50,9 @@ export class Player extends Character {
   /** Death animation keys */
   private deathAnims: Record<string, string> | null = null;
 
+  /** Bonus damage from SWORD upgrades (added to base damage) */
+  private bonusDamage: number = 0;
+
   constructor(
     scene: Phaser.Scene,
     collisionLayer: Phaser.Tilemaps.TilemapLayer | null,
@@ -193,5 +196,62 @@ export class Player extends Character {
 
     // Apply movement with keyboard prioritizing horizontal facing
     this.applyMovement(vx, vy, isKeyboard);
+  }
+
+  // ─── Upgrade System ───
+
+  /** Max speed cap to prevent uncontrollable movement */
+  private static readonly MAX_SPEED = 250;
+  /** Max defense cap */
+  private static readonly MAX_DEFENSE = 50;
+
+  /**
+   * Increase attack damage bonus (SWORD upgrade).
+   */
+  addBonusDamage(amount: number): void {
+    this.bonusDamage += amount;
+  }
+
+  /**
+   * Get the total bonus damage from upgrades.
+   */
+  getBonusDamage(): number {
+    return this.bonusDamage;
+  }
+
+  /**
+   * Increase defense (SHIELD upgrade).
+   */
+  addDefense(amount: number): void {
+    this.defense = Math.min(Player.MAX_DEFENSE, this.defense + amount);
+  }
+
+  /**
+   * Get current defense value.
+   */
+  getDefense(): number {
+    return this.defense;
+  }
+
+  /**
+   * Increase max HP and heal by the same amount (GOLDEN_HEART upgrade).
+   */
+  addMaxHP(amount: number): void {
+    this.maxHealth += Math.round(amount);
+    this.currentHealth += Math.round(amount);
+  }
+
+  /**
+   * Increase movement speed (WINGED_BOOTS upgrade), capped.
+   */
+  addSpeed(amount: number): void {
+    this.speed = Math.min(Player.MAX_SPEED, this.speed + amount);
+  }
+
+  /**
+   * Get current speed.
+   */
+  getSpeed(): number {
+    return this.speed;
   }
 }
