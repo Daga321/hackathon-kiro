@@ -152,6 +152,15 @@ export class HudManager {
     this.drawMinimap(player, enemies);
   }
 
+  /**
+   * Set health pickup positions for minimap rendering.
+   */
+  setPickupPositions(positions: { x: number; y: number }[]): void {
+    this.pickupPositions = positions;
+  }
+
+  private pickupPositions: { x: number; y: number }[] = [];
+
   private drawMinimap(player: Player, enemies: Enemy[]): void {
     if (!this.minimapCtx || !this.minimapCanvas) return;
     const ctx = this.minimapCtx;
@@ -163,6 +172,16 @@ export class HudManager {
     // Clear
     ctx.fillStyle = '#1a2a1a';
     ctx.fillRect(0, 0, w, h);
+
+    // Draw health pickups (green dots)
+    ctx.fillStyle = '#44ff44';
+    for (const pos of this.pickupPositions) {
+      const px = (pos.x / mapW) * w;
+      const py = (pos.y / mapH) * h;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Draw enemies (red dots)
     ctx.fillStyle = '#cc3333';

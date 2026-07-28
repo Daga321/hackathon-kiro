@@ -64,11 +64,29 @@ export class DatabaseStack extends Stack {
     // Access patterns:
     //   - Get all scores for a user (sorted by time desc)
     //   - Get latest N scores for a user
+    //   - Get top N scores for a user (sorted by score desc) via user-score-gsi
     const scoresTable = new dynamodb.Table(this, 'ScoresTable', {
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.DESTROY,
+    });
+
+    // GSI: user-score-gsi
+    //   Enables "my best scores" queries — top N by score for a given user.
+    //   PK: userId
+    //   SK: score (NUMBER — query with ScanIndexForward=false for descending)
+    scoresTable.addGlobalSecondaryIndex({
+      indexName: 'user-score-gsi',
+      partitionKey: {
+        name: 'userId',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'score',
+        type: dynamodb.AttributeType.NUMBER,
+      },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     this.tables['scores'] = scoresTable;

@@ -7,11 +7,7 @@ const STORAGE_KEYS = {
 /**
  * Saves authentication tokens to localStorage.
  */
-export function saveTokens(
-  accessToken: string,
-  idToken: string,
-  refreshToken: string,
-): void {
+export function saveTokens(accessToken: string, idToken: string, refreshToken: string): void {
   localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
   localStorage.setItem(STORAGE_KEYS.ID_TOKEN, idToken);
   localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
@@ -22,6 +18,14 @@ export function saveTokens(
  */
 export function getAccessToken(): string | null {
   return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+}
+
+/**
+ * Returns the current ID token, or null if not authenticated.
+ * Used for API Gateway authorization (Cognito Authorizer validates ID tokens).
+ */
+export function getIdToken(): string | null {
+  return localStorage.getItem(STORAGE_KEYS.ID_TOKEN);
 }
 
 /**

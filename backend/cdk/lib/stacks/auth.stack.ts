@@ -1,5 +1,9 @@
-import { Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
-import { aws_cognito as cognito } from 'aws-cdk-lib';
+import { Stack, StackProps, CfnOutput, RemovalPolicy, Duration } from 'aws-cdk-lib';
+import {
+  aws_cognito as cognito,
+  aws_lambda as lambda,
+  aws_lambda_nodejs as nodejs,
+} from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 export type AuthStackProps = StackProps;
@@ -40,6 +44,17 @@ export class AuthStack extends Stack {
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       removalPolicy: RemovalPolicy.DESTROY,
     });
+
+    // ─── Pre Sign-up Lambda Trigger (auto-confirm users) ─────────────────────
+    const preSignUpLambda = new nodejs.NodejsFunction(this, 'PreSignUpFunction', {
+      entry: '../lambdas/auth/pre-signup.ts',
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: Duration.seconds(5),
+      memorySize: 128,
+    });
+
+    this.userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, preSignUpLambda);
 
     // ─── App Client (frontend) ─────────────────────────────────────────────────
     this.userPoolClient = this.userPool.addClient('AppClient', {

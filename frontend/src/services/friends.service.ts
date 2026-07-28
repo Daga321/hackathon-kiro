@@ -10,6 +10,14 @@ export async function listFriends(): Promise<ServiceResult<{ friends: FriendEntr
 }
 
 /**
+ * Get pending friend requests for the authenticated user.
+ * Protected endpoint — requires valid token.
+ */
+export async function listPendingRequests(): Promise<ServiceResult<{ friends: FriendEntry[] }>> {
+  return get<{ friends: FriendEntry[] }>('/friends?status=pending');
+}
+
+/**
  * Send a friend request to another player.
  * Protected endpoint — requires valid token.
  */
@@ -43,8 +51,6 @@ export async function rejectFriendRequest(
  * Remove an existing friendship.
  * Protected endpoint — requires valid token.
  */
-export async function removeFriend(
-  friendId: string,
-): Promise<ServiceResult<{ message: string }>> {
+export async function removeFriend(friendId: string): Promise<ServiceResult<{ message: string }>> {
   return del<{ message: string }>(`/friends/${friendId}`);
 }

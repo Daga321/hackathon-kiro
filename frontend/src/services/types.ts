@@ -2,9 +2,7 @@
  * Standard result type for all service calls.
  * Services never throw — they always return a ServiceResult.
  */
-export type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ServiceResult<T> = { success: true; data: T } | { success: false; error: string };
 
 /** Tokens returned by the login endpoint */
 export interface AuthTokens {
@@ -42,6 +40,16 @@ export interface FriendEntry {
   friendId: string;
   status: 'pending' | 'confirmed';
   createdAt: string;
+}
+
+/** Personal best score entry (from DB) */
+export interface MyScoreEntry {
+  rank: number;
+  score: number;
+  round: number;
+  enemiesKilled: number;
+  sessionDuration: number;
+  timestamp: string;
 }
 
 /** Pending score saved in localStorage for retry */

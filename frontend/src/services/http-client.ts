@@ -1,7 +1,7 @@
-import { getAccessToken } from './token-manager';
+import { getIdToken } from './token-manager';
 import type { ServiceResult } from './types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 const IS_DEV = import.meta.env.VITE_DEV_TOOLS === 'true';
 
 /**
@@ -13,7 +13,7 @@ function getErrorMessage(status: number, body: { error?: string } | null): strin
     case 400:
       return body?.error || 'Invalid request.';
     case 401:
-      return 'Session expired. Please log in again.';
+      return body?.error || 'Session expired. Please log in again.';
     case 403:
       return 'Access denied.';
     case 404:
@@ -45,7 +45,7 @@ async function request<T>(
   };
 
   if (authenticated) {
-    const token = getAccessToken();
+    const token = getIdToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -90,7 +90,11 @@ export function get<T>(path: string, authenticated = true): Promise<ServiceResul
 /**
  * POST request (authenticated by default).
  */
-export function post<T>(path: string, body?: unknown, authenticated = true): Promise<ServiceResult<T>> {
+export function post<T>(
+  path: string,
+  body?: unknown,
+  authenticated = true,
+): Promise<ServiceResult<T>> {
   return request<T>('POST', path, body, authenticated);
 }
 

@@ -183,6 +183,23 @@ export class Enemy extends Character {
   }
 
   /**
+   * Play the special idle animation in a loop (for game over celebration).
+   * Uses the enemy's current direction. Does nothing if no special idle is configured.
+   */
+  playSpecialIdleLoop(): void {
+    if (!this.specialIdleAnims) return;
+
+    // Stop all movement
+    this.sprite.setVelocity(0, 0);
+    this.isMoving = false;
+
+    const animKey = this.specialIdleAnims[this.direction];
+    this.sprite.setFlipX(this.direction === 'left');
+    this.currentAnimKey = animKey;
+    this.sprite.play({ key: animKey, repeat: -1 }); // loop indefinitely
+  }
+
+  /**
    * Update enemy each frame. Handles detection, pursuit, attack, and obstacle avoidance.
    * @param playerSprite The player sprite to target
    * @param globalAggro If true, ignores detection radius and always pursues the player

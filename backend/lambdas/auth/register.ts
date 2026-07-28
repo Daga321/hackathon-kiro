@@ -62,7 +62,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     );
 
     return ok({
-      message: 'User registered successfully. Please verify your email.',
+      message: 'User registered successfully.',
       userId,
     });
   } catch (error) {
